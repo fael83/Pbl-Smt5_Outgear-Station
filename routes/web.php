@@ -28,4 +28,8 @@ Route::middleware('auth')->group(function () {
         return view('customer.katalog');
     });
 
+    Route::get('/admin/pelanggan', function () {
+    return view('admin.pelanggan');
+    });
+
 require __DIR__.'/auth.php';
