@@ -100,33 +100,34 @@
             <!-- Secondary Search & Options -->
             <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-gray-200 shadow-sm">
                 <div class="flex-1 min-w-[240px] relative">
-                    <input type="text" placeholder="Cari tenda ultralight, carrier 60L, kompor, sleeping bag..." 
+                    <input id="catalog-search" type="search" placeholder="Cari tenda ultralight, carrier 60L, kompor, sleeping bag..."
+                           aria-label="Cari peralatan"
                            class="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-brand">
                 </div>
 
-               
+                <select id="category-filter" aria-label="Filter kategori"
+                        class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
+                    <option value="all">Semua Kategori</option>
+                    <option value="tenda-shelter">Tenda & Shelter</option>
+                    <option value="tas-carrier">Tas Carrier</option>
+                    <option value="sleeping-gear">Sleeping Gear</option>
+                    <option value="alat-masak">Alat Masak & Kompor</option>
+                </select>
 
-                    <select class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
-                        <option>Semua Kategori</option>
-                        <option>Tenda & Shelter</option>
-                        <option>Tas Carrier</option>
-                        <option>Sleeping Gear</option>
-                        <option>Alat Masak & Kompor</option>
-                    </select>
-
-                    <select class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
-                        <option>Pilihan Harga</option>
-                        <option>Harga Terendah</option>
-                        <option>Harga Tertinggi</option>
-                        <option>Rating Tertinggi</option>
-                    </select>
+                <select id="price-sort" aria-label="Urutkan produk"
+                        class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
+                    <option value="default">Pilihan Harga</option>
+                    <option value="price-asc">Harga Terendah</option>
+                    <option value="price-desc">Harga Tertinggi</option>
+                    <option value="rating-desc">Rating Tertinggi</option>
+                </select>
                 </div>
             </div>
 
             <!-- Category Pills Bar -->
             <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs font-semibold">
                 <button class="px-4 py-2 rounded-full bg-dark text-white shadow-sm shrink-0 flex items-center gap-1.5">
-                    <span>⛺</span> Semua Alat <span class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full">142</span>
+                    <span>⛺</span> Semua Alat <span id="total-product-count" class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full">4</span>
                 </button>
             </div>
         </div>
@@ -134,7 +135,7 @@
         <!-- Section Title & Info Status Real-time -->
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                Daftar Peralatan <span class="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">8 Item Ditampilkan</span>
+                Daftar Peralatan <span class="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full"><span id="visible-product-count" aria-live="polite">4</span> Item Ditampilkan</span>
             </h2>
             <div class="flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -143,10 +144,10 @@
         </div>
 
         <!-- Product Cards Grid (4 Kolom Layout) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             
             <!-- CARD 1: Naturehike Cloud Up 2 -->
-            <div class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
+            <div data-product-card data-category="tenda-shelter" data-price="45000" data-rating="4.9" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                 <div>
                     <!-- Image Container -->
                     <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
@@ -199,7 +200,7 @@
             </div>
 
             <!-- CARD 2: Osprey Atmos AG 65L -->
-            <div class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
+            <div data-product-card data-category="tas-carrier" data-price="55000" data-rating="4.95" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                 <div>
                     <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
                         <img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=500&q=80" alt="Carrier" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
@@ -247,7 +248,7 @@
             </div>
 
             <!-- CARD 3: Eiger Mammoth 4P -->
-            <div class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
+            <div data-product-card data-category="tenda-shelter" data-price="60000" data-rating="4.8" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                 <div>
                     <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
                         <img src="https://images.unsplash.com/photo-1478828128388-69274296564e?auto=format&fit=crop&w=500&q=80" alt="Tenda Eiger" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
@@ -295,7 +296,7 @@
             </div>
 
             <!-- CARD 4: Deuter Aircontact Pro (Habis) -->
-            <div class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between opacity-80 hover:opacity-100 transition group">
+            <div data-product-card data-category="tas-carrier" data-price="65000" data-rating="4.9" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between opacity-80 hover:opacity-100 transition group">
                 <div>
                     <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
                         <img src="https://images.unsplash.com/photo-1622260614153-03223fb72052?auto=format&fit=crop&w=500&q=80" alt="Deuter" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-300">
@@ -344,10 +345,14 @@
 
         </div>
 
+        <p id="empty-product-results" class="hidden rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500" role="status">
+            Tidak ada peralatan yang cocok dengan pencarian atau filter ini.
+        </p>
+
         <!-- Pagination Bar -->
         <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200">
             <p class="text-xs text-gray-500">
-                Menampilkan <span class="font-bold text-gray-800">1–8</span> dari <span class="font-bold text-gray-800">142</span> peralatan outdoor
+                Menampilkan <span id="pagination-product-count" class="font-bold text-gray-800">4</span> dari <span class="font-bold text-gray-800">4</span> peralatan outdoor
             </p>
 
             <button class="bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 text-xs font-bold px-4 py-2 rounded-full shadow-sm transition">
@@ -421,5 +426,55 @@
         </div>
     </footer>
 
+    <script>
+        const productGrid = document.getElementById('product-grid');
+        const searchInput = document.getElementById('catalog-search');
+        const categoryFilter = document.getElementById('category-filter');
+        const sortSelector = document.getElementById('price-sort');
+        const productCards = Array.from(productGrid.querySelectorAll('[data-product-card]'));
+        const visibleCount = document.getElementById('visible-product-count');
+        const paginationCount = document.getElementById('pagination-product-count');
+        const totalCount = document.getElementById('total-product-count');
+        const emptyResults = document.getElementById('empty-product-results');
+
+        totalCount.textContent = productCards.length;
+
+        function updateCatalog() {
+            const searchTerm = searchInput.value.trim().toLocaleLowerCase('id-ID');
+            const selectedCategory = categoryFilter.value;
+            const sortBy = sortSelector.value;
+            const matchingCards = [];
+
+            productCards.forEach((card) => {
+                const matchesSearch = card.textContent.toLocaleLowerCase('id-ID').includes(searchTerm);
+                const matchesCategory = selectedCategory === 'all' || card.dataset.category === selectedCategory;
+                const isVisible = matchesSearch && matchesCategory;
+
+                card.hidden = !isVisible;
+                card.classList.toggle('hidden', !isVisible);
+
+                if (isVisible) {
+                    matchingCards.push(card);
+                }
+            });
+
+            if (sortBy === 'price-asc') {
+                matchingCards.sort((first, second) => Number(first.dataset.price) - Number(second.dataset.price));
+            } else if (sortBy === 'price-desc') {
+                matchingCards.sort((first, second) => Number(second.dataset.price) - Number(first.dataset.price));
+            } else if (sortBy === 'rating-desc') {
+                matchingCards.sort((first, second) => Number(second.dataset.rating) - Number(first.dataset.rating));
+            }
+
+            matchingCards.forEach((card) => productGrid.append(card));
+            visibleCount.textContent = matchingCards.length;
+            paginationCount.textContent = matchingCards.length;
+            emptyResults.classList.toggle('hidden', matchingCards.length > 0);
+        }
+
+        searchInput.addEventListener('input', updateCatalog);
+        categoryFilter.addEventListener('change', updateCatalog);
+        sortSelector.addEventListener('change', updateCatalog);
+    </script>
 </body>
 </html>
