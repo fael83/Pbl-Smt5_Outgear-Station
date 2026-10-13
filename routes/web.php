@@ -17,12 +17,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Route sementara untuk testing tampilan Dashboard Admin
-Route::get('/admin', function () {
-    return view('admin.dashboard');
-})->name('admin.dashboard');
+    Route::get('/admin', function () {
+        return view('admin.dashboard');
+    })->name('admin.dashboard');
 
-use App\Http\Controllers\Admin\InventarisController;
-Route::get('/adminAlat', [InventarisController::class, 'index'])->name('admin.alat.index');
+    use App\Http\Controllers\Admin\InventarisController;
+    Route::get('/adminAlat', [InventarisController::class, 'index'])->name('admin.alat.index');
+
+    Route::get('/katalog', function () {
+        return view('customer.katalog');
+    });
 
 require __DIR__.'/auth.php';
