@@ -19,7 +19,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/admin', function () {
         return view('admin.dashboard');
-    })->name('admin.dashboard');
+    });
 
     use App\Http\Controllers\Admin\InventarisController;
     Route::get('/adminAlat', [InventarisController::class, 'index'])->name('admin.alat.index');
