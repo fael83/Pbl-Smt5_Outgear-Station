@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\InventarisController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,43 +18,43 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-    use App\Http\Controllers\Admin\InventarisController;
-    Route::get('/adminAlat', [InventarisController::class, 'index'])->name('admin.alat.index');
+// Data Alat & Stok. Dipakai oleh menu "Data Peralatan" di sidebar admin.
+Route::get('/adminAlat', [InventarisController::class, 'index'])->name('admin.alat.index');
 
-    Route::get('/admin', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
-    
-    Route::get('/katalog', function () {
-        return view('customer.katalog');
-    });
+Route::get('/admin/peralatan', [InventarisController::class, 'index'])->name('admin.peralatan.index');
+// Endpoint JSON untuk pencarian, filter, dan pagination tanpa reload halaman.
+Route::get('/admin/peralatan/tabel', [InventarisController::class, 'tabel'])->name('admin.peralatan.tabel');
 
-    Route::get('/admin/pelanggan', function () {
+Route::post('/admin/peralatan', [InventarisController::class, 'store'])->name('admin.peralatan.store');
+Route::put('/admin/peralatan/{alat}', [InventarisController::class, 'update'])->name('admin.peralatan.update');
+Route::delete('/admin/peralatan/{alat}', [InventarisController::class, 'destroy'])->name('admin.peralatan.destroy');
+
+Route::get('/admin', function () {
+    return view('admin.dashboard');
+})->name('admin.dashboard');
+
+Route::get('/katalog', function () {
+    return view('customer.katalog');
+});
+
+Route::get('/admin/pelanggan', function () {
     return view('admin.pelanggan');
-    });
+});
 
-    Route::get('/admin/pemesanan', function () {
-        return view('admin.pemesanan');
-    });
+Route::get('/admin/pemesanan', function () {
+    return view('admin.pemesanan');
+});
 
-    Route::get('/admin/peralatan', function () {
-        // Halaman "Data Peralatan" pada sidebar dashboard menampilkan
-        // inventaris alat yang sama dengan menu "Data Alat & Stok".
-        return view('admin.inventaris.index');
-    });
+Route::get('/admin/verifikasi', function () {
+    return view('admin.verifikasi');
+});
 
-    Route::get('/admin/verifikasi', function () {
-        return view('admin.verifikasi');
-    });
+Route::get('/admin/denda', function () {
+    return view('admin.denda');
+});
 
-    Route::get('/admin/denda', function () {
-        return view('admin.denda');
-    });
-
-    Route::get('/admin/laporan', function () {
-        return view('admin.laporan');
-    });
-
-    
+Route::get('/admin/laporan', function () {
+    return view('admin.laporan');
+});
 
 require __DIR__.'/auth.php';
