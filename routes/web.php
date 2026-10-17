@@ -52,4 +52,6 @@ Route::middleware('auth')->group(function () {
         return view('admin.laporan');
     });
 
+    
+
 require __DIR__.'/auth.php';
