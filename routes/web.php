@@ -17,19 +17,39 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-    Route::get('/admin', function () {
-        return view('admin.dashboard');
-    });
-
     use App\Http\Controllers\Admin\InventarisController;
     Route::get('/adminAlat', [InventarisController::class, 'index'])->name('admin.alat.index');
 
+    Route::get('/admin', function () {
+        return view('admin.dashboard');
+    });
+    
     Route::get('/katalog', function () {
         return view('customer.katalog');
     });
 
     Route::get('/admin/pelanggan', function () {
     return view('admin.pelanggan');
+    });
+
+    Route::get('/admin/pemesanan', function () {
+        return view('admin.pemesanan');
+    });
+
+    Route::get('/admin/peralatan', function () {
+        return view('admin.peralatan');
+    });
+
+    Route::get('/admin/verifikasi', function () {
+        return view('admin.verifikasi');
+    });
+
+    Route::get('/admin/denda', function () {
+        return view('admin.denda');
+    });
+
+    Route::get('/admin/laporan', function () {
+        return view('admin.laporan');
     });
 
 require __DIR__.'/auth.php';
