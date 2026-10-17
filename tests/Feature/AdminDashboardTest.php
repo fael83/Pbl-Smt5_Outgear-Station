@@ -6,8 +6,8 @@ it('renders the admin dashboard and its statistics', function () {
     $response = $this->get('/admin');
 
     $response->assertOk()
-        ->assertSee('Dashboard Operasional')
-        ->assertSee('12 Transaksi')
-        ->assertSee('5 Transaksi')
-        ->assertSee('WA Bot Status');
+        ->assertSee('Operasional OutGear Station')
+        ->assertSee('TOTAL BOOKING AKTIF')
+        ->assertSee('MENUNGGU VERIFIKASI')
+        ->assertSee('Verifikasi Pembayaran');
 });
