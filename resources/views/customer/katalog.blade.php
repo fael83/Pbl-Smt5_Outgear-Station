@@ -4,23 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katalog Sewa Alat Outdoor & Pendakian - OutGear Station</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: '#D86B43',
-                        'brand-hover': '#c25a34',
-                        dark: '#1A2024',
-                        'dark-card': '#151A1D',
-                        bglight: '#FBF9F6',
-                    }
-                }
-            }
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-[#F8F6F2] text-gray-800 font-sans min-h-screen flex flex-col justify-between">
 
