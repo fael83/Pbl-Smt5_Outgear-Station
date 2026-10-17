@@ -4,25 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OutGear Station - Data Pelanggan</title>
-    <!-- Alpine.js untuk interaktivitas tombol search & dropdown filter -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'portal-sidebar': '#18181b',
-                        'portal-bg': '#f4f2ef',
-                        'portal-orange': '#e05a3f',
-                        'portal-card': '#ffffff',
-                    }
-                }
-            }
-        }
-    </script>
-    @vite('resources/css/app.css')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="text-slate-800 antialiased" x-data="{ showSearchInput: false, showFilterDropdown: false, selectedFilter: 'Semua' }">
 
