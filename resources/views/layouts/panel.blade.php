@@ -26,7 +26,7 @@
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col min-w-0">
             <!-- Topbar -->
-            <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+            <header class="bg-transparent px-6 py-4 flex items-center justify-between sticky top-0 z-10">
                 <div class="flex items-center gap-4 w-1/3">
                 </div>
                 <div class="flex items-center gap-4">

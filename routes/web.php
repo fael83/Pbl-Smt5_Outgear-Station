@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\InventarisController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\InventarisController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -9,7 +11,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return redirect('/katalog');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
