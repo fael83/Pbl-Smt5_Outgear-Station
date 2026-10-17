@@ -95,7 +95,11 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
+            // Dibuat null secara default supaya Laravel tidak mengirim
+            // `set search_path ...` setiap kali membuat koneksi baru.
+            // Satu round-trip tambahan ini mahal untuk database remote.
+            // PostgreSQL sudah memakai "public" sebagai default.
+            'search_path' => env('DB_SEARCH_PATH'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 

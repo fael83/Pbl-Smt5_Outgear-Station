@@ -4,23 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OutGear Station - Admin Portal</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'portal-sidebar': '#18181b',
-                        'portal-bg': '#f4f2ef',
-                        'portal-orange': '#e05a3f',
-                        'portal-card': '#ffffff',
-                    }
-                }
-            }
-        }
-    </script>
-    @vite('resources/css/app.css')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="text-slate-800 antialiased">
 

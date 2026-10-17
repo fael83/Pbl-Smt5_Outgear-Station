@@ -22,7 +22,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/admin', function () {
         return view('admin.dashboard');
-    });
+    })->name('admin.dashboard');
     
     Route::get('/katalog', function () {
         return view('customer.katalog');
@@ -37,7 +37,9 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/admin/peralatan', function () {
-        return view('admin.peralatan');
+        // Halaman "Data Peralatan" pada sidebar dashboard menampilkan
+        // inventaris alat yang sama dengan menu "Data Alat & Stok".
+        return view('admin.inventaris.index');
     });
 
     Route::get('/admin/verifikasi', function () {
