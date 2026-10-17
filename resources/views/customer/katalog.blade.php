@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katalog Sewa Alat Outdoor & Pendakian - OutGear Station</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
+
 <body class="bg-[#F8F6F2] text-gray-800 font-sans min-h-screen flex flex-col justify-between">
 
     <!-- Main Navigation Bar -->
@@ -21,26 +23,54 @@
             </div>
         </div>
 
+
         <!-- Menu Navigasi Utama -->
         <div class="hidden md:flex items-center gap-2 text-xs font-medium">
-            <a href="#" class="px-4 py-2 rounded-full bg-brand text-white font-semibold shadow-sm">Katalog</a>
-            <a href="{{ route('booking.saya') }}" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5">
-                Booking Saya <span class="bg-brand/80 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">2</span>
+            <a href="{{ url('/katalog') }}"
+                class="px-4 py-2 rounded-full bg-brand text-white font-semibold shadow-sm">
+                Katalog
             </a>
-            <a href="#" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition">Chatbot & Bantuan</a>
-           <a href="{{ route('panduan') }}" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition">Panduan Sewa</a>
+
+            <a href="{{ route('booking.saya') }}"
+                class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition">
+                Booking Saya
+            </a>
+
+            <a href="#"
+                class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition">
+                Chatbot & Bantuan
+            </a>
+
+            <a href="{{ route('panduan') }}"
+                class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition">
+                Panduan Sewa
+            </a>
         </div>
 
-            <!-- Tombol Keranjang -->
-            <button class="bg-brand hover:bg-brand-hover text-white text-xs px-3.5 py-2 rounded-full flex items-center gap-2 transition shadow-md">
-                <span>🛒 Keranjang</span>
-                <span class="bg-white text-brand text-[10px] font-bold px-1.5 py-0.5 rounded-full">3 Item</span>
-            </button>
 
-            <!-- Profile Icon -->
-            <button class="w-8 h-8 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center text-xs hover:bg-gray-600 transition">
-                👤
+        <!-- Tombol Keranjang -->
+        <button class="bg-brand hover:bg-brand-hover text-white text-xs px-3.5 py-2 rounded-full flex items-center gap-2 transition shadow-md">
+            <span>🛒 Keranjang</span>
+            <span class="bg-white text-brand text-[10px] font-bold px-1.5 py-0.5 rounded-full">3 Item</span>
+        </button>
+
+        <!-- Tombol Login / Logout berdasarkan status autentikasi -->
+        @guest
+        <a href="{{ route('login') }}"
+            class="bg-brand hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow-md">
+            Login
+        </a>
+        @endguest
+
+        @auth
+        <form method="POST" action="{{ route('logout') }}" class="inline">
+            @csrf
+            <button type="submit"
+                class="bg-brand hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow-md">
+                Logout
             </button>
+        </form>
+        @endauth
         </div>
     </nav>
 
@@ -56,7 +86,7 @@
                         Sewa perlengkapan ultralight, tenda badai, carrier ergonomis, dan peralatan masak gunung. Seluruh unit sudah dicuci dan lolos uji fungsi sebelum diserahkan.
                     </p>
                 </div>
-                
+
                 <div class="flex sm:flex-col gap-2 shrink-0">
                     <div class="bg-white/80 backdrop-blur px-3.5 py-2 rounded-xl border border-gray-200 text-xs flex items-center gap-2">
                         <span class="text-brand">📅</span>
@@ -78,19 +108,19 @@
 
     <!-- Main Content Katalog -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-grow">
-        
+
         <!-- Filter & Search Section -->
         <div class="space-y-4 mb-6">
             <!-- Secondary Search & Options -->
             <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-gray-200 shadow-sm">
                 <div class="flex-1 min-w-[240px] relative">
                     <input id="catalog-search" type="search" placeholder="Cari tenda ultralight, carrier 60L, kompor, sleeping bag..."
-                           aria-label="Cari peralatan"
-                           class="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-brand">
+                        aria-label="Cari peralatan"
+                        class="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-brand">
                 </div>
 
                 <select id="category-filter" aria-label="Filter kategori"
-                        class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
+                    class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
                     <option value="all">Semua Kategori</option>
                     <option value="tenda-shelter">Tenda & Shelter</option>
                     <option value="tas-carrier">Tas Carrier</option>
@@ -99,21 +129,21 @@
                 </select>
 
                 <select id="price-sort" aria-label="Urutkan produk"
-                        class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
+                    class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
                     <option value="default">Pilihan Harga</option>
                     <option value="price-asc">Harga Terendah</option>
                     <option value="price-desc">Harga Tertinggi</option>
                     <option value="rating-desc">Rating Tertinggi</option>
                 </select>
-                </div>
             </div>
+        </div>
 
-            <!-- Category Pills Bar -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs font-semibold">
-                <button class="px-4 py-2 rounded-full bg-dark text-white shadow-sm shrink-0 flex items-center gap-1.5">
-                    <span>⛺</span> Semua Alat <span id="total-product-count" class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full">4</span>
-                </button>
-            </div>
+        <!-- Category Pills Bar -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs font-semibold">
+            <button class="px-4 py-2 rounded-full bg-dark text-white shadow-sm shrink-0 flex items-center gap-1.5">
+                <span>⛺</span> Semua Alat <span id="total-product-count" class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full">4</span>
+            </button>
+        </div>
         </div>
 
         <!-- Section Title & Info Status Real-time -->
@@ -129,7 +159,7 @@
 
         <!-- Product Cards Grid (4 Kolom Layout) -->
         <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            
+
             <!-- CARD 1: Naturehike Cloud Up 2 -->
             <div data-product-card data-category="tenda-shelter" data-price="45000" data-rating="4.9" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                 <div>
@@ -461,4 +491,5 @@
         sortSelector.addEventListener('change', updateCatalog);
     </script>
 </body>
+
 </html>
