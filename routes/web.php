@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\InventarisController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\InventarisController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -37,7 +36,15 @@ Route::get('/admin', function () {
 
 Route::get('/katalog', function () {
     return view('customer.katalog');
-});
+})->name('katalog');
+
+Route::get('/panduan', function () {
+    return view('customer.panduan');
+})->name('panduan');
+
+Route::get('/booking-saya', function () {
+    return view('customer.booking');
+})->name('booking.saya');
 
 Route::get('/admin/pelanggan', function () {
     return view('admin.pelanggan');
@@ -48,7 +55,8 @@ Route::get('/admin/pemesanan', function () {
 });
 
 Route::get('/admin/verifikasi', function () {
-    return view('admin.verifikasi');
+    $pembayaranDb = \App\Models\Pembayaran::with('pemesanan.pelanggan')->latest('id')->get();
+    return view('admin.verifikasi', compact('pembayaranDb'));
 });
 
 Route::get('/admin/denda', function () {

@@ -24,8 +24,7 @@
         <div class="hidden md:flex items-center gap-2">
             <a href="/katalog" class="px-4 py-2 rounded-full {{ request()->is('katalog*') ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }} transition font-medium text-sm">Katalog</a>
             <a href="{{ route('booking.saya') }}" class="px-4 py-2 rounded-full {{ request()->is('booking-saya*') ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }} transition font-medium text-sm">Booking Saya</a>
-            <a href="#" class="px-4 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition font-medium text-sm">Chatbot & Bantuan</a>
-            <a shref="/panduan-sewa" class="px-4 py-2 rounded-full {{ request()->is('panduan-sewa*') ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }} transition font-medium text-sm">Panduan Sewa</a>
+            <a href="{{ route('panduan') }}" class="px-4 py-2 rounded-full {{ request()->routeIs('panduan') ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }} transition font-medium text-sm">Panduan Sewa</a>
         </div>
 
         <!-- Bagian Kanan (Dinamis: Cek Status Login) -->
