@@ -17,7 +17,8 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    // Login saat ini langsung mengarahkan pelanggan ke katalog.
+    $response->assertRedirect('/katalog');
 });
 
 test('users can not authenticate with invalid password', function () {

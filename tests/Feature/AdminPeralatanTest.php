@@ -7,7 +7,8 @@ use App\Models\Pemesanan;
 use App\Models\User;
 
 beforeEach(function () {
-    $this->actingAs(User::factory()->create());
+    // Route admin hanya untuk tim internal; test ini memakai admin.
+    $this->actingAs(User::factory()->admin()->create());
 });
 
 /**

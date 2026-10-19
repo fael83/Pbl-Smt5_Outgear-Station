@@ -50,6 +50,8 @@ class InventarisController extends Controller
      */
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', Alat::class);
+
         $filters = $this->filter($request);
         $daftarAlat = $this->daftarAlat($filters);
 
@@ -69,6 +71,8 @@ class InventarisController extends Controller
      */
     public function tabel(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Alat::class);
+
         $filters = $this->filter($request);
         $daftarAlat = $this->daftarAlat($filters);
 
@@ -398,6 +402,8 @@ class InventarisController extends Controller
      */
     public function destroy(Request $request, Alat $alat): RedirectResponse|JsonResponse
     {
+        $this->authorize('delete', $alat);
+
         if ($alat->detailPemesanan()->exists()) {
             $pesan = "Alat \"{$alat->nama}\" tidak bisa dihapus karena sudah dipakai pada pemesanan.";
 
