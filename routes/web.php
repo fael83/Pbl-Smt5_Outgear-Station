@@ -1,18 +1,24 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DendaController as AdminDendaController;
 use App\Http\Controllers\Admin\InventarisController;
+use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
+use App\Http\Controllers\Admin\PelangganController as AdminPelangganController;
+use App\Http\Controllers\Admin\PemesananController as AdminPemesananController;
+use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
+use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\InventarisController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', BerandaController::class);
 
-Route::get('/dashboard', function () {
-    return redirect('/katalog');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Setelah login, pengguna diarahkan sesuai perannya (lihat DashboardController).
+Route::get('/dashboard', DashboardController::class)
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -20,43 +26,42 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Data Alat & Stok. Dipakai oleh menu "Data Peralatan" di sidebar admin.
-Route::get('/adminAlat', [InventarisController::class, 'index'])->name('admin.alat.index');
+// Katalog tetap publik seperti perilaku sebelumnya.
+Route::get('/katalog', KatalogController::class)->name('katalog');
 
-Route::get('/admin/peralatan', [InventarisController::class, 'index'])->name('admin.peralatan.index');
-// Endpoint JSON untuk pencarian, filter, dan pagination tanpa reload halaman.
-Route::get('/admin/peralatan/tabel', [InventarisController::class, 'tabel'])->name('admin.peralatan.tabel');
+/*
+|--------------------------------------------------------------------------
+| Panel admin
+|--------------------------------------------------------------------------
+|
+| Seluruh halaman /admin/* hanya untuk pengguna yang sudah login dan
+| memiliki peran internal. Owner dan petugas hanya boleh melihat data,
+| sedangkan aksi tulis (simpan/ubah/hapus alat) khusus admin.
+|
+*/
+Route::middleware(['auth', 'role:admin,owner,petugas'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', AdminDashboardController::class)->name('dashboard');
+        Route::get('/pelanggan', AdminPelangganController::class)->name('pelanggan');
+        Route::get('/pemesanan', AdminPemesananController::class)->name('pemesanan');
+        Route::get('/verifikasi', AdminVerifikasiController::class)->name('verifikasi');
+        Route::get('/denda', AdminDendaController::class)->name('denda');
+        Route::get('/laporan', AdminLaporanController::class)->name('laporan');
 
-Route::post('/admin/peralatan', [InventarisController::class, 'store'])->name('admin.peralatan.store');
-Route::put('/admin/peralatan/{alat}', [InventarisController::class, 'update'])->name('admin.peralatan.update');
-Route::delete('/admin/peralatan/{alat}', [InventarisController::class, 'destroy'])->name('admin.peralatan.destroy');
+        // Data Alat & Stok. Dipakai oleh menu "Data Peralatan" di sidebar admin.
+        Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
 
-Route::get('/admin', function () {
-    return view('admin.dashboard');
-})->name('admin.dashboard');
+        // Endpoint JSON untuk pencarian, filter, dan pagination tanpa reload halaman.
+        Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
 
-Route::get('/katalog', function () {
-    return view('customer.katalog');
-});
-
-Route::get('/admin/pelanggan', function () {
-    return view('admin.pelanggan');
-});
-
-Route::get('/admin/pemesanan', function () {
-    return view('admin.pemesanan');
-});
-
-Route::get('/admin/verifikasi', function () {
-    return view('admin.verifikasi');
-});
-
-Route::get('/admin/denda', function () {
-    return view('admin.denda');
-});
-
-Route::get('/admin/laporan', function () {
-    return view('admin.laporan');
-});
+        // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/peralatan', [InventarisController::class, 'store'])->name('peralatan.store');
+            Route::put('/peralatan/{alat}', [InventarisController::class, 'update'])->name('peralatan.update');
+            Route::delete('/peralatan/{alat}', [InventarisController::class, 'destroy'])->name('peralatan.destroy');
+        });
+    });
 
 require __DIR__.'/auth.php';

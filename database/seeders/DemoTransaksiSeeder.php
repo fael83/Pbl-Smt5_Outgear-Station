@@ -13,7 +13,9 @@ use App\Models\Pemesanan;
 use App\Models\Pengembalian;
 use App\Models\SerahTerima;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Data contoh: satu siklus penuh (pemesanan -> serah terima -> pengembalian
@@ -32,24 +34,33 @@ class DemoTransaksiSeeder extends Seeder
             return;
         }
 
-        $pelanggan = User::where('email', 'pelanggan@outgear.test')->first()
-            ?? User::factory()->customer()->create();
-
-        $petugas = User::where('email', 'petugas@outgear.test')->first()
-            ?? User::factory()->petugas()->create();
-
         $alat = Alat::query()->orderBy('id')->take(2)->get();
 
         if ($alat->count() < 2) {
             return;
         }
 
+        // Semua baris demo dibuat dalam satu transaksi agar data tidak
+        // setengah jadi ketika salah satu insert gagal.
+        DB::transaction(fn () => $this->buatDataDemo($alat));
+    }
+
+    /**
+     * @param  Collection<int, Alat>  $alat
+     */
+    private function buatDataDemo(Collection $alat): void
+    {
+        $pelanggan = User::where('email', 'pelanggan@outgear.test')->first()
+            ?? User::factory()->customer()->create();
+
+        $petugas = User::where('email', 'petugas@outgear.test')->first()
+            ?? User::factory()->petugas()->create();
+
         $alatUtama = $alat[0];
         $alatKedua = $alat[1];
 
         $mulai = now()->subDays(4)->startOfDay();
         $selesai = now()->subDay()->startOfDay();
-        $lamaSewa = 3;
         $jumlahUtama = 2;
 
         $pemesanan = Pemesanan::create([
@@ -61,6 +72,10 @@ class DemoTransaksiSeeder extends Seeder
             'jumlah_dp' => 0,
             'status' => 'berlangsung',
         ]);
+
+        // Lama sewa dihitung dari tanggal pemesanan (inklusif), bukan angka
+        // tetap, supaya konsisten dengan aturan bisnis.
+        $lamaSewa = $pemesanan->lamaSewa();
 
         $detailUtama = DetailPemesanan::create([
             'pemesanan_id' => $pemesanan->id,
@@ -143,17 +158,20 @@ class DemoTransaksiSeeder extends Seeder
 
         $serahTerima->update(['status_serah_terima' => 'dikembalikan']);
 
-        // Denda kerusakan ringan = persentase dari tarif alat yang rusak.
+        // Denda kerusakan ringan = persentase dari nilai pengganti alat,
+        // bukan dari tarif sewa harian.
         $aturan = AturanDenda::where('jenis_denda', 'kerusakan_ringan')->first();
 
         if ($aturan !== null) {
+            $nilaiPengganti = (float) $alatUtama->nilai_pengganti;
+
             Denda::create([
                 'pengembalian_id' => $pengembalian->id,
                 'aturan_denda_id' => $aturan->id,
                 'pemesanan_id' => $pemesanan->id,
                 'detail_pengembalian_id' => $detailPengembalianRusak->id,
-                'nilai_dasar' => $alatUtama->tarif_per_hari,
-                'jumlah_denda' => round((float) $alatUtama->tarif_per_hari * (float) $aturan->nilai_denda / 100),
+                'nilai_dasar' => $nilaiPengganti,
+                'jumlah_denda' => round($nilaiPengganti * (float) $aturan->nilai_denda / 100),
                 'status' => 'belum_dibayar',
                 'jenis_denda' => 'kerusakan_ringan',
                 'nilai_tarif_terkait' => $alatUtama->tarif_per_hari,

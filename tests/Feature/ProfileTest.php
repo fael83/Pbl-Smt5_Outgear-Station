@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Pemesanan;
 use App\Models\User;
 
 test('profile page is displayed', function () {
@@ -50,7 +51,7 @@ test('email verification status is unchanged when the email address is unchanged
     $this->assertNotNull($user->refresh()->email_verified_at);
 });
 
-test('user can delete their account', function () {
+test('user can deactivate their account', function () {
     $user = User::factory()->create();
 
     $response = $this
@@ -64,7 +65,32 @@ test('user can delete their account', function () {
         ->assertRedirect('/');
 
     $this->assertGuest();
-    $this->assertNull($user->fresh());
+    $this->assertSame('nonaktif', $user->fresh()->status_akun);
+});
+
+test('deactivating an account keeps its pemesanan history', function () {
+    $user = User::factory()->customer()->create();
+    $pemesanan = Pemesanan::factory()->create(['user_id' => $user->id]);
+
+    $response = $this
+        ->actingAs($user)
+        ->delete('/profile', [
+            'password' => 'password',
+        ]);
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect('/');
+
+    $this->assertGuest();
+    $this->assertDatabaseHas('users', [
+        'id' => $user->id,
+        'status_akun' => 'nonaktif',
+    ]);
+    $this->assertDatabaseHas('pemesanan', [
+        'id' => $pemesanan->id,
+        'user_id' => $user->id,
+    ]);
 });
 
 test('correct password must be provided to delete account', function () {

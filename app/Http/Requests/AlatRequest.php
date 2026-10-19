@@ -11,11 +11,23 @@ use Illuminate\Validation\Validator;
 class AlatRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Tentukan apakah pengguna berhak menjalankan aksi ini.
+     *
+     * Store memakai policy `create`, sedangkan update memakai policy `update`
+     * pada alat yang sedang diubah. Route middleware `role:admin` menjadi
+     * lapis pertama, policy menjadi lapis kedua.
      */
     public function authorize(): bool
     {
-        return true;
+        if ($this->isMethod('post')) {
+            return $this->user()?->can('create', Alat::class) ?? false;
+        }
+
+        /** @var Alat|null $alat */
+        $alat = $this->route('alat');
+
+        return $alat instanceof Alat
+            && ($this->user()?->can('update', $alat) ?? false);
     }
 
     /**

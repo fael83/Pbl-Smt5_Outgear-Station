@@ -17,7 +17,8 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    // Login saat ini langsung mengarahkan pelanggan ke katalog.
+    $response->assertRedirect('/katalog');
 });
 
 test('users can not authenticate with invalid password', function () {
@@ -27,6 +28,23 @@ test('users can not authenticate with invalid password', function () {
         'email' => $user->email,
         'password' => 'wrong-password',
     ]);
+
+    $this->assertGuest();
+});
+
+test('users with an inactive account can not authenticate', function () {
+    $user = User::factory()->nonaktif()->create();
+
+    $response = $this->from('/login')->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response
+        ->assertRedirect('/login')
+        ->assertSessionHasErrors([
+            'email' => 'Akun Anda sedang tidak aktif. Silakan hubungi admin OutGear Station.',
+        ]);
 
     $this->assertGuest();
 });

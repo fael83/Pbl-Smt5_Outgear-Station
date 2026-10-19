@@ -43,6 +43,18 @@ class Pemesanan extends Model
     }
 
     /**
+     * Lama sewa dalam hari, menghitung tanggal mulai dan tanggal selesai
+     * secara inklusif. Sewa 1-3 Oktober berarti 3 hari.
+     */
+    public function lamaSewa(): int
+    {
+        $selisihHari = (int) $this->tanggal_mulai->copy()->startOfDay()
+            ->diffInDays($this->tanggal_selesai->copy()->startOfDay());
+
+        return max(1, $selisihHari + 1);
+    }
+
+    /**
      * ERD: pelanggan_id (PENGGUNA).
      *
      * @return BelongsTo<User, $this>

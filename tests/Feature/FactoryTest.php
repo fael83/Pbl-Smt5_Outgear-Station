@@ -96,3 +96,18 @@ it('reuses an existing aturan denda when creating many denda', function () {
     expect(Denda::count())->toBe(3)
         ->and(AturanDenda::count())->toBe(1);
 });
+
+it('counts the rental period inclusively', function () {
+    $tigaHari = Pemesanan::factory()->create([
+        'tanggal_mulai' => '2026-10-01',
+        'tanggal_selesai' => '2026-10-03',
+    ]);
+
+    $sehari = Pemesanan::factory()->create([
+        'tanggal_mulai' => '2026-10-01',
+        'tanggal_selesai' => '2026-10-01',
+    ]);
+
+    expect($tigaHari->lamaSewa())->toBe(3)
+        ->and($sehari->lamaSewa())->toBe(1);
+});
