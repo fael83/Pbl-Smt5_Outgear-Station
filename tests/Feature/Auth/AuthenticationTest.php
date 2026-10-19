@@ -32,6 +32,23 @@ test('users can not authenticate with invalid password', function () {
     $this->assertGuest();
 });
 
+test('users with an inactive account can not authenticate', function () {
+    $user = User::factory()->nonaktif()->create();
+
+    $response = $this->from('/login')->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response
+        ->assertRedirect('/login')
+        ->assertSessionHasErrors([
+            'email' => 'Akun Anda sedang tidak aktif. Silakan hubungi admin OutGear Station.',
+        ]);
+
+    $this->assertGuest();
+});
+
 test('users can logout', function () {
     $user = User::factory()->create();
 

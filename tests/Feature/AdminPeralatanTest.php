@@ -64,6 +64,26 @@ it('mencari alat berdasarkan id yang ditampilkan (#AL-002)', function () {
         ->assertDontSee('Alat Pertama');
 });
 
+it('tetap menerapkan filter kategori dan kondisi saat kata kunci berisi angka', function () {
+    $tenda = Kategori::factory()->create(['nama' => 'Tenda']);
+    $tas = Kategori::factory()->create(['nama' => 'Tas']);
+
+    buatAlat(['nama' => 'Tenda 2 Orang', 'kategori' => $tenda, 'stok_total' => 4, 'stok_disewa' => 1]);
+    buatAlat(['nama' => 'Carrier 2 Liter', 'kategori' => $tas, 'stok_total' => 4]);
+    buatAlat(['nama' => 'Tenda 2P Habis', 'kategori' => $tenda, 'stok_total' => 2, 'stok_disewa' => 2]);
+
+    // Dulu orWhereKey() berada di luar grup sehingga hasil pencarian nama/ID
+    // bisa lolos dari filter kategori dan kondisi.
+    $this->get(route('admin.peralatan.index', [
+        'search' => '2',
+        'kategori' => $tenda->id,
+        'kondisi' => 'tersedia',
+    ]))->assertOk()
+        ->assertSee('Tenda 2 Orang')
+        ->assertDontSee('Carrier 2 Liter')
+        ->assertDontSee('Tenda 2P Habis');
+});
+
 it('memfilter alat berdasarkan kategori', function () {
     $tenda = Kategori::factory()->create(['nama' => 'Tenda']);
     $tas = Kategori::factory()->create(['nama' => 'Carrier & Tas']);

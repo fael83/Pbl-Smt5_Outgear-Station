@@ -133,20 +133,27 @@ class InventarisController extends Controller
             ->when($filters['search'] !== '', function (Builder $query) use ($filters): void {
                 $search = $filters['search'];
 
-                $query->where(function (Builder $query) use ($search): void {
-                    $query->whereLike('nama', "%{$search}%")
-                        ->orWhereLike('deskripsi', "%{$search}%")
+                // Escape wildcard LIKE supaya "%" dan "_" dicari sebagai
+                // karakter biasa, bukan sebagai pola pencarian.
+                $pola = '%'.addcslashes($search, '%_\\').'%';
+
+                // Semua kondisi pencarian (termasuk pencarian ID) harus berada
+                // di dalam satu grup agar filter kategori/kondisi tetap
+                // diterapkan dengan logika AND.
+                $query->where(function (Builder $query) use ($pola, $search): void {
+                    $query->whereLike('nama', $pola)
+                        ->orWhereLike('deskripsi', $pola)
                         ->orWhereHas(
                             'kategori',
-                            fn (Builder $kategori) => $kategori->whereLike('nama', "%{$search}%"),
+                            fn (Builder $kategori) => $kategori->whereLike('nama', $pola),
                         );
-                });
 
-                // ID ditampilkan sebagai #AL-001, jadi pencarian "001",
-                // "AL-001", maupun "#AL-001" tetap menemukan alat yang sama.
-                if (preg_match('/\d+/', $search, $cocok) === 1) {
-                    $query->orWhereKey((int) $cocok[0]);
-                }
+                    // ID ditampilkan sebagai #AL-001, jadi pencarian "001",
+                    // "AL-001", maupun "#AL-001" tetap menemukan alat yang sama.
+                    if (preg_match('/\d+/', $search, $cocok) === 1) {
+                        $query->orWhereKey((int) $cocok[0]);
+                    }
+                });
             })
             ->when($filters['kategori'] > 0, fn (Builder $query) => $query->where('alat.kategori_id', $filters['kategori']))
             ->when($filters['kondisi'] === 'tersedia', fn (Builder $query) => $query->where('stok_tersedia', '>', 0))
