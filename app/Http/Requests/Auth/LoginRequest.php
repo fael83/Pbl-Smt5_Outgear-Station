@@ -50,6 +50,15 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Akun nonaktif tidak boleh masuk meskipun kredensialnya benar.
+        if (! $this->user()?->isAktif()) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun Anda sedang tidak aktif. Silakan hubungi admin OutGear Station.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 
