@@ -44,8 +44,14 @@ it('forbids a pengguna whose role is not listed', function () {
         ->assertForbidden();
 });
 
-it('redirects a guest to the login page', function () {
-    $this->get('/_test/admin-only')->assertRedirect('/login');
+it('allows a guest through so pages can be opened without login', function () {
+    $this->get('/_test/admin-only')
+        ->assertOk()
+        ->assertSee('admin area');
+
+    $this->get('/_test/staff-only')
+        ->assertOk()
+        ->assertSee('staff area');
 });
 
 it('rejects an unknown role in the route definition', function () {

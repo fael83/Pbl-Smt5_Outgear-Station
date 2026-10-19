@@ -16,18 +16,26 @@ class AlatRequest extends FormRequest
      * Store memakai policy `create`, sedangkan update memakai policy `update`
      * pada alat yang sedang diubah. Route middleware `role:admin` menjadi
      * lapis pertama, policy menjadi lapis kedua.
+     *
+     * Tamu (belum login) tetap diizinkan pada mode demo agar panel admin bisa
+     * dipakai tanpa login.
      */
     public function authorize(): bool
     {
+        $user = $this->user();
+
+        if ($user === null) {
+            return true;
+        }
+
         if ($this->isMethod('post')) {
-            return $this->user()?->can('create', Alat::class) ?? false;
+            return $user->can('create', Alat::class);
         }
 
         /** @var Alat|null $alat */
         $alat = $this->route('alat');
 
-        return $alat instanceof Alat
-            && ($this->user()?->can('update', $alat) ?? false);
+        return $alat instanceof Alat && $user->can('update', $alat);
     }
 
     /**
