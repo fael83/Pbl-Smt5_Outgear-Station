@@ -10,7 +10,7 @@ class PenggunaSeeder extends Seeder
 {
     /**
      * Akun bawaan untuk setiap peran (ERD: PENGGUNA).
-     * Password semua akun: "password".
+     * Password default "password"; dapat diganti lewat SEED_PASSWORD.
      *
      * @var array<int, array{name: string, email: string, role: Role, no_telepon: string}>
      */
@@ -46,12 +46,15 @@ class PenggunaSeeder extends Seeder
      */
     public function run(): void
     {
+        // Jangan pakai password demo di server produksi.
+        $kataSandi = (string) env('SEED_PASSWORD', 'password');
+
         foreach (self::AKUN as $akun) {
             $pengguna = User::firstOrCreate(
                 ['email' => $akun['email']],
                 [
                     'name' => $akun['name'],
-                    'password' => 'password',
+                    'password' => $kataSandi,
                     'role' => $akun['role'],
                     'no_telepon' => $akun['no_telepon'],
                     'status_akun' => 'aktif',

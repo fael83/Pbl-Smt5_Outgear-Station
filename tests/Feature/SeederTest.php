@@ -80,3 +80,39 @@ it('leaves a second pemesanan waiting for payment', function () {
         ->and($pemesanan->pembayaran()->count())->toBe(0)
         ->and($pemesanan->detailPemesanan()->count())->toBe(1);
 });
+
+it('menghitung subtotal demo memakai lama sewa inklusif', function () {
+    $this->seed();
+
+    $pemesanan = Pemesanan::where('kode_pemesanan', DemoTransaksiSeeder::KODE_SELESAI)->firstOrFail();
+    $detail = $pemesanan->detailPemesanan()->orderBy('id')->firstOrFail();
+
+    expect($pemesanan->lamaSewa())->toBe(4)
+        ->and((float) $detail->subtotal)->toBe(
+            (float) $detail->jumlah * (float) $detail->tarif_per_hari * $pemesanan->lamaSewa(),
+        )
+        ->and((float) $pemesanan->total_biaya)->toBe((float) $pemesanan->detailPemesanan()->sum('subtotal'));
+});
+
+it('menghitung denda demo dari nilai pengganti alat', function () {
+    $this->seed();
+
+    $pemesanan = Pemesanan::where('kode_pemesanan', DemoTransaksiSeeder::KODE_SELESAI)->firstOrFail();
+    $alat = $pemesanan->detailPemesanan()->orderBy('id')->firstOrFail()->alat;
+    $denda = $pemesanan->denda()->firstOrFail();
+
+    expect((float) $denda->nilai_dasar)->toBe((float) $alat->nilai_pengganti)
+        ->and((float) $denda->jumlah_denda)->toBe(round((float) $alat->nilai_pengganti * 20 / 100));
+});
+
+it('tidak mengisi transaksi demo di lingkungan produksi', function () {
+    $this->app->detectEnvironment(fn () => 'production');
+
+    // --force melewati konfirmasi "Application In Production" pada db:seed.
+    $this->artisan('db:seed', ['--force' => true])->assertSuccessful();
+
+    expect(User::count())->toBe(count(PenggunaSeeder::AKUN))
+        ->and(Kategori::count())->toBe(count(KategoriSeeder::KATEGORI))
+        ->and(Alat::count())->toBe(count(AlatSeeder::ALAT))
+        ->and(Pemesanan::count())->toBe(0);
+});

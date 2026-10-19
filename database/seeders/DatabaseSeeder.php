@@ -19,7 +19,11 @@ class DatabaseSeeder extends Seeder
             KategoriSeeder::class,
             AlatSeeder::class,
             AturanDendaSeeder::class,
-            DemoTransaksiSeeder::class,
         ]);
+
+        // Data transaksi demo tidak boleh masuk ke database produksi.
+        if (! app()->environment('production')) {
+            $this->call(DemoTransaksiSeeder::class);
+        }
     }
 }
