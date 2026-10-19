@@ -8,18 +8,19 @@ use App\Http\Controllers\Admin\PelangganController as AdminPelangganController;
 use App\Http\Controllers\Admin\PemesananController as AdminPemesananController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\BookingSayaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
+use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', BerandaController::class);
 
-// Setelah login, pengguna diarahkan sesuai perannya (lihat DashboardController).
-Route::get('/dashboard', DashboardController::class)
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Seluruh halaman publik di bawah ini dapat dibuka tanpa login. Setelah login,
+// pengguna tetap diarahkan sesuai perannya (lihat DashboardController).
+Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -27,20 +28,22 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Katalog tetap publik seperti perilaku sebelumnya.
+// Katalog, panduan, dan ringkasan booking tetap publik seperti perilaku sebelumnya.
 Route::get('/katalog', KatalogController::class)->name('katalog');
+Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
+Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
 
 /*
 |--------------------------------------------------------------------------
 | Panel admin
 |--------------------------------------------------------------------------
 |
-| Seluruh halaman /admin/* hanya untuk pengguna yang sudah login dan
-| memiliki peran internal. Owner dan petugas hanya boleh melihat data,
-| sedangkan aksi tulis (simpan/ubah/hapus alat) khusus admin.
+| Halaman /admin/* dapat dibuka tanpa login (mode demo). Jika pengguna sudah
+| login, middleware role tetap membatasi akses: owner dan petugas hanya boleh
+| melihat data, sedangkan aksi tulis (simpan/ubah/hapus alat) khusus admin.
 |
 */
-Route::middleware(['auth', 'role:admin,owner,petugas'])
+Route::middleware(['role:admin,owner,petugas'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
