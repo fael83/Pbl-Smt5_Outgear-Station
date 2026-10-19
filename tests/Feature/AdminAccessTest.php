@@ -22,10 +22,23 @@ function dataAlatValid(Kategori $kategori, array $ubah = []): array
     ], $ubah);
 }
 
-it('mengalihkan tamu ke halaman login', function () {
-    $this->get(route('admin.peralatan.index'))->assertRedirect('/login');
-    $this->get(route('admin.peralatan.tabel'))->assertRedirect('/login');
-    $this->get(route('admin.dashboard'))->assertRedirect('/login');
+it('mengizinkan tamu membuka panel admin tanpa login', function () {
+    $kategori = Kategori::factory()->create(['nama' => 'Tenda']);
+
+    $this->get(route('admin.peralatan.index'))->assertOk();
+    $this->getJson(route('admin.peralatan.tabel'))->assertOk();
+    $this->get(route('admin.dashboard'))->assertOk();
+    $this->get(route('admin.pelanggan'))->assertOk();
+    $this->get(route('admin.pemesanan'))->assertOk();
+    $this->get(route('admin.verifikasi'))->assertOk();
+    $this->get(route('admin.denda'))->assertOk();
+    $this->get(route('admin.laporan'))->assertOk();
+
+    // Mode demo: tamu juga boleh menambah data alat.
+    $this->post(route('admin.peralatan.store'), dataAlatValid($kategori))
+        ->assertRedirect(route('admin.peralatan.index'));
+
+    $this->assertDatabaseHas('alat', ['nama' => 'Tenda Uji Akses']);
 });
 
 it('menolak pelanggan mengakses seluruh route admin', function () {
