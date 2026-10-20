@@ -127,6 +127,32 @@ Alpine.data('halamanPeralatan', (config = {}) => {
         },
 
         /**
+         * Pindah tab status di atas tabel. `semua` berarti tanpa filter kondisi.
+         */
+        pilihKondisi(nilai) {
+            if (this.kondisi === nilai) {
+                return;
+            }
+
+            this.kondisi = nilai;
+            this.muatTabel();
+        },
+
+        /**
+         * Persentase satu angka desimal untuk badge kartu statistik.
+         * Aman ketika total masih 0 (belum ada alat).
+         */
+        rasio(bagian, total) {
+            const pembagi = Number(total) || 0;
+
+            if (pembagi <= 0) {
+                return 0;
+            }
+
+            return Math.round(((Number(bagian) || 0) / pembagi) * 1000) / 10;
+        },
+
+        /**
          * URL endpoint tabel sesuai filter yang sedang aktif.
          */
         urlTabel(halaman = 1) {

@@ -5,29 +5,39 @@
     halamanPeralatan.muatTabel(), sehingga pencarian/filter/pagination tidak
     perlu memuat ulang seluruh halaman.
 --}}
-<div class="bg-white rounded-2xl border border-gray-100 p-5 space-y-4 shadow-sm">
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-b border-gray-100">
+        <div>
+            <h2 class="text-sm font-bold font-heading text-[#1A2024]">Daftar Peralatan</h2>
+            <p class="text-[11px] text-gray-400 mt-0.5">
+                Katalog alat, tarif sewa, dan posisi stok terkini.
+            </p>
+        </div>
+        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#F4EFEA] text-[#1A2024] border border-gray-200">
+            {{ $daftarAlat->total() }} alat
+        </span>
+    </div>
+
     <div class="overflow-x-auto">
         <table class="w-full text-left text-xs text-gray-600">
             <thead class="bg-[#F4EFEA]/60 text-[#1A2024] font-semibold">
                 <tr>
-                    <th class="p-3.5 rounded-l-xl whitespace-nowrap">ID Alat</th>
-                    <th class="p-3.5">Nama Alat</th>
+                    <th class="p-3.5 whitespace-nowrap">Peralatan</th>
+                    <th class="p-3.5 whitespace-nowrap">ID Alat</th>
                     <th class="p-3.5">Kategori</th>
                     <th class="p-3.5 whitespace-nowrap">Tarif / Hari</th>
                     <th class="p-3.5 whitespace-nowrap">Nilai Pengganti</th>
-                    <th class="p-3.5 text-center">Total</th>
-                    <th class="p-3.5 text-center">Tersedia</th>
-                    <th class="p-3.5 text-center">Disewa</th>
-                    <th class="p-3.5 text-center">Rusak</th>
-                    <th class="p-3.5 rounded-r-xl text-right">Aksi</th>
+                    <th class="p-3.5 whitespace-nowrap">Stok</th>
+                    <th class="p-3.5 text-center whitespace-nowrap">Status</th>
+                    <th class="p-3.5 text-right whitespace-nowrap">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse ($daftarAlat as $alat)
-                    @include('admin.inventaris._baris', ['alat' => $alat, 'filters' => $filters])
+                    @include('admin.peralatan._baris', ['alat' => $alat, 'filters' => $filters])
                 @empty
                     <tr>
-                        <td colspan="10" class="p-10 text-center">
+                        <td colspan="8" class="p-10 text-center">
                             <p class="text-3xl">📦</p>
                             <p class="mt-2 text-sm font-semibold text-[#1A2024]">
                                 {{ $adaFilter ? 'Tidak ada alat yang cocok dengan filter.' : 'Belum ada data alat.' }}
@@ -35,7 +45,7 @@
                             <p class="mt-1 text-xs text-gray-500">
                                 {{ $adaFilter
                                     ? 'Coba ubah kata kunci pencarian atau reset filter.'
-                                    : 'Tambahkan alat pertama melalui tombol "+ Tambah Alat Baru".' }}
+                                    : 'Tambahkan peralatan pertama melalui tombol "+ Tambah Peralatan".' }}
                             </p>
                         </td>
                     </tr>
@@ -45,7 +55,7 @@
     </div>
 
     <!-- Pagination & Baris per Halaman -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-4 border-t border-gray-100">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 px-5 py-4 border-t border-gray-100">
         <p class="text-xs text-gray-500">
             @if ($daftarAlat->total() > 0)
                 Menampilkan {{ $daftarAlat->firstItem() }}–{{ $daftarAlat->lastItem() }}
@@ -59,7 +69,7 @@
         </p>
 
         <div class="flex flex-wrap items-center gap-3">
-            {{-- Tanpa JavaScript form ini masih bisa dikirim lewat tombol "Terapkan" di form filter. --}}
+            {{-- Tanpa JavaScript form ini masih bisa dikirim lewat tombol "Terapkan" di toolbar. --}}
             <form method="GET" action="{{ route('admin.peralatan.index') }}" class="flex items-center gap-2">
                 <input type="hidden" name="search" value="{{ $filters['search'] }}">
                 <input type="hidden" name="kategori" value="{{ $filters['kategori'] ?: '' }}">
