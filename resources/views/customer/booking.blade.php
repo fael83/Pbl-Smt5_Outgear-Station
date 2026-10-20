@@ -1,6 +1,7 @@
+
 @extends('layouts.customer')
 
-@section('title', 'Booking Saya - Outgear Station')
+@section('title', 'Booking Saya - OutGear Station')
 
 @section('content')
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
@@ -18,6 +19,19 @@
                 <span>Sewa Alat Baru</span>
             </a>
         </div>
+
+        <!-- Tombol Sewa Alat -->
+        <a href="/katalog"
+           class="inline-flex items-center justify-center gap-2 px-4 py-2.5
+                  bg-brand hover:bg-brand-hover text-white rounded-lg
+                  text-sm font-semibold transition self-start sm:self-auto">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Sewa Alat
+        </a>
     </div>
 
     <!-- Filter Tab Status (Minimalis Modern) -->
@@ -92,8 +106,9 @@
                         Bantuan CS
                     </button>
                 </div>
+
             </div>
-        </div>
+        </article>
 
         <!-- Kartu 2: Selesai -->
         <div x-show="activeTab === 'semua' || activeTab === 'selesai'" 
@@ -121,6 +136,15 @@
                     <p class="text-xs text-gray-500">
                         Jadwal Ambil: <strong class="text-gray-800">2 Sep 2026</strong> — Kembali: <strong class="text-gray-800">4 Sep 2026</strong> (2 Hari)
                     </p>
+
+                    <a href="/katalog"
+                       class="inline-flex items-center justify-center
+                              px-3.5 py-2 rounded-lg border border-gray-200
+                              text-gray-700 text-xs font-semibold
+                              hover:bg-gray-50 transition self-start sm:self-auto">
+                        Sewa Lagi
+                    </a>
+
                 </div>
 
                 <div class="text-left md:text-right shrink-0">
@@ -136,7 +160,7 @@
                     Sewa Lagi
                 </a>
             </div>
-        </div>
+        </article>
 
     </div>
 </div>

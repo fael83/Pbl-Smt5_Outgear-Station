@@ -29,6 +29,7 @@ it('mengizinkan tamu membuka panel admin tanpa login', function () {
     $this->getJson(route('admin.peralatan.tabel'))->assertOk();
     $this->get(route('admin.dashboard'))->assertOk();
     $this->get(route('admin.pelanggan'))->assertOk();
+    $this->getJson(route('admin.pelanggan.tabel'))->assertOk();
     $this->get(route('admin.pemesanan'))->assertOk();
     $this->get(route('admin.verifikasi'))->assertOk();
     $this->get(route('admin.denda'))->assertOk();
@@ -48,6 +49,11 @@ it('menolak pelanggan mengakses seluruh route admin', function () {
 
     $this->actingAs($pelanggan)->get(route('admin.peralatan.index'))->assertForbidden();
     $this->actingAs($pelanggan)->getJson(route('admin.peralatan.tabel'))->assertForbidden();
+    $this->actingAs($pelanggan)->get(route('admin.pelanggan'))->assertForbidden();
+    $this->actingAs($pelanggan)->getJson(route('admin.pelanggan.tabel'))->assertForbidden();
+    $this->actingAs($pelanggan)
+        ->patch(route('admin.pelanggan.status', $pelanggan), ['status_akun' => 'nonaktif'])
+        ->assertForbidden();
     $this->actingAs($pelanggan)->post(route('admin.peralatan.store'), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pelanggan)->put(route('admin.peralatan.update', $alat), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pelanggan)->delete(route('admin.peralatan.destroy', $alat))->assertForbidden();
@@ -60,6 +66,17 @@ it('mengizinkan :peran melihat data peralatan tetapi tidak menulis', function (s
 
     $this->actingAs($pengguna)->get(route('admin.peralatan.index'))->assertOk();
     $this->actingAs($pengguna)->getJson(route('admin.peralatan.tabel'))->assertOk();
+
+    // Halaman pelanggan boleh dilihat, tetapi status akun tidak boleh diubah.
+    $target = User::factory()->customer()->create();
+
+    $this->actingAs($pengguna)->get(route('admin.pelanggan'))->assertOk();
+    $this->actingAs($pengguna)->getJson(route('admin.pelanggan.tabel'))->assertOk();
+    $this->actingAs($pengguna)
+        ->patch(route('admin.pelanggan.status', $target), ['status_akun' => 'nonaktif'])
+        ->assertForbidden();
+
+    expect($target->refresh()->status_akun)->toBe('aktif');
 
     $this->actingAs($pengguna)->post(route('admin.peralatan.store'), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pengguna)->put(route('admin.peralatan.update', $alat), dataAlatValid($kategori))->assertForbidden();
