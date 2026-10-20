@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 #[Fillable(['name', 'email', 'password', 'role', 'no_telepon', 'status_akun'])]
 #[Hidden(['password', 'remember_token'])]
@@ -75,6 +76,29 @@ class User extends Authenticatable
     public function isAktif(): bool
     {
         return $this->status_akun === 'aktif';
+    }
+
+    /**
+     * Inisial nama untuk avatar (maksimal dua huruf kapital).
+     */
+    public function inisial(): string
+    {
+        $inisial = Str::of($this->name)
+            ->explode(' ')
+            ->filter()
+            ->take(2)
+            ->map(static fn (string $kata): string => Str::upper(Str::substr($kata, 0, 1)))
+            ->implode('');
+
+        return $inisial !== '' ? $inisial : 'AD';
+    }
+
+    /**
+     * Label peran untuk ditampilkan di sidebar/topbar panel.
+     */
+    public function labelPeran(): string
+    {
+        return $this->role?->label() ?? 'Staf Internal';
     }
 
     /**
