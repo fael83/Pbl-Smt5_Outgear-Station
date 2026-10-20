@@ -15,3 +15,19 @@ aside::-webkit-scrollbar-thumb {
     background-color: #3f3f46;
     border-radius: 4px;
 }
+
+/* Global Brand Colors */
+@layer utilities {
+    .bg-brand {
+        background-color: #BE5103; 
+    }
+    .bg-brand-hover:hover {
+        background-color: #A34302;
+    }
+    .text-brand {
+        color: #BE5103;
+    }
+    .border-brand {
+        border-color: #BE5103;
+    }
+}
