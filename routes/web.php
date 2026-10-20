@@ -60,7 +60,7 @@ Route::middleware(['role:admin,owner,petugas'])
 
         // Unduh daftar pelanggan (CSV) sesuai filter yang sedang aktif.
         Route::get('/pelanggan/ekspor', [AdminPelangganController::class, 'ekspor'])->name('pelanggan.ekspor');
-        Route::get('/pemesanan', AdminPemesananController::class)->name('pemesanan');
+        Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/verifikasi', AdminVerifikasiController::class)->name('verifikasi');
         Route::get('/denda', AdminDendaController::class)->name('denda');
         Route::get('/laporan', AdminLaporanController::class)->name('laporan');
