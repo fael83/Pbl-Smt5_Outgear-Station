@@ -3,17 +3,16 @@
 
     // Badge sidebar dihitung dari database (cache 1 menit) supaya tidak
     // menambah query baru di setiap perpindahan halaman.
-    $jumlahPembayaranMenunggu = \Illuminate\Support\Facades\Cache::remember(
-        'sidebar:jumlah-pembayaran-pending',
-        now()->addMinute(),
-        static fn (): int => \App\Models\Pembayaran::query()->where('status_transaksi', 'pending')->count(),
+    $badgeSidebar = \Illuminate\Support\Facades\Cache::remember(
+        'sidebar:badge',
+        now()->addMinutes(5),
+        static fn (): array => [
+            'pembayaran' => \App\Models\Pembayaran::query()->where('status_transaksi', 'pending')->count(),
+            'denda' => \App\Models\Denda::query()->where('status', 'belum_dibayar')->count(),
+        ],
     );
-
-    $jumlahDendaBelumLunas = \Illuminate\Support\Facades\Cache::remember(
-        'sidebar:jumlah-denda-belum-lunas',
-        now()->addMinute(),
-        static fn (): int => \App\Models\Denda::query()->where('status', 'belum_dibayar')->count(),
-    );
+    $jumlahPembayaranMenunggu = $badgeSidebar['pembayaran'];
+    $jumlahDendaBelumLunas = $badgeSidebar['denda'];
 @endphp
 <aside class="sticky top-0 h-screen w-64 bg-portal-sidebar text-white flex flex-col flex-shrink-0 z-40 select-none">
     
