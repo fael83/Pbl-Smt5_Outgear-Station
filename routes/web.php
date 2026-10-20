@@ -11,9 +11,12 @@ use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\BookingSayaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
+use App\Http\Controllers\OutGearBotController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook']);
 
 Route::get('/', BerandaController::class);
 
