@@ -81,9 +81,9 @@ Route::middleware(['role:admin,owner,petugas'])
         });
     });
 
-<<<<<<< HEAD
+
 require __DIR__.'/auth.php';
-=======
+
 Route::get('/admin/peralatan', function () {
     // Halaman "Data Peralatan" pada sidebar dashboard menampilkan
     // inventaris alat yang sama dengan menu "Data Alat & Stok".
@@ -102,10 +102,10 @@ Route::get('/admin/laporan', function () {
     return view('admin.laporan');
 });
 
-Route::get('/owner/harga-sewa', function () {
-    return view('owner.harga-sewa');
+Route::prefix('owner')->group(function () {
+    Route::get('/harga-sewa', [OwnerController::class, 'hargaSewa']);
+    Route::put('/harga-sewa/{id}', [OwnerController::class, 'updateHargaSewa']);
 });
-Route::get('/owner/harga-sewa', [OwnerController::class, 'hargaSewa']);
 
 Route::prefix('owner')->group(function () {
     Route::get('/kelola-staff', [OwnerController::class, 'kelolaStaff']);
@@ -117,4 +117,16 @@ Route::prefix('owner')->group(function () {
 });
     
 require __DIR__.'/auth.php';
->>>>>>> 3a90183 (Fitur Kelola Staff untuk owner sudah bisa crud dan terintegrasi dengan backend)
+
+Route::prefix('owner')->group(function () {
+    // Rute Kelola Harga Sewa / Tarif Alat
+    Route::get('/harga-sewa', [OwnerController::class, 'hargaSewa']);
+    Route::put('/harga-sewa/{id}', [OwnerController::class, 'updateHargaSewa']);
+
+    // Rute Kelola Aturan Denda
+    Route::get('/aturan-denda', [OwnerController::class, 'aturanDenda']);
+    Route::put('/aturan-denda/{id}', [OwnerController::class, 'updateAturanDenda']);
+});
+
+require __DIR__.'/auth.php';
+
