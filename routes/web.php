@@ -61,12 +61,12 @@ Route::middleware(['role:admin,owner,petugas'])
         Route::get('/', AdminDashboardController::class)->name('dashboard');
 
         // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
-        Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan.index');
+        Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
         Route::get('/pelanggan/tabel', [AdminPelangganController::class, 'tabel'])->name('pelanggan.tabel');
         Route::get('/pelanggan/ekspor', [AdminPelangganController::class, 'ekspor'])->name('pelanggan.ekspor');
 
         // Pemesanan, verifikasi, denda, laporan — read-only untuk owner/petugas.
-        Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan.index');
+        Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/verifikasi', AdminVerifikasiController::class)->name('verifikasi.index');
         Route::get('/denda', AdminDendaController::class)->name('denda.index');
         Route::get('/laporan', AdminLaporanController::class)->name('laporan.index');
