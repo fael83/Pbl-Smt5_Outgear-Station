@@ -55,7 +55,7 @@ class InventarisController extends Controller
         $filters = $this->filter($request);
         $daftarAlat = $this->daftarAlat($filters);
 
-        return view('admin.inventaris.index', [
+        return view('admin.peralatan', [
             'daftarAlat' => $daftarAlat,
             'dataAlat' => $this->dataAlat($daftarAlat),
             'ringkasan' => $this->ringkasan(),
@@ -77,7 +77,7 @@ class InventarisController extends Controller
         $daftarAlat = $this->daftarAlat($filters);
 
         return response()->json([
-            'html' => view('admin.inventaris._tabel', [
+            'html' => view('admin.peralatan._tabel', [
                 'daftarAlat' => $daftarAlat,
                 'filters' => $filters,
                 'adaFilter' => $this->adaFilter($filters),
@@ -203,11 +203,15 @@ class InventarisController extends Controller
     /**
      * Ringkasan stok seluruh inventaris (tidak terpengaruh filter).
      *
-     * @return array{total_alat: int, total_unit: int, unit_tersedia: int, unit_disewa: int, unit_rusak: int}
+     * Selain total unit, dihitung juga jumlah *jenis alat* per kondisi supaya
+     * tab status di halaman data peralatan bisa menampilkan angka asli tanpa
+     * query tambahan.
+     *
+     * @return array{total_alat: int, total_unit: int, unit_tersedia: int, unit_disewa: int, unit_rusak: int, alat_tersedia: int, alat_habis: int, alat_rusak: int}
      */
     private function ringkasan(): array
     {
-        /** @var array{total_alat: int, total_unit: int, unit_tersedia: int, unit_disewa: int, unit_rusak: int} $ringkasan */
+        /** @var array{total_alat: int, total_unit: int, unit_tersedia: int, unit_disewa: int, unit_rusak: int, alat_tersedia: int, alat_habis: int, alat_rusak: int} $ringkasan */
         $ringkasan = Cache::remember(self::CACHE_RINGKASAN, now()->addMinute(), function (): array {
             $hasil = Alat::query()
                 ->selectRaw('COUNT(*) AS total_alat')
@@ -215,6 +219,9 @@ class InventarisController extends Controller
                 ->selectRaw('COALESCE(SUM(stok_tersedia), 0) AS unit_tersedia')
                 ->selectRaw('COALESCE(SUM(stok_disewa), 0) AS unit_disewa')
                 ->selectRaw('COALESCE(SUM(stok_rusak), 0) AS unit_rusak')
+                ->selectRaw('COALESCE(SUM(CASE WHEN stok_tersedia > 0 THEN 1 ELSE 0 END), 0) AS alat_tersedia')
+                ->selectRaw('COALESCE(SUM(CASE WHEN stok_tersedia <= 0 THEN 1 ELSE 0 END), 0) AS alat_habis')
+                ->selectRaw('COALESCE(SUM(CASE WHEN stok_rusak > 0 THEN 1 ELSE 0 END), 0) AS alat_rusak')
                 ->toBase()
                 ->first();
 
@@ -224,6 +231,9 @@ class InventarisController extends Controller
                 'unit_tersedia' => (int) ($hasil->unit_tersedia ?? 0),
                 'unit_disewa' => (int) ($hasil->unit_disewa ?? 0),
                 'unit_rusak' => (int) ($hasil->unit_rusak ?? 0),
+                'alat_tersedia' => (int) ($hasil->alat_tersedia ?? 0),
+                'alat_habis' => (int) ($hasil->alat_habis ?? 0),
+                'alat_rusak' => (int) ($hasil->alat_rusak ?? 0),
             ];
         });
 
@@ -451,7 +461,7 @@ class InventarisController extends Controller
         return response()->json([
             'message' => $pesan,
             'id' => $alat->id,
-            'baris' => view('admin.inventaris._baris', [
+            'baris' => view('admin.peralatan._baris', [
                 'alat' => $alat,
                 'filters' => $this->filter($request, true),
             ])->render(),
