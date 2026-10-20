@@ -6,359 +6,281 @@
     <title>Katalog Sewa Alat Outdoor & Pendakian - OutGear Station</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#F8F6F2] text-gray-800 font-sans min-h-screen flex flex-col justify-between">
+<body class="bg-[#F8F6F2] text-gray-800 font-sans min-h-screen flex flex-col justify-between"
+      x-data="{ 
+          cart: [], 
+          isCartOpen: false,
+          
+          addToCart(item) {
+              let existing = this.cart.find(i => i.id === item.id);
+              if (existing) {
+                  existing.qty += 1;
+              } else {
+                  this.cart.push({ ...item, qty: 1, selected: true });
+              }
+              this.isCartOpen = true; // Langsung buka drawer keranjang saat tombol sewa diklik
+          },
+          
+          increaseQty(id) {
+              let item = this.cart.find(i => i.id === id);
+              if (item) item.qty += 1;
+          },
+          
+          decreaseQty(id) {
+              let item = this.cart.find(i => i.id === id);
+              if (item && item.qty > 1) item.qty -= 1;
+          },
+          
+          removeFromCart(id) {
+              this.cart = this.cart.filter(i => i.id !== id);
+          },
+          
+          get totalItems() {
+              return this.cart.reduce((sum, item) => sum + item.qty, 0);
+          },
 
-    <!-- Main Navigation Bar -->
-    <nav class="bg-dark text-white px-6 py-3.5 flex items-center justify-between shadow-lg sticky top-0 z-50">
-        <!-- Logo Brand -->
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-brand flex items-center justify-center font-bold text-white shadow-md text-sm">
+          get totalPrice() {
+              return this.cart.filter(i => i.selected).reduce((sum, item) => sum + (item.tarif * item.qty), 0);
+          }
+      }">
+
+    <!-- Main Navigation Bar - Lebih Tinggi & Lebih Gagah -->
+    <nav class="bg-dark text-white px-8 py-6 flex items-center justify-between shadow-xl sticky top-0 z-50 border-b border-white/10">
+        
+        <!-- Logo Brand (Diperbesar) -->
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center font-black text-white shadow-xl shadow-brand/30 text-base tracking-wider">
                 OS
             </div>
             <div>
-                <h1 class="font-bold text-sm tracking-wide text-white">OutGear Station</h1>
-                <p class="text-[10px] text-gray-400 tracking-wider uppercase">Rental & Outdoor Equipment</p>
+                <h1 class="font-black text-base tracking-wide text-white leading-tight">OutGear Station</h1>
+                <p class="text-[11px] text-gray-400 tracking-widest uppercase font-semibold">Rental & Outdoor Equipment</p>
             </div>
         </div>
 
-        <!-- Menu Navigasi Utama -->
-        <div class="hidden md:flex items-center gap-2 text-xs font-medium">
-            <a href="#" class="px-4 py-2 rounded-full bg-brand text-white font-semibold shadow-sm">Katalog</a>
-            <a href="{{ route('booking.saya') }}" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5">
-                Booking Saya <span class="bg-brand/80 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">2</span>
+        <!-- Menu Navigasi Utama (Font Diperbesar & Tanpa Elips) -->
+        <div class="hidden md:flex items-center gap-10 text-sm font-bold tracking-wide">
+            <!-- Katalog (Aktif - Hanya Teks Warna Oranye) -->
+            <a href="#" class="text-brand transition-colors duration-200">
+                Katalog
             </a>
-            <a href="#" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition">Chatbot & Bantuan</a>
-           <a href="{{ route('panduan') }}" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition">Panduan Sewa</a>
+
+            <!-- Booking Saya -->
+            <a href="{{ route('booking.saya') }}" class="text-gray-300 hover:text-brand transition-colors duration-200 flex items-center gap-2.5 group">
+                <span>Booking Saya</span>
+                <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">2</span>
+            </a>
+
+            <!-- Chatbot & Bantuan -->
+            <a href="#" class="text-gray-300 hover:text-brand transition-colors duration-200">
+                Chatbot & Bantuan
+            </a>
+
+            <!-- Panduan Sewa -->
+            <a href="{{ route('panduan') }}" class="text-gray-300 hover:text-brand transition-colors duration-200">
+                Panduan Sewa
+            </a>
         </div>
 
+        <!-- Action Items (Tombol Keranjang & Profile Diperbesar) -->
+        <div class="flex items-center gap-4">
             <!-- Tombol Keranjang -->
-            <button class="bg-brand hover:bg-brand-hover text-white text-xs px-3.5 py-2 rounded-full flex items-center gap-2 transition shadow-md">
-                <span>🛒 Keranjang</span>
-                <span class="bg-white text-brand text-[10px] font-bold px-1.5 py-0.5 rounded-full">3 Item</span>
+            <button @click="isCartOpen = true" class="bg-brand hover:bg-brand-hover text-white text-xs font-black px-5 py-3 rounded-2xl flex items-center gap-3 transition shadow-lg shadow-brand/25 active:scale-95">
+                <span class="text-sm">🛒 Keranjang</span>
+                <span class="bg-white/20 backdrop-blur text-white text-[11px] font-black px-2.5 py-0.5 rounded-full" x-text="totalItems + ' Item'">0 Item</span>
             </button>
 
             <!-- Profile Icon -->
-            <button class="w-8 h-8 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center text-xs hover:bg-gray-600 transition">
+            <button class="w-11 h-11 rounded-2xl bg-gray-800 text-gray-300 flex items-center justify-center text-sm hover:bg-gray-700 hover:text-white transition border border-gray-700/60 shadow-sm">
                 👤
             </button>
         </div>
     </nav>
 
-    <!-- Header & Form Filter Ketersediaan Realtime -->
-    <header class="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-4 w-full">
-        <div class="bg-[#FAF6F0] rounded-3xl p-6 sm:p-8 border border-amber-900/10 shadow-sm relative overflow-hidden">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
-                <div>
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                        Katalog Sewa Alat Outdoor & Pendakian
-                    </h1>
-                    <p class="text-xs sm:text-sm text-gray-600 mt-2 max-w-2xl leading-relaxed">
-                        Sewa perlengkapan ultralight, tenda badai, carrier ergonomis, dan peralatan masak gunung. Seluruh unit sudah dicuci dan lolos uji fungsi sebelum diserahkan.
-                    </p>
-                </div>
-                
-                <div class="flex sm:flex-col gap-2 shrink-0">
-                    <div class="bg-white/80 backdrop-blur px-3.5 py-2 rounded-xl border border-gray-200 text-xs flex items-center gap-2">
-                        <span class="text-brand">📅</span>
-                        <div>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase">Status Operasional</p>
-                            <p class="font-bold text-gray-800">Booking Buka 24/7</p>
+    <!-- Header & Hero Section -->
+    <header class="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-4 w-full space-y-6">
+        <div class="space-y-6">
+            <!-- 1. HERO SLIDER (Alpine.js) -->
+            <div x-data="{
+                activeSlide: 1,
+                slides: [
+                    { id: 1, title: 'MEET CURTUS TROPIC', subtitle: 'EIGER\'S FIRST INTEGRATED GAITER HIKING SHOES', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800', cta: 'Discover CURTUS TROPIC' },
+                    { id: 2, title: 'REZEKI ANAK GUNUNG', subtitle: 'Dapatkan Kesempatan Mendaki Gunung Impianmu!', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800', cta: 'Pelajari Selengkapnya' },
+                    { id: 3, title: 'ULTRALIGHT GEAR', subtitle: 'Peralatan Pendakian Ringan untuk Kenyamanan Ekstra', image: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800', cta: 'Lihat Koleksi' }
+                ],
+                next() { this.activeSlide = this.activeSlide === this.slides.length ? 1 : this.activeSlide + 1; },
+                prev() { this.activeSlide = this.activeSlide === 1 ? this.slides.length : this.activeSlide - 1; }
+            }"
+            x-init="setInterval(() => { next() }, 5000)"
+            class="relative bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-200 p-6 md:p-10">
+
+                <div class="relative min-h-[280px] flex items-center justify-center">
+                    <template x-for="slide in slides" :key="slide.id">
+                        <div x-show="activeSlide === slide.id" class="absolute inset-0 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="w-full md:w-1/2 h-56 md:h-72 rounded-2xl overflow-hidden shadow-sm">
+                                <img :src="slide.image" :alt="slide.title" class="w-full h-full object-cover">
+                            </div>
+                            <div class="w-full md:w-1/2 text-center md:text-left space-y-3">
+                                <h2 class="text-2xl md:text-4xl font-black text-gray-900 tracking-tight uppercase" x-text="slide.title"></h2>
+                                <p class="text-xs md:text-sm font-semibold text-gray-600 uppercase tracking-wide" x-text="slide.subtitle"></p>
+                                <div class="pt-2">
+                                    <a href="#" class="inline-block bg-gray-900 hover:bg-brand text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-sm" x-text="slide.cta"></a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="bg-white/80 backdrop-blur px-3.5 py-2 rounded-xl border border-gray-200 text-xs flex items-center gap-2">
-                        <span class="text-blue-500">🚚</span>
-                        <div>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase">Opsi Kirim</p>
-                            <p class="font-bold text-gray-800">Pengambilan langsung di basecamp</p>
-                        </div>
-                    </div>
+                    </template>
                 </div>
+
+                <button @click="prev()" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white shadow flex items-center justify-center text-gray-800 transition z-10 text-sm">❮</button>
+                <button @click="next()" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white shadow flex items-center justify-center text-gray-800 transition z-10 text-sm">❯</button>
             </div>
+        </div>
     </header>
 
     <!-- Main Content Katalog -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-grow">
-        
-        <!-- Filter & Search Section -->
-        <div class="space-y-4 mb-6">
-            <!-- Secondary Search & Options -->
-            <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-gray-200 shadow-sm">
-                <div class="flex-1 min-w-[240px] relative">
-                    <input id="catalog-search" type="search" placeholder="Cari tenda ultralight, carrier 60L, kompor, sleeping bag..."
-                           aria-label="Cari peralatan"
-                           class="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-brand">
-                </div>
-
-                <select id="category-filter" aria-label="Filter kategori"
-                        class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
-                    <option value="all">Semua Kategori</option>
-                    <option value="tenda-shelter">Tenda & Shelter</option>
-                    <option value="tas-carrier">Tas Carrier</option>
-                    <option value="sleeping-gear">Sleeping Gear</option>
-                    <option value="alat-masak">Alat Masak & Kompor</option>
-                </select>
-
-                <select id="price-sort" aria-label="Urutkan produk"
-                        class="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-medium focus:outline-none">
-                    <option value="default">Pilihan Harga</option>
-                    <option value="price-asc">Harga Terendah</option>
-                    <option value="price-desc">Harga Tertinggi</option>
-                    <option value="rating-desc">Rating Tertinggi</option>
-                </select>
-                </div>
-            </div>
-
-            <!-- Category Pills Bar -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs font-semibold">
-                <button class="px-4 py-2 rounded-full bg-dark text-white shadow-sm shrink-0 flex items-center gap-1.5">
-                    <span>⛺</span> Semua Alat <span id="total-product-count" class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full">4</span>
-                </button>
-            </div>
+        <div class="mb-5">
+            <h2 class="text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight">Daftar Peralatan</h2>
         </div>
 
-        <!-- Section Title & Info Status Real-time -->
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                Daftar Peralatan <span class="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full"><span id="visible-product-count" aria-live="polite">4</span> Item Ditampilkan</span>
-            </h2>
-            <div class="flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Stok real-time tersinkronisasi</span>
-            </div>
-        </div>
-
-        <!-- Product Cards Grid (4 Kolom Layout) -->
+        <!-- Product Cards Grid -->
         <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            
-            <!-- CARD 1: Naturehike Cloud Up 2 -->
-            <div data-product-card data-category="tenda-shelter" data-price="45000" data-rating="4.9" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
-                <div>
-                    <!-- Image Container -->
-                    <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
-                        <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80" alt="Tenda" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                        <!-- Badges -->
-                        <span class="absolute top-2.5 right-2.5 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur">
-                            ● Tersedia (5 Unit)
-                        </span>
-                        <span class="absolute bottom-2.5 left-2.5 bg-black/60 text-white text-[9px] font-medium px-2 py-0.5 rounded backdrop-blur uppercase tracking-wider">
-                            TENDA & SHELTER
-                        </span>
-                    </div>
-
-                    <!-- Rating & Specs -->
-                    <div class="flex justify-between items-center text-[11px] text-gray-500 mb-1">
-                        <span class="flex items-center gap-1 font-semibold text-amber-500">⭐ 4.9 <span class="text-gray-400 font-normal">(120)</span></span>
-                        <span>Berat: 1.8kg</span>
-                    </div>
-
-                    <h3 class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-1">
-                        Naturehike Cloud Up 2 Pro...
-                    </h3>
-                    <p class="text-[10px] text-gray-500 line-clamp-2 mb-3">
-                        Kapasitas 2P • Double Layer 20D Silnylon • Waterproof 4000mm • Free Footprint
-                    </p>
-
-                    <!-- Features Pills -->
-                    <div class="grid grid-cols-2 gap-1.5 mb-3">
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">KAPASITAS</p>
-                            <p class="text-[10px] font-bold text-gray-700">2 Orang</p>
-                        </div>
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">KETAHANAN</p>
-                            <p class="text-[10px] font-bold text-gray-700">PU 4000mm</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Price & Action -->
-                <div class="pt-2 border-t border-gray-100 flex justify-between items-center">
+            @forelse ($peralatan as $alat)
+                <article class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                     <div>
-                        <p class="text-[9px] text-gray-400 uppercase font-bold">TARIF SEWA</p>
-                        <p class="text-xs font-extrabold text-brand">Rp45.000 <span class="text-[9px] font-normal text-gray-500">/hari</span></p>
-                    </div>
-                    <button class="bg-brand hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm transition">
-                        <span>🛒</span> Sewa
-                    </button>
-                </div>
-            </div>
+                        <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3 flex items-center justify-center">
+                            @if (filled($alat->foto))
+                                <img src="{{ filter_var($alat->foto, FILTER_VALIDATE_URL) ? $alat->foto : asset('storage/'.$alat->foto) }}"
+                                     alt="{{ $alat->nama }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            @else
+                                <span class="text-5xl">{{ \App\Support\IkonKategori::untuk($alat->kategori?->nama) }}</span>
+                            @endif
 
-            <!-- CARD 2: Osprey Atmos AG 65L -->
-            <div data-product-card data-category="tas-carrier" data-price="55000" data-rating="4.95" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
-                <div>
-                    <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
-                        <img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=500&q=80" alt="Carrier" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                        <span class="absolute top-2.5 right-2.5 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur">
-                            ● Tersedia (4 Unit)
-                        </span>
-                        <span class="absolute bottom-2.5 left-2.5 bg-black/60 text-white text-[9px] font-medium px-2 py-0.5 rounded backdrop-blur uppercase tracking-wider">
-                            TAS CARRIER
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center text-[11px] text-gray-500 mb-1">
-                        <span class="flex items-center gap-1 font-semibold text-amber-500">⭐ 4.95 <span class="text-gray-400 font-normal">(94)</span></span>
-                        <span>Beban Max: 22kg</span>
-                    </div>
-
-                    <h3 class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-1">
-                        Osprey Atmos AG 65L Anti-...
-                    </h3>
-                    <p class="text-[10px] text-gray-500 line-clamp-2 mb-3">
-                        Torso M/L Adjustable • Suspensi Anti-Gravity 3D Mesh • Include Raincover
-                    </p>
-
-                    <div class="grid grid-cols-2 gap-1.5 mb-3">
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">VOLUME</p>
-                            <p class="text-[10px] font-bold text-gray-700">65 Liter</p>
+                            <span class="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full border backdrop-blur {{ $alat->stok_tersedia > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                                {{ $alat->stok_tersedia > 0 ? 'Tersedia ('.$alat->stok_tersedia.' unit)' : 'Stok Habis' }}
+                            </span>
                         </div>
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">BACKSYSTEM</p>
-                            <p class="text-[10px] font-bold text-gray-700">AG Mesh 3D</p>
+
+                        <h3 class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-2">
+                            {{ $alat->nama }}
+                        </h3>
+                    </div>
+
+                    <div class="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+                        <div>
+                            <p class="text-[9px] text-gray-400 uppercase font-bold">TARIF / HARI</p>
+                            <p class="text-xs font-extrabold text-brand">Rp {{ number_format((float) $alat->tarif_per_hari, 0, ',', '.') }}</p>
                         </div>
+
+                        <!-- Tombol Sewa: Masuk keranjang & Buka Drawer -->
+                        <button @disabled($alat->stok_tersedia <= 0)
+                                @click="addToCart({ id: {{ $alat->id }}, nama: '{{ addslashes($alat->nama) }}', tarif: {{ $alat->tarif_per_hari }}, foto: '{{ $alat->foto ? (filter_var($alat->foto, FILTER_VALIDATE_URL) ? $alat->foto : asset('storage/'.$alat->foto)) : '' }}' })"
+                                class="{{ $alat->stok_tersedia > 0 ? 'bg-brand hover:bg-brand-hover text-white shadow-sm' : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' }} text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1">
+                            <span>Sewa</span>
+                        </button>
                     </div>
-                </div>
-
-                <div class="pt-2 border-t border-gray-100 flex justify-between items-center">
-                    <div>
-                        <p class="text-[9px] text-gray-400 uppercase font-bold">TARIF SEWA</p>
-                        <p class="text-xs font-extrabold text-brand">Rp55.000 <span class="text-[9px] font-normal text-gray-500">/hari</span></p>
-                    </div>
-                    <button class="bg-brand hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm transition">
-                        <span>🛒</span> Sewa
-                    </button>
-                </div>
-            </div>
-
-            <!-- CARD 3: Eiger Mammoth 4P -->
-            <div data-product-card data-category="tenda-shelter" data-price="60000" data-rating="4.8" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
-                <div>
-                    <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
-                        <img src="https://images.unsplash.com/photo-1478828128388-69274296564e?auto=format&fit=crop&w=500&q=80" alt="Tenda Eiger" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                        <span class="absolute top-2.5 right-2.5 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur">
-                            ● Tersedia (3 Unit)
-                        </span>
-                        <span class="absolute bottom-2.5 left-2.5 bg-black/60 text-white text-[9px] font-medium px-2 py-0.5 rounded backdrop-blur uppercase tracking-wider">
-                            TENDA & SHELTER
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center text-[11px] text-gray-500 mb-1">
-                        <span class="flex items-center gap-1 font-semibold text-amber-500">⭐ 4.8 <span class="text-gray-400 font-normal">(85)</span></span>
-                        <span>Berat: 3.4kg</span>
-                    </div>
-
-                    <h3 class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-1">
-                        Eiger Mammoth 4P Dome...
-                    </h3>
-                    <p class="text-[10px] text-gray-500 line-clamp-2 mb-3">
-                        Kapasitas 4 Orang Dewasa • Frame Alloy Duralumin 7001 • Teras Depan Luas
-                    </p>
-
-                    <div class="grid grid-cols-2 gap-1.5 mb-3">
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">KAPASITAS</p>
-                            <p class="text-[10px] font-bold text-gray-700">4 Person</p>
-                        </div>
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">FRAME MATERIAL</p>
-                            <p class="text-[10px] font-bold text-gray-700">Alloy 8.5mm</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 border-t border-gray-100 flex justify-between items-center">
-                    <div>
-                        <p class="text-[9px] text-gray-400 uppercase font-bold">TARIF SEWA</p>
-                        <p class="text-xs font-extrabold text-brand">Rp60.000 <span class="text-[9px] font-normal text-gray-500">/hari</span></p>
-                    </div>
-                    <button class="bg-brand hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm transition">
-                        <span>🛒</span> Sewa
-                    </button>
-                </div>
-            </div>
-
-            <!-- CARD 4: Deuter Aircontact Pro (Habis) -->
-            <div data-product-card data-category="tas-carrier" data-price="65000" data-rating="4.9" class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between opacity-80 hover:opacity-100 transition group">
-                <div>
-                    <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3">
-                        <img src="https://images.unsplash.com/photo-1622260614153-03223fb72052?auto=format&fit=crop&w=500&q=80" alt="Deuter" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-300">
-                        <span class="absolute top-2.5 right-2.5 bg-gray-800/90 text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur">
-                            ● Habis Tanggal Ini
-                        </span>
-                        <span class="absolute bottom-2.5 left-2.5 bg-black/60 text-white text-[9px] font-medium px-2 py-0.5 rounded backdrop-blur uppercase tracking-wider">
-                            TAS CARRIER
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center text-[11px] text-gray-500 mb-1">
-                        <span class="flex items-center gap-1 font-semibold text-amber-500">⭐ 4.9 <span class="text-gray-400 font-normal">(67)</span></span>
-                        <span class="text-gray-400">Expedition Tier</span>
-                    </div>
-
-                    <h3 class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-1">
-                        Deuter Aircontact Pro 70+15L
-                    </h3>
-                    <p class="text-[10px] text-gray-500 line-clamp-2 mb-3">
-                        Heavy Load Trekking • VariQuick System • Ergonomic Hip Belt ActiveFit
-                    </p>
-
-                    <div class="grid grid-cols-2 gap-1.5 mb-3">
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">VOLUME</p>
-                            <p class="text-[10px] font-bold text-gray-700">70 + 15 L</p>
-                        </div>
-                        <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-center">
-                            <p class="text-[9px] text-gray-400">SISTEM PUNGGUNG</p>
-                            <p class="text-[10px] font-bold text-gray-700">Aircontact Pro</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 border-t border-gray-100 flex justify-between items-center">
-                    <div>
-                        <p class="text-[9px] text-gray-400 uppercase font-bold">TARIF SEWA</p>
-                        <p class="text-xs font-extrabold text-gray-700">Rp65.000 <span class="text-[9px] font-normal text-gray-500">/hari</span></p>
-                    </div>
-                    <button class="bg-gray-200 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 cursor-not-allowed">
-                        <span>🔔</span> Antre Stok
-                    </button>
-                </div>
-            </div>
-
-        </div>
-
-        <p id="empty-product-results" class="hidden rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500" role="status">
-            Tidak ada peralatan yang cocok dengan pencarian atau filter ini.
-        </p>
-
-        <!-- Pagination Bar -->
-        <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200">
-            <p class="text-xs text-gray-500">
-                Menampilkan <span id="pagination-product-count" class="font-bold text-gray-800">4</span> dari <span class="font-bold text-gray-800">4</span> peralatan outdoor
-            </p>
-
-            <button class="bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 text-xs font-bold px-4 py-2 rounded-full shadow-sm transition">
-                + Muat Lebih Banyak Alat (+12)
-            </button>
-
-            <div class="flex items-center gap-1 text-xs font-semibold">
-                <button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-100">‹</button>
-                <button class="w-8 h-8 rounded-full bg-dark text-white flex items-center justify-center">1</button>
-                <button class="w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-700">2</button>
-                <button class="w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-700">3</button>
-                <span class="px-1 text-gray-400">...</span>
-                <button class="w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-700">18</button>
-                <button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-100">›</button>
-            </div>
+                </article>
+            @empty
+                <p class="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+                    Belum ada peralatan yang terdaftar.
+                </p>
+            @endforelse
         </div>
     </main>
+
+    <!-- SIDEBAR DRAWER KERANJANG BELANJA (Gaya Eiger) -->
+    <div x-show="isCartOpen" style="display: none;" class="fixed inset-0 z-50 overflow-hidden">
+        <!-- Backdrop Gelap -->
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @click="isCartOpen = false"></div>
+
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
+                
+                <div>
+                    <!-- Header Keranjang -->
+                    <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-white">
+                        <h3 class="font-bold text-base text-gray-900">Keranjang Belanja</h3>
+                        <button @click="isCartOpen = false" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+                    </div>
+
+                    <!-- Opsi Pilih Semua -->
+                    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between text-xs bg-gray-50/50">
+                        <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                            <input type="checkbox" @click="cart.forEach(i => i.selected = !i.selected)" :checked="cart.every(i => i.selected) && cart.length > 0" class="rounded text-brand focus:ring-brand">
+                            <span>Pilih Semua</span>
+                        </label>
+                        <button @click="cart = []" class="text-brand font-semibold hover:underline">Hapus</button>
+                    </div>
+
+                    <!-- List Item dalam Keranjang -->
+                    <div class="max-h-[calc(100vh-250px)] overflow-y-auto p-4 space-y-4">
+                        <template x-for="item in cart" :key="item.id">
+                            <div class="flex gap-3 pb-4 border-b border-gray-100 items-start">
+                                <!-- Checkbox Item -->
+                                <input type="checkbox" x-model="item.selected" class="mt-8 rounded text-brand focus:ring-brand">
+
+                                <!-- Gambar Item -->
+                                <div class="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center border border-gray-200">
+                                    <template x-if="item.foto">
+                                        <img :src="item.foto" class="w-full h-full object-cover">
+                                    </template>
+                                    <template x-if="!item.foto">
+                                        <span class="text-xs text-gray-400">⛺</span>
+                                    </template>
+                                </div>
+
+                                <!-- Detail Item -->
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <h4 class="font-bold text-xs text-gray-900 line-clamp-1" x-text="item.nama"></h4>
+                                        <span class="font-extrabold text-xs text-gray-900" x-text="'Rp ' + Number(item.tarif * item.qty).toLocaleString('id-ID')"></span>
+                                    </div>
+                                    <p class="text-[10px] text-emerald-600 font-medium mt-0.5">✔ Stock Tersedia</p>
+
+                                    <div class="flex justify-between items-center mt-3">
+                                        <!-- Tombol Hapus Produk -->
+                                        <button @click="removeFromCart(item.id)" class="text-gray-400 hover:text-red-500 border border-gray-200 px-2 py-1 rounded-lg text-[10px] flex items-center gap-1 transition">
+                                            🗑️ Hapus
+                                        </button>
+
+                                        <!-- Kontrol Kuantitas (- / +) -->
+                                        <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                                            <button @click="decreaseQty(item.id)" class="px-2 py-1 text-gray-600 hover:bg-gray-200 text-xs font-bold transition">-</button>
+                                            <span class="px-3 py-1 text-xs font-bold text-gray-800" x-text="item.qty"></span>
+                                            <button @click="increaseQty(item.id)" class="px-2 py-1 text-gray-600 hover:bg-gray-200 text-xs font-bold transition">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="cart.length === 0">
+                            <div class="text-center py-16 text-gray-400 text-xs space-y-2">
+                                <p class="text-3xl">🛒</p>
+                                <p>Keranjang belanja masih kosong.</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Footer Checkout Keranjang -->
+                <div class="p-4 border-t border-gray-200 bg-white space-y-3">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-500 font-medium">Total Harga</span>
+                        <span class="font-black text-base text-gray-900" x-text="'Rp ' + Number(totalPrice).toLocaleString('id-ID')"></span>
+                    </div>
+                    <button class="w-full bg-gray-900 hover:bg-brand text-white text-xs font-bold py-3 rounded-2xl transition shadow-lg tracking-wide uppercase">
+                        Checkout (<span x-text="totalItems"></span>)
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
     <!-- Dark Footer -->
     <footer class="bg-dark text-gray-400 text-xs pt-10 pb-6 border-t border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <!-- Brand Info -->
             <div>
                 <div class="flex items-center gap-2 mb-3">
                     <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center font-bold text-white text-xs">OS</div>
@@ -368,97 +290,11 @@
                     Penyedia persewaan perlengkapan outdoor, mountaineering & camping terpercaya sejak 2021.
                 </p>
             </div>
-
-            <!-- Quick Links -->
-            <div>
-                <h4 class="font-bold text-white text-xs mb-3 uppercase tracking-wider">Akses Cepat</h4>
-                <ul class="space-y-2 text-[11px]">
-                    <li><a href="#" class="hover:text-white transition">Katalog Alat</a></li>
-                    <li><a href="#" class="hover:text-white transition">Prosedur Sewa & Jaminan</a></li>
-                    <li><a href="#" class="hover:text-white transition">Paket Ekspedisi</a></li>
-                    <li><a href="#" class="hover:text-white transition">Cek Denda & Standar QC</a></li>
-                </ul>
-            </div>
-
-            <!-- Contact -->
-            <div>
-                <h4 class="font-bold text-white text-xs mb-3 uppercase tracking-wider">Kontak Basecamp</h4>
-                <p class="text-[11px] mb-2 leading-relaxed">
-                    Jalan Semeru No.12 Kota Malang
-                </p>
-                <p class="text-[11px] text-gray-300">🕒 Buka Setiap Hari: 09.00 - 22.00 WIB</p>
-                <p class="text-[11px] text-emerald-400 font-medium mt-1">💬 WhatsApp 24/7 Aktif</p>
-            </div>
-
-            <!-- Payment Methods -->
-            <div>
-                <h4 class="font-bold text-white text-xs mb-3 uppercase tracking-wider">Pembayaran & Keamanan</h4>
-                <p class="text-[11px] mb-3">Opsi Pembayaran:</p>
-                <div class="flex flex-wrap gap-1.5 text-[9px] font-bold text-gray-300">
-                    <span class="bg-[#242B30] px-2 py-1 rounded border border-gray-700">QRIS</span>
-                    <span class="bg-[#242B30] px-2 py-1 rounded border border-gray-700">Tunai</span>
-                </div>
-            </div>
         </div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-4 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center text-[10px] text-gray-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-4 border-t border-gray-800 text-center text-[10px] text-gray-500">
             <p>© 2026 OutGear Station. All rights reserved.</p>
-            <div class="flex gap-4 mt-2 sm:mt-0">
-                <a href="#" class="hover:text-gray-400">Syarat & Ketentuan</a>
-                <a href="#" class="hover:text-gray-400">Kebijakan Privasi</a>
-            </div>
         </div>
     </footer>
 
-    <script>
-        const productGrid = document.getElementById('product-grid');
-        const searchInput = document.getElementById('catalog-search');
-        const categoryFilter = document.getElementById('category-filter');
-        const sortSelector = document.getElementById('price-sort');
-        const productCards = Array.from(productGrid.querySelectorAll('[data-product-card]'));
-        const visibleCount = document.getElementById('visible-product-count');
-        const paginationCount = document.getElementById('pagination-product-count');
-        const totalCount = document.getElementById('total-product-count');
-        const emptyResults = document.getElementById('empty-product-results');
-
-        totalCount.textContent = productCards.length;
-
-        function updateCatalog() {
-            const searchTerm = searchInput.value.trim().toLocaleLowerCase('id-ID');
-            const selectedCategory = categoryFilter.value;
-            const sortBy = sortSelector.value;
-            const matchingCards = [];
-
-            productCards.forEach((card) => {
-                const matchesSearch = card.textContent.toLocaleLowerCase('id-ID').includes(searchTerm);
-                const matchesCategory = selectedCategory === 'all' || card.dataset.category === selectedCategory;
-                const isVisible = matchesSearch && matchesCategory;
-
-                card.hidden = !isVisible;
-                card.classList.toggle('hidden', !isVisible);
-
-                if (isVisible) {
-                    matchingCards.push(card);
-                }
-            });
-
-            if (sortBy === 'price-asc') {
-                matchingCards.sort((first, second) => Number(first.dataset.price) - Number(second.dataset.price));
-            } else if (sortBy === 'price-desc') {
-                matchingCards.sort((first, second) => Number(second.dataset.price) - Number(first.dataset.price));
-            } else if (sortBy === 'rating-desc') {
-                matchingCards.sort((first, second) => Number(second.dataset.rating) - Number(first.dataset.rating));
-            }
-
-            matchingCards.forEach((card) => productGrid.append(card));
-            visibleCount.textContent = matchingCards.length;
-            paginationCount.textContent = matchingCards.length;
-            emptyResults.classList.toggle('hidden', matchingCards.length > 0);
-        }
-
-        searchInput.addEventListener('input', updateCatalog);
-        categoryFilter.addEventListener('change', updateCatalog);
-        sortSelector.addEventListener('change', updateCatalog);
-    </script>
 </body>
 </html>

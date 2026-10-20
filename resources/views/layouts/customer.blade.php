@@ -6,55 +6,86 @@
     <title>@yield('title', 'Outgear Station')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#F4EFEA] text-gray-900 antialiased flex flex-col min-h-screen">
+<body class="bg-[#F8F6F2] text-gray-900 antialiased flex flex-col min-h-screen"
+      x-data="{ 
+          cart: [], 
+          isCartOpen: false,
+          get totalItems() {
+              return this.cart.reduce((sum, item) => sum + item.qty, 0);
+          }
+      }">
 
-    <!-- NAVBAR GELAP KUSTOM (Sama persis dengan halaman Katalog) -->
-    <nav class="bg-[#1A2024] text-white px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center font-bold text-white shadow">
+    <!--  NAVBAR GELAP KUSTOM MODERN (Lebih Lebar, Gagah & Clean Text) -->
+    <nav class="bg-dark text-white px-8 py-6 flex items-center justify-between sticky top-0 z-50 shadow-xl border-b border-white/10">
+        
+        <!-- Logo Brand (Diperbesar) -->
+        <a href="/katalog" class="flex items-center gap-4 group">
+            <div class="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center font-black text-white shadow-xl shadow-brand/30 text-base tracking-wider group-hover:scale-105 transition-transform duration-200">
                 OS
             </div>
             <div>
-                <span class="font-bold tracking-wide text-lg block leading-tight">OutGear Station</span>
-                <span class="text-[10px] text-gray-400 tracking-wider uppercase">Rental & Outdoor Equipment</span>
+                <span class="font-black text-base tracking-wide text-white leading-tight block">OutGear Station</span>
+                <span class="text-[11px] text-gray-400 tracking-widest uppercase font-semibold block">Rental & Outdoor Equipment</span>
             </div>
-        </div>
+        </a>
 
-        <!-- Menu Tengah -->
-        <div class="hidden md:flex items-center gap-2">
-            <a href="/katalog" class="px-4 py-2 rounded-full {{ request()->is('katalog*') ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }} transition font-medium text-sm">Katalog</a>
-            <a href="{{ route('booking.saya') }}" class="px-4 py-2 rounded-full {{ request()->is('booking-saya*') ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }} transition font-medium text-sm">Booking Saya</a>
-            <a href="#" class="px-4 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition font-medium text-sm">Chatbot & Bantuan</a>
-            <a href="/panduan-sewa" class="px-4 py-2 rounded-full {{ request()->is('panduan-sewa*') ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }} transition font-medium text-sm">Panduan Sewa</a>
-        </div>
-
-        <!-- Bagian Kanan (Dinamis: Cek Status Login) -->
-        <div class="flex items-center gap-4">
-            <a href="/katalog" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-full text-xs font-bold transition shadow">
-                🛒 Keranjang
+        <!-- Menu Navigasi Utama (Hanya Teks Warna Oranye Saat Aktif) -->
+        <div class="hidden md:flex items-center gap-10 text-sm font-bold tracking-wide">
+            <!-- Katalog -->
+            <a href="/katalog" 
+               class="{{ request()->is('katalog*') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200">
+                Katalog
             </a>
 
+            <!-- Booking Saya -->
+            <a href="{{ route('booking.saya') }}" 
+               class="{{ request()->is('booking-saya*') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200 flex items-center gap-2.5 group">
+                <span>Booking Saya</span>
+                <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">2</span>
+            </a>
+
+            <!-- Chatbot & Bantuan -->
+            <a href="#" 
+               class="text-gray-300 hover:text-brand transition-colors duration-200">
+                Chatbot & Bantuan
+            </a>
+
+            <!-- Panduan Sewa -->
+            <a href="/panduan-sewa" 
+               class="{{ request()->is('panduan-sewa*') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200">
+                Panduan Sewa
+            </a>
+        </div>
+
+        <!-- Bagian Kanan (Tombol Keranjang & Cek Status Login) -->
+        <div class="flex items-center gap-4">
+            <!-- Tombol Keranjang -->
+            <button @click="isCartOpen = true" class="bg-brand hover:bg-brand-hover text-white text-xs font-black px-5 py-3 rounded-2xl flex items-center gap-3 transition shadow-lg shadow-brand/25 active:scale-95">
+                <span class="text-sm">🛒 Keranjang</span>
+                <span class="bg-white/20 backdrop-blur text-white text-[11px] font-black px-2.5 py-0.5 rounded-full" x-text="typeof totalItems !== 'undefined' ? totalItems + ' Item' : '0 Item'">0 Item</span>
+            </button>
+
             @auth
-                <!-- Jika Sudah Login, Tampilkan Nama/Dropdown Sederhana -->
-                <div class="flex items-center gap-2 bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700">
-                    <span class="text-xs font-semibold text-gray-200">{{ Auth::user()->name }}</span>
+                <!-- Jika Sudah Login: Tampilkan Nama User & Logout -->
+                <div class="flex items-center gap-3 bg-gray-800/90 backdrop-blur px-4 py-2 rounded-2xl border border-gray-700/80 shadow-sm">
+                    <span class="text-xs font-bold text-gray-200">👤 {{ Auth::user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
-                        <button type="submit" class="text-xs text-red-400 hover:text-red-300 ml-2 font-bold">Keluar</button>
+                        <button type="submit" class="text-xs text-red-400 hover:text-red-300 font-bold transition border-l border-gray-700 pl-3">Keluar</button>
                     </form>
                 </div>
             @else
                 <!-- Jika Belum Login -->
                 <div class="flex items-center gap-2">
-                    <a href="{{ route('login') }}" class="text-xs font-semibold text-gray-300 hover:text-white px-3 py-1.5 transition">Masuk</a>
-                    <a href="{{ route('register') }}" class="text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-lg transition shadow">Daftar</a>
+                    <a href="{{ route('login') }}" class="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 transition">Masuk</a>
+                    <a href="{{ route('register') }}" class="text-xs font-black bg-brand hover:bg-brand-hover text-white px-4 py-2.5 rounded-xl transition shadow-md shadow-brand/20">Daftar</a>
                 </div>
             @endauth
         </div>
     </nav>
 
-    <!-- Area Render Konten Utama -->
-    <main class="flex-grow pt-8 pb-12">
+    <!-- Area Render Konten Utama (Disi oleh Katalog, Panduan, dll) -->
+    <main class="flex-grow pt-6 pb-12">
         @yield('content')
     </main>
 

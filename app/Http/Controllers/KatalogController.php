@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Alat;
 use Illuminate\View\View;
 
-/**
- * Katalog alat yang dapat dilihat publik maupun pelanggan.
- */
 class KatalogController extends Controller
 {
+    /**
+     * Handle the incoming request.
+     */
     public function __invoke(): View
     {
-        return view('customer.katalog');
+        $peralatan = Alat::query()
+            ->with('kategori')
+            ->orderBy('nama')
+            ->get();
+
+        return view('customer.katalog', compact('peralatan'));
     }
 }
