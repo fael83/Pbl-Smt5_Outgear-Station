@@ -18,8 +18,11 @@ class EnsureUserHasRole
     {
         $user = $request->user();
 
+        // Mode demo: tamu (belum login) tetap boleh membuka halaman. Pembatasan
+        // peran hanya berlaku untuk pengguna yang sudah login, sehingga
+        // /admin, /katalog, dan halaman lain dapat diakses tanpa login.
         if ($user === null) {
-            return redirect()->route('login');
+            return $next($request);
         }
 
         $allowed = array_values(array_filter(

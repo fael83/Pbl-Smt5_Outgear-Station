@@ -24,11 +24,11 @@
         <!-- Menu Navigasi Utama -->
         <div class="hidden md:flex items-center gap-2 text-xs font-medium">
             <a href="#" class="px-4 py-2 rounded-full bg-brand text-white font-semibold shadow-sm">Katalog</a>
-            <a href="#" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5">
+            <a href="{{ route('booking.saya') }}" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5">
                 Booking Saya <span class="bg-brand/80 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">2</span>
             </a>
             <a href="#" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition">Chatbot & Bantuan</a>
-            <a href="#" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition">Panduan Sewa</a>
+           <a href="{{ route('panduan') }}" class="px-3.5 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition">Panduan Sewa</a>
         </div>
 
             <!-- Tombol Keranjang -->

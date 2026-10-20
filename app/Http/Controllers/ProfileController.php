@@ -38,7 +38,11 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Nonaktifkan akun pengguna.
+     *
+     * Akun tidak dihapus permanen karena pemesanan/pembayaran historis masih
+     * merujuk ke `users.id`. Dengan menonaktifkan akun, riwayat transaksi
+     * tetap utuh dan pengguna tidak bisa login lagi.
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -47,10 +51,9 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        $user->update(['status_akun' => 'nonaktif']);
 
         Auth::logout();
-
-        $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

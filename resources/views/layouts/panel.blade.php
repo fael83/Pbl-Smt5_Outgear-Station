@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Admin Panel' }} - Outgear Station</title>
     
     <!-- Google Fonts -->
@@ -25,7 +26,7 @@
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col min-w-0">
             <!-- Topbar -->
-            <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+            <header class="bg-transparent px-6 py-4 flex items-center justify-between sticky top-0 z-10">
                 <div class="flex items-center gap-4 w-1/3">
                 </div>
                 <div class="flex items-center gap-4">
@@ -33,11 +34,11 @@
                     </button>
                     <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
                         <div class="w-8 h-8 rounded-full bg-[#1A2024] text-white flex items-center justify-center font-bold text-xs">
-                            AD
+                            {{ auth()->user()?->inisial() ?? 'AD' }}
                         </div>
                         <div class="text-xs">
-                            <p class="font-semibold text-[#1A2024]">Admin Toko</p>
-                            <p class="text-gray-500">admin@outgear.com</p>
+                            <p class="font-semibold text-[#1A2024]">{{ auth()->user()?->name ?? 'Admin Toko' }}</p>
+                            <p class="text-gray-500">{{ auth()->user()?->email ?? '-' }}</p>
                         </div>
                     </div>
                 </div>
