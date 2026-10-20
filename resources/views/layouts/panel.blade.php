@@ -34,11 +34,11 @@
                     </button>
                     <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
                         <div class="w-8 h-8 rounded-full bg-[#1A2024] text-white flex items-center justify-center font-bold text-xs">
-                            AD
+                            {{ auth()->user()?->inisial() ?? 'AD' }}
                         </div>
                         <div class="text-xs">
-                            <p class="font-semibold text-[#1A2024]">Admin Toko</p>
-                            <p class="text-gray-500">admin@outgear.com</p>
+                            <p class="font-semibold text-[#1A2024]">{{ auth()->user()?->name ?? 'Admin Toko' }}</p>
+                            <p class="text-gray-500">{{ auth()->user()?->email ?? '-' }}</p>
                         </div>
                     </div>
                 </div>

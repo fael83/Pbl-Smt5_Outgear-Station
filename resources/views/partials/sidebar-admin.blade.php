@@ -1,3 +1,20 @@
+@php
+    $penggunaPanel = auth()->user();
+
+    // Badge sidebar dihitung dari database (cache 1 menit) supaya tidak
+    // menambah query baru di setiap perpindahan halaman.
+    $jumlahPembayaranMenunggu = \Illuminate\Support\Facades\Cache::remember(
+        'sidebar:jumlah-pembayaran-pending',
+        now()->addMinute(),
+        static fn (): int => \App\Models\Pembayaran::query()->where('status_transaksi', 'pending')->count(),
+    );
+
+    $jumlahDendaBelumLunas = \Illuminate\Support\Facades\Cache::remember(
+        'sidebar:jumlah-denda-belum-lunas',
+        now()->addMinute(),
+        static fn (): int => \App\Models\Denda::query()->where('status', 'belum_dibayar')->count(),
+    );
+@endphp
 <aside class="sticky top-0 h-screen w-64 bg-portal-sidebar text-white flex flex-col flex-shrink-0 z-40 select-none">
     
     <!-- Logo & Brand -->
@@ -43,7 +60,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Verifikasi Pembayaran
             </div>
-            <span class="bg-amber-500 text-zinc-950 font-bold text-xs px-2 py-0.5 rounded-full">5</span>
+            <span class="bg-amber-500 text-zinc-950 font-bold text-xs px-2 py-0.5 rounded-full">{{ $jumlahPembayaranMenunggu }}</span>
         </a>
 
         <!-- Kelola Denda -->
@@ -52,7 +69,9 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                 Kelola Denda
             </div>
-            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+            @if ($jumlahDendaBelumLunas > 0)
+                <span class="w-2 h-2 bg-red-500 rounded-full" title="{{ $jumlahDendaBelumLunas }} denda belum lunas"></span>
+            @endif
         </a>
 
         <!-- Laporan -->
@@ -64,15 +83,20 @@
 
     <!-- Profil User -->
     <div class="p-3 mx-3 mb-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-between shadow-inner">
-        <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-full bg-portal-orange font-bold text-xs flex items-center justify-center text-white">DW</div>
-            <div class="leading-tight">
-                <div class="font-semibold text-xs text-white">Dimas Wicaksono</div>
-                <div class="text-[10px] text-zinc-400">Staff Operasional</div>
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-portal-orange font-bold text-xs flex items-center justify-center text-white shrink-0">
+                {{ $penggunaPanel?->inisial() ?? 'AD' }}
+            </div>
+            <div class="leading-tight min-w-0">
+                <div class="font-semibold text-xs text-white truncate max-w-[120px]">{{ $penggunaPanel?->name ?? 'Pengguna' }}</div>
+                <div class="text-[10px] text-zinc-400">{{ $penggunaPanel?->labelPeran() ?? 'Staf Internal' }}</div>
             </div>
         </div>
-        <button class="text-zinc-400 hover:text-white">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-        </button>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" title="Keluar" class="text-zinc-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </form>
     </div>
 </aside>
