@@ -13,7 +13,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', BerandaController::class);
@@ -57,41 +56,15 @@ Route::middleware(['role:admin,owner,petugas'])
         // Data Alat & Stok. Dipakai oleh menu "Data Peralatan" di sidebar admin.
         Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
 
-Route::get('/admin', function () {
-    return view('admin.dashboard');
-})->name('admin.dashboard');
+        // Endpoint JSON untuk pencarian, filter, dan pagination tanpa reload halaman.
+        Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
 
-Route::get('/katalog', function () {
-    return view('customer.katalog');
-})->name('katalog');
-
-Route::get('/panduan', function () {
-    return view('customer.panduan');
-})->name('panduan');
-
-Route::get('/booking-saya', function () {
-    return view('customer.booking');
-})->name('booking.saya');
-
-Route::get('/admin/pelanggan', function () {
-    return view('admin.pelanggan');
-});
-
-Route::get('/admin/pemesanan', function () {
-    return view('admin.pemesanan');
-});
-
-Route::get('/admin/verifikasi', function () {
-    $pembayaranDb = \App\Models\Pembayaran::with('pemesanan.pelanggan')->latest('id')->get();
-    return view('admin.verifikasi', compact('pembayaranDb'));
-});
-
-Route::get('/admin/denda', function () {
-    return view('admin.denda');
-});
-
-Route::get('/admin/laporan', function () {
-    return view('admin.laporan');
-});
+        // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/peralatan', [InventarisController::class, 'store'])->name('peralatan.store');
+            Route::put('/peralatan/{alat}', [InventarisController::class, 'update'])->name('peralatan.update');
+            Route::delete('/peralatan/{alat}', [InventarisController::class, 'destroy'])->name('peralatan.destroy');
+        });
+    });
 
 require __DIR__.'/auth.php';
