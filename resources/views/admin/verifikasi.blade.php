@@ -3,188 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>OutGear Station - Verifikasi Pembayaran</title>
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'portal-sidebar': '#18181b',
-                        'portal-bg': '#f4f2ef',
-                        'portal-orange': '#e05a3f',
-                        'portal-card': '#ffffff',
-                    }
-                }
-            }
-        }
-    </script>
-    @vite('resources/css/app.css')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="text-slate-800 antialiased bg-portal-bg min-h-screen"
-    x-data="{
-        search: '',
-        showSearchInput: false,
-        showFilterDropdown: false,
-        selectedFilter: 'Semua',
-        selectedJenis: 'Semua',
-        modalDetail: false,
-        selectedItem: null,
-        memproses: null,
-        page: 1,
-        perPage: 10,
+<body class="text-slate-800 antialiased bg-portal-bg min-h-screen" 
+      x-data="{
+          search: '',
+          showSearchInput: false,
+          showFilterDropdown: false,
+          selectedFilter: 'Semua',
+          selectedJenis: 'Semua',
+          modalDetail: false,
+          selectedItem: null,
+          pembayaranList: [
+              @if(isset($pembayaranDb) && $pembayaranDb->isNotEmpty())
+                  @foreach($pembayaranDb as $p)
+                  {
+                      id: {{ $p->id }},
+                      pemesanan_id: {{ $p->pemesanan_id }},
+                      kode_pemesanan: '{{ $p->pemesanan?->kode_pemesanan ?? '#ORD-' . str_pad($p->pemesanan_id, 4, '0', STR_PAD_LEFT) }}',
+                      pelanggan_nama: '{{ $p->pemesanan?->pelanggan?->name ?? 'Pelanggan #' . $p->pemesanan_id }}',
+                      pelanggan_telp: '{{ $p->pemesanan?->pelanggan?->no_telepon ?? '-' }}',
+                      transaction_id_midtrans: '{{ $p->transaction_id ?? ($p->midtrans ?? 'MID-' . date('Ymd', strtotime($p->created_at ?? now())) . '-' . str_pad($p->id, 4, '0', STR_PAD_LEFT)) }}',
+                      jenis_pembayaran: '{{ $p->jenis_pembayaran }}',
+                      metode_pembayaran: '{{ $p->metode_pembayaran }}',
+                      jumlah: {{ (float) $p->jumlah }},
+                      status_transaksi: '{{ $p->status_transaksi }}',
+                      waktu_bayar: '{{ $p->waktu_bayar ? \Carbon\Carbon::parse($p->waktu_bayar)->translatedFormat('d M Y, H:i') : '-' }}'
+                  },
+                  @endforeach
+              @endif
+              {
+                  id: 2,
+                  pemesanan_id: 2,
+                  kode_pemesanan: 'ORD-DEMO-0002',
+                  pelanggan_nama: 'Fajar Hidayat',
+                  pelanggan_telp: '0812-3456-7890',
+                  transaction_id_midtrans: 'MID-TRX-20261018-0892',
+                  jenis_pembayaran: 'dp',
+                  metode_pembayaran: 'qris',
+                  jumlah: 250000,
+                  status_transaksi: 'pending',
+                  waktu_bayar: '18 Okt 2026, 13:45'
+              },
+              {
+                  id: 3,
+                  pemesanan_id: 2,
+                  kode_pemesanan: 'ORD-DEMO-0002',
+                  pelanggan_nama: 'Fajar Hidayat',
+                  pelanggan_telp: '0812-3456-7890',
+                  transaction_id_midtrans: '-',
+                  jenis_pembayaran: 'pelunasan',
+                  metode_pembayaran: 'cash',
+                  jumlah: 250000,
+                  status_transaksi: 'pending',
+                  waktu_bayar: '-'
+              },
+              {
+                  id: 4,
+                  pemesanan_id: 1,
+                  kode_pemesanan: 'ORD-DEMO-0001',
+                  pelanggan_nama: 'Budi Pelanggan',
+                  pelanggan_telp: '0811-0000-0004',
+                  transaction_id_midtrans: 'MID-TRX-20261018-0899',
+                  jenis_pembayaran: 'denda',
+                  metode_pembayaran: 'qris',
+                  jumlah: 45000,
+                  status_transaksi: 'berhasil',
+                  waktu_bayar: '12 Okt 2026, 16:20'
+              },
+              {
+                  id: 5,
+                  pemesanan_id: 3,
+                  kode_pemesanan: 'ORD-0894',
+                  pelanggan_nama: 'Anisa Tri Utami',
+                  pelanggan_telp: '0857-1122-3344',
+                  transaction_id_midtrans: 'MID-TRX-20261018-0901',
+                  jenis_pembayaran: 'dp',
+                  metode_pembayaran: 'qris',
+                  jumlah: 420000,
+                  status_transaksi: 'pending',
+                  waktu_bayar: '18 Okt 2026, 14:02'
+              },
+              {
+                  id: 6,
+                  pemesanan_id: 4,
+                  kode_pemesanan: 'ORD-0870',
+                  pelanggan_nama: 'Rian Pratama',
+                  pelanggan_telp: '0813-9876-5432',
+                  transaction_id_midtrans: '-',
+                  jenis_pembayaran: 'pelunasan',
+                  metode_pembayaran: 'cash',
+                  jumlah: 190000,
+                  status_transaksi: 'berhasil',
+                  waktu_bayar: '17 Okt 2026, 11:15'
+              },
+              {
+                  id: 7,
+                  pemesanan_id: 5,
+                  kode_pemesanan: 'ORD-0865',
+                  pelanggan_nama: 'Dewi Sartika',
+                  pelanggan_telp: '0821-4455-6677',
+                  transaction_id_midtrans: 'MID-TRX-20261016-0850',
+                  jenis_pembayaran: 'dp',
+                  metode_pembayaran: 'qris',
+                  jumlah: 310000,
+                  status_transaksi: 'gagal',
+                  waktu_bayar: '16 Okt 2026, 09:12'
+              }
+          ],
+          
+          formatRupiah(val) {
+              return 'Rp ' + Number(val).toLocaleString('id-ID');
+          },
 
-        pembayaranList: {{ Js::from($pembayaranList) }},
+          verifikasi(id) {
+              const item = this.pembayaranList.find(p => p.id === id);
+              if (item) {
+                  item.status_transaksi = 'berhasil';
+                  if (item.waktu_bayar === '-') {
+                      const now = new Date();
+                      item.waktu_bayar = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + 
+                                         now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                  }
+                  if (this.selectedItem && this.selectedItem.id === id) {
+                      this.selectedItem.status_transaksi = 'berhasil';
+                      this.selectedItem.waktu_bayar = item.waktu_bayar;
+                  }
+              }
+          },
 
-        init() {
-            // Kembali ke halaman 1 setiap kali pencarian atau filter berubah.
-            this.$watch('search', () => this.page = 1);
-            this.$watch('selectedFilter', () => this.page = 1);
-            this.$watch('selectedJenis', () => this.page = 1);
-        },
+          tolak(id) {
+              const item = this.pembayaranList.find(p => p.id === id);
+              if (item) {
+                  item.status_transaksi = 'gagal';
+                  if (this.selectedItem && this.selectedItem.id === id) {
+                      this.selectedItem.status_transaksi = 'gagal';
+                  }
+              }
+          },
 
-        formatRupiah(val) {
-            return 'Rp ' + Number(val).toLocaleString('id-ID');
-        },
+          openDetail(item) {
+              this.selectedItem = item;
+              this.modalDetail = true;
+          },
 
-        labelMetode(metode) {
-            return { qris: 'QRIS', card: 'Kartu', cash: 'Cash' }[metode] ?? String(metode ?? '-').toUpperCase();
-        },
+          get filteredList() {
+              return this.pembayaranList.filter(item => {
+                  // Yang berhasil tidak ditampilkan di tabel verifikasi
+                  if (item.status_transaksi === 'berhasil') {
+                      return false;
+                  }
 
-        tokenCsrf() {
-            return document.querySelector('meta[name=csrf-token]')?.content ?? '';
-        },
+                  const matchStatus = this.selectedFilter === 'Semua' || 
+                      (this.selectedFilter === 'Pending' && item.status_transaksi === 'pending') ||
+                      (this.selectedFilter === 'Gagal' && item.status_transaksi === 'gagal');
+                      
+                  const matchJenis = this.selectedJenis === 'Semua' || item.jenis_pembayaran === this.selectedJenis;
+                  
+                  const query = this.search.toLowerCase().trim();
+                  const matchSearch = query === '' || 
+                      item.id.toString().includes(query) ||
+                      item.pemesanan_id.toString().includes(query) ||
+                      item.kode_pemesanan.toLowerCase().includes(query) ||
+                      item.pelanggan_nama.toLowerCase().includes(query) ||
+                      item.transaction_id_midtrans.toLowerCase().includes(query);
 
-        async kirimAksi(url) {
-            try {
-                const respons = await fetch(url, {
-                    method: 'PATCH',
-                    credentials: 'same-origin',
-                    headers: {
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN': this.tokenCsrf(),
-                    },
-                });
+                  return matchStatus && matchJenis && matchSearch;
+              });
+          },
 
-                const data = await respons.json().catch(() => ({}));
+          get countPending() {
+              return this.pembayaranList.filter(p => p.status_transaksi === 'pending').length;
+          },
 
-                return { ok: respons.ok, data };
-            } catch (galat) {
-                return { ok: false, data: { message: 'Koneksi ke server gagal. Coba lagi.' } };
-            }
-        },
+          get countBerhasil() {
+              return this.pembayaranList.filter(p => p.status_transaksi === 'berhasil').length;
+          },
 
-        async verifikasi(id) {
-            const item = this.pembayaranList.find(p => p.id === id);
-            if (!item || this.memproses) return;
-
-            this.memproses = id;
-            const { ok, data } = await this.kirimAksi(item.url_verifikasi);
-            this.memproses = null;
-
-            if (!ok) {
-                alert(data.message ?? 'Gagal memverifikasi pembayaran.');
-                return;
-            }
-
-            item.status_transaksi = data.status_transaksi;
-            item.waktu_bayar = data.waktu_bayar;
-
-            if (this.selectedItem && this.selectedItem.id === id) {
-                this.selectedItem.status_transaksi = data.status_transaksi;
-                this.selectedItem.waktu_bayar = data.waktu_bayar;
-            }
-        },
-
-        async tolak(id) {
-            const item = this.pembayaranList.find(p => p.id === id);
-            if (!item || this.memproses) return;
-
-            this.memproses = id;
-            const { ok, data } = await this.kirimAksi(item.url_tolak);
-            this.memproses = null;
-
-            if (!ok) {
-                alert(data.message ?? 'Gagal menolak pembayaran.');
-                return;
-            }
-
-            item.status_transaksi = data.status_transaksi;
-
-            if (this.selectedItem && this.selectedItem.id === id) {
-                this.selectedItem.status_transaksi = data.status_transaksi;
-            }
-        },
-
-        openDetail(item) {
-            this.selectedItem = item;
-            this.modalDetail = true;
-        },
-
-        get filteredList() {
-            const query = this.search.toLowerCase().trim();
-            const teks = (nilai) => String(nilai ?? '').toLowerCase();
-
-            return this.pembayaranList.filter(item => {
-                // Yang berhasil tidak ditampilkan di tabel verifikasi
-                if (item.status_transaksi === 'berhasil') {
-                    return false;
-                }
-
-                const matchStatus = this.selectedFilter === 'Semua' ||
-                    (this.selectedFilter === 'Pending' && item.status_transaksi === 'pending') ||
-                    (this.selectedFilter === 'Gagal' && item.status_transaksi === 'gagal');
-
-                const matchJenis = this.selectedJenis === 'Semua' || item.jenis_pembayaran === this.selectedJenis;
-
-                const matchSearch = query === '' ||
-                    teks(item.id).includes(query) ||
-                    teks(item.pemesanan_id).includes(query) ||
-                    teks(item.kode_pemesanan).includes(query) ||
-                    teks(item.pelanggan_nama).includes(query) ||
-                    teks(item.transaction_id_midtrans).includes(query);
-
-                return matchStatus && matchJenis && && matchSearch;
-            });
-        },
-
-        get totalPages() {
-            return Math.max(1, Math.ceil(this.filteredList.length / this.perPage));
-        },
-
-        get halamanAktif() {
-            return Math.min(this.page, this.totalPages);
-        },
-
-        get pagedList() {
-            const awal = (this.halamanAktif - 1) * this.perPage;
-            return this.filteredList.slice(awal, awal + this.perPage);
-        },
-
-        get awalData() {
-            return this.filteredList.length === 0 ? 0 : (this.halamanAktif - 1) * this.perPage + 1;
-        },
-
-        get akhirData() {
-            return Math.min(this.halamanAktif * this.perPage, this.filteredList.length);
-        },
-
-        get countPending() {
-            return this.pembayaranList.filter(p => p.status_transaksi === 'pending').length;
-        },
-
-        get countBerhasil() {
-            return this.pembayaranList.filter(p => p.status_transaksi === 'berhasil').length;
-        },
-
-        get countGagal() {
-            return this.pembayaranList.filter(p => p.status_transaksi === 'gagal').length;
-        }
-    }">
+          get countGagal() {
+              return this.pembayaranList.filter(p => p.status_transaksi === 'gagal').length;
+          }
+      }">
 
     <div class="flex min-h-screen relative">
 
@@ -203,10 +203,10 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         BASECAMP SLEMAN - AKTIF
                     </div>
-                    <button type="button" onclick="window.location.reload()" title="Muat ulang data" class="p-2 bg-white border border-zinc-200/80 rounded-full text-zinc-600 hover:bg-zinc-50 shadow-sm transition">
+                    <button class="p-2 bg-white border border-zinc-200/80 rounded-full text-zinc-600 hover:bg-zinc-50 shadow-sm transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
-                    <div class="w-8 h-8 rounded-full bg-zinc-900 text-white font-bold text-xs flex items-center justify-center border border-zinc-300 shadow-sm" title="{{ auth()->user()?->name }}">{{ auth()->user()?->inisial() ?? '?' }}</div>
+                    <div class="w-8 h-8 rounded-full bg-zinc-900 text-white font-bold text-xs flex items-center justify-center border border-zinc-300 shadow-sm">DW</div>
                 </div>
             </header>
 
@@ -363,7 +363,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100 font-medium text-zinc-700">
-                                <template x-for="item in pagedList" :key="item.id">
+                                <template x-for="item in filteredList" :key="item.id">
                                     <tr class="hover:bg-zinc-50/80 transition">
                                         <!-- id (bigint PK - clean text tanpa kotak) -->
                                         <td class="p-4 text-center">
@@ -406,13 +406,18 @@
                                             </template>
                                         </td>
 
-                                        <!-- metode_pembayaran -->
+                                        <!-- metode_pembayaran (enum: 'qris', 'cash') -->
                                         <td class="p-4">
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-bold text-[10px] uppercase border"
-                                                  :class="item.metode_pembayaran === 'qris' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-zinc-100 text-zinc-700 border-zinc-300'">
-                                                <span class="w-1.5 h-1.5 rounded-full" :class="item.metode_pembayaran === 'qris' ? 'bg-purple-500' : 'bg-zinc-400'"></span>
-                                                <span x-text="labelMetode(item.metode_pembayaran)"></span>
-                                            </span>
+                                            <template x-if="item.metode_pembayaran === 'qris'">
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 font-bold text-[10px] uppercase border border-purple-200">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> QRIS
+                                                </span>
+                                            </template>
+                                            <template x-if="item.metode_pembayaran === 'cash'">
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 text-zinc-700 font-bold text-[10px] uppercase border border-zinc-300">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span> Cash
+                                                </span>
+                                            </template>
                                         </td>
 
                                         <!-- jumlah (decimal) -->
@@ -436,7 +441,7 @@
 
                                         <!-- waktu_bayar (datetime) -->
                                         <td class="p-4 text-zinc-500 text-[11px]">
-                                            <span x-text="item.waktu_bayar || '-'"></span>
+                                            <span x-text="item.waktu_bayar"></span>
                                         </td>
 
                                         <!-- AKSI -->
@@ -484,16 +489,15 @@
                     <!-- PAGINATION FOOTER (Seperti Halaman Pelanggan) -->
                     <div class="p-4 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-medium">
                         <div>
-                            Menampilkan data ke <span class="font-bold text-zinc-900" x-text="awalData + ' - ' + akhirData"></span> dari <span class="font-bold text-zinc-900" x-text="filteredList.length"></span> antrean
+                            Menampilkan data ke <span class="font-bold text-zinc-900" x-text="filteredList.length > 0 ? '1 - ' + filteredList.length : '0'"></span> dari <span class="font-bold text-zinc-900" x-text="filteredList.length"></span> antrean
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" @click="page = Math.max(1, halamanAktif - 1)" :disabled="halamanAktif <= 1"
-                                    class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center"
-                                    :class="halamanAktif <= 1 ? 'text-zinc-400 cursor-not-allowed' : 'hover:bg-zinc-100 text-zinc-700'">‹</button>
-                            <span class="px-2 text-zinc-600" x-text="'Halaman ' + halamanAktif + ' dari ' + totalPages"></span>
-                            <button type="button" @click="page = Math.min(totalPages, halamanAktif + 1)" :disabled="halamanAktif >= totalPages"
-                                    class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center"
-                                    :class="halamanAktif >= totalPages ? 'text-zinc-400 cursor-not-allowed' : 'hover:bg-zinc-100 text-zinc-700'">›</button>
+                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-400 cursor-not-allowed">‹</button>
+                            <button class="w-8 h-8 rounded-lg bg-zinc-900 text-white font-bold flex items-center justify-center">1</button>
+                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">2</button>
+                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">3</button>
+                            <span class="px-1 text-zinc-400">...</span>
+                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">›</button>
                         </div>
                     </div>
 
@@ -528,8 +532,7 @@
             </div>
 
             <!-- Modal Content (All ERD Attributes) -->
-            <template x-if="selectedItem">
-<           <div class="p-6 space-y-4 text-xs">
+            <div class="p-6 space-y-4 text-xs" x-if="selectedItem">
                 <div class="grid grid-cols-2 gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-200/80">
                     <div>
                         <span class="text-zinc-400 font-semibold block text-[10px] uppercase">ID Pembayaran (PK)</span>
@@ -570,7 +573,10 @@
                     <div class="flex justify-between items-center py-1.5 border-b border-zinc-100">
                         <span class="text-zinc-500 font-medium">Metode Pembayaran</span>
                         <span class="font-bold uppercase tracking-wider text-[11px] px-2.5 py-0.5 rounded"
-                              :class="selectedItem.metode_pembayaran === 'qris' ? 'bg-purple-100 text-purple-800' : 'bg-zinc-200 text-zinc-800'"
+                              :class="{
+                                  'bg-purple-100 text-purple-800': selectedItem.metode_pembayaran === 'qris',
+                                  'bg-zinc-200 text-zinc-800': selectedItem.metode_pembayaran === 'cash'
+                              }"
                               x-text="selectedItem.metode_pembayaran"></span>
                     </div>
 
@@ -592,7 +598,7 @@
 
                     <div class="flex justify-between items-center py-1.5 border-b border-zinc-100">
                         <span class="text-zinc-500 font-medium">Waktu Pembayaran</span>
-                        <span class="font-semibold text-zinc-700" x-text="item.waktu_bayar || '-'"></span>
+                        <span class="font-semibold text-zinc-700" x-text="selectedItem.waktu_bayar"></span>
                     </div>
                 </div>
 
@@ -618,7 +624,7 @@
                     </template>
                 </div>
             </div>
-            </template>
+
         </div>
     </div>
 
