@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Scripts (Pastikan kamu sudah menginstall Tailwind & Vite) -->
+    <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -68,16 +68,16 @@
                     </div>
                 </div>
 
-                <!-- Grup Menu: SDM & Laporan -->
+                <!-- Grup Menu: SDM & Analitik -->
                 <div>
                     <p class="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">SDM & Analitik</p>
                     <div class="space-y-1">
                         <!-- Link Akun Staf -->
-                        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all {{ request()->is('owner/staf*') ? 'bg-white shadow-sm border border-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50' }}">
+                        <a href="{{ url('/owner/kelola-staff') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all {{ request()->is('owner/kelola-staff*') ? 'bg-white shadow-sm border border-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                             </svg>
-                            Kelola Data Admin
+                            Kelola Data Admin dan Petugas
                         </a>
 
                         <!-- Link Laporan -->
@@ -88,7 +88,7 @@
                                 </svg>
                                 Laporan Penyewaan
                             </div>
-                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> <!-- Titik indikator live -->
+                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
                         </a>
                     </div>
                 </div>
@@ -108,24 +108,10 @@
         <!-- ================= KONTEN UTAMA KANAN ================= -->
         <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
 
-            <!-- Topbar Header -->
-            <header class="h-20 flex items-center justify-between px-8 bg-[#FAF7F2]">
-
-                <!-- Kotak Pencarian Global -->
-                <div class="flex-1 max-w-xl">
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400 group-focus-within:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                        </div>
-                        <input type="text" placeholder="Cari booking, nama alat, atau resi..." class="block w-full pl-10 pr-3 py-2.5 border-transparent bg-white shadow-sm rounded-full text-sm placeholder-gray-400 focus:border-gray-300 focus:ring-0 transition-all">
-                    </div>
-                </div>
-
-                <!-- Aksi Profil -->
-                <div class="flex items-center gap-4 pl-4">
-                    <!-- Lencana Profil Owner -->
+            <!-- Topbar Header (Kotak pencarian global sudah dihapus, menyisakan profil di kanan) -->
+            <header class="h-20 flex items-center justify-end px-8 bg-[#FAF7F2]">
+                <!-- Aksi Profil Owner -->
+                <div class="flex items-center gap-4">
                     <div class="flex items-center gap-3 bg-white pl-1 pr-4 py-1 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:shadow transition-all">
                         <div class="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold">
                             {{ substr(Auth::user()->name ?? 'Owner', 0, 1) }}
@@ -140,10 +126,7 @@
 
             <!-- Slot Konten Spesifik Halaman (Dinamis) -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto px-8 pb-10 scroll-smooth">
-
-                <!-- Di sinilah isi halaman spesifik (misal: tabel harga sewa) akan dimuat -->
                 @yield('content')
-
             </main>
         </div>
     </div>

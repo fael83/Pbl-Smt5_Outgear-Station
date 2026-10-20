@@ -14,6 +14,8 @@ use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\OutGearBotController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\OwnerController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook']);
@@ -79,4 +81,40 @@ Route::middleware(['role:admin,owner,petugas'])
         });
     });
 
+<<<<<<< HEAD
 require __DIR__.'/auth.php';
+=======
+Route::get('/admin/peralatan', function () {
+    // Halaman "Data Peralatan" pada sidebar dashboard menampilkan
+    // inventaris alat yang sama dengan menu "Data Alat & Stok".
+    return view('admin.inventaris.index');
+});
+
+Route::get('/admin/verifikasi', function () {
+    return view('admin.verifikasi');
+});
+
+Route::get('/admin/denda', function () {
+    return view('admin.denda');
+});
+
+Route::get('/admin/laporan', function () {
+    return view('admin.laporan');
+});
+
+Route::get('/owner/harga-sewa', function () {
+    return view('owner.harga-sewa');
+});
+Route::get('/owner/harga-sewa', [OwnerController::class, 'hargaSewa']);
+
+Route::prefix('owner')->group(function () {
+    Route::get('/kelola-staff', [OwnerController::class, 'kelolaStaff']);
+    Route::get('/kelola-staff/tambah', [OwnerController::class, 'createStaff']);
+    Route::post('/kelola-staff', [OwnerController::class, 'storeStaff']);
+    Route::get('/kelola-staff/{id}/edit', [OwnerController::class, 'editStaff']);
+    Route::put('/kelola-staff/{id}', [OwnerController::class, 'updateStaff']);
+    Route::delete('/kelola-staff/{id}', [OwnerController::class, 'destroyStaff']);
+});
+    
+require __DIR__.'/auth.php';
+>>>>>>> 3a90183 (Fitur Kelola Staff untuk owner sudah bisa crud dan terintegrasi dengan backend)
