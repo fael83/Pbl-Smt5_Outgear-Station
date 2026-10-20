@@ -50,7 +50,14 @@ Route::middleware(['role:admin,owner,petugas'])
     ->name('admin.')
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
-        Route::get('/pelanggan', AdminPelangganController::class)->name('pelanggan');
+        // Data pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
+        Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
+
+        // Endpoint JSON untuk pencarian, filter, dan pagination tanpa reload halaman.
+        Route::get('/pelanggan/tabel', [AdminPelangganController::class, 'tabel'])->name('pelanggan.tabel');
+
+        // Unduh daftar pelanggan (CSV) sesuai filter yang sedang aktif.
+        Route::get('/pelanggan/ekspor', [AdminPelangganController::class, 'ekspor'])->name('pelanggan.ekspor');
         Route::get('/pemesanan', AdminPemesananController::class)->name('pemesanan');
         Route::get('/verifikasi', AdminVerifikasiController::class)->name('verifikasi');
         Route::get('/denda', AdminDendaController::class)->name('denda');
@@ -64,6 +71,8 @@ Route::middleware(['role:admin,owner,petugas'])
 
         // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
         Route::middleware('role:admin')->group(function () {
+            Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
+
             Route::post('/peralatan', [InventarisController::class, 'store'])->name('peralatan.store');
             Route::put('/peralatan/{alat}', [InventarisController::class, 'update'])->name('peralatan.update');
             Route::delete('/peralatan/{alat}', [InventarisController::class, 'destroy'])->name('peralatan.destroy');

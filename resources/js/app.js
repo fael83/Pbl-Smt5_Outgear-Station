@@ -3,6 +3,65 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 
 /**
+ * Ambil token CSRF dari layout panel.
+ */
+const tokenCsrf = () =>
+    document.querySelector('meta[name="csrf-token"]')?.content ??
+    document.querySelector('input[name="_token"]')?.value ??
+    '';
+
+/**
+ * Kirim request dan baca balasan JSON.
+ */
+const kirim = async (url, { method = 'GET', body = null } = {}) => {
+    const respons = await fetch(url, {
+        method,
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': tokenCsrf(),
+        },
+        body,
+    });
+
+    let data = {};
+
+    try {
+        data = await respons.json();
+    } catch {
+        data = { message: 'Balasan server tidak dapat dibaca.' };
+    }
+
+    return { ok: respons.ok, status: respons.status, data };
+};
+
+/**
+ * Ubah `{ errors: { nama: ['pesan'] } }` menjadi `{ nama: 'pesan' }`.
+ */
+const ratakan = (errors = {}) =>
+    Object.fromEntries(
+        Object.entries(errors).map(([kunci, nilai]) => [
+            kunci,
+            Array.isArray(nilai) ? nilai[0] : String(nilai),
+        ]),
+    );
+
+/**
+ * Persentase satu angka desimal untuk badge kartu statistik.
+ * Aman ketika total masih 0 (belum ada data).
+ */
+const persentase = (bagian, total) => {
+    const pembagi = Number(total) || 0;
+
+    if (pembagi <= 0) {
+        return 0;
+    }
+
+    return Math.round(((Number(bagian) || 0) / pembagi) * 1000) / 10;
+};
+
+/**
  * Komponen halaman admin "Data Peralatan" (/admin/peralatan).
  *
  * Halaman ini membaca data dari Supabase yang jaraknya jauh (~1,3 detik per
@@ -31,48 +90,6 @@ Alpine.data('halamanPeralatan', (config = {}) => {
     });
 
     const lengkapiForm = (data = {}) => ({ ...formKosong(), ...data });
-
-    const tokenCsrf = () =>
-        document.querySelector('meta[name="csrf-token"]')?.content ??
-        document.querySelector('input[name="_token"]')?.value ??
-        '';
-
-    /**
-     * Kirim request dan baca balasan JSON.
-     */
-    const kirim = async (url, { method = 'GET', body = null } = {}) => {
-        const respons = await fetch(url, {
-            method,
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': tokenCsrf(),
-            },
-            body,
-        });
-
-        let data = {};
-
-        try {
-            data = await respons.json();
-        } catch {
-            data = { message: 'Balasan server tidak dapat dibaca.' };
-        }
-
-        return { ok: respons.ok, status: respons.status, data };
-    };
-
-    /**
-     * Ubah `{ errors: { nama: ['pesan'] } }` menjadi `{ nama: 'pesan' }`.
-     */
-    const ratakan = (errors = {}) =>
-        Object.fromEntries(
-            Object.entries(errors).map(([kunci, nilai]) => [
-                kunci,
-                Array.isArray(nilai) ? nilai[0] : String(nilai),
-            ]),
-        );
 
     return {
         // --- Filter & data tabel ---
@@ -143,13 +160,7 @@ Alpine.data('halamanPeralatan', (config = {}) => {
          * Aman ketika total masih 0 (belum ada alat).
          */
         rasio(bagian, total) {
-            const pembagi = Number(total) || 0;
-
-            if (pembagi <= 0) {
-                return 0;
-            }
-
-            return Math.round(((Number(bagian) || 0) / pembagi) * 1000) / 10;
+            return persentase(bagian, total);
         },
 
         /**
@@ -424,6 +435,236 @@ Alpine.data('halamanPeralatan', (config = {}) => {
                 if (sisaBaris === 0) {
                     this.muatTabel(this.halaman);
                 }
+            } catch {
+                this.notifikasi('Tidak dapat terhubung ke server.', true);
+            } finally {
+                if (tombol) {
+                    tombol.disabled = false;
+                }
+            }
+        },
+
+        notifikasi(pesan, gagal = false) {
+            this.pesan = pesan;
+            this.pesanGagal = gagal;
+
+            window.clearTimeout(this.timerPesan);
+            this.timerPesan = window.setTimeout(() => {
+                this.pesan = '';
+            }, 4000);
+        },
+    };
+});
+
+/**
+ * Komponen halaman admin "Data Pelanggan" (/admin/pelanggan).
+ *
+ * Polanya sama seperti halamanPeralatan: pencarian, filter status, dan
+ * pagination hanya mengambil ulang kartu tabel lewat
+ * GET /admin/pelanggan/tabel, sedangkan perubahan status akun dikirim lewat
+ * PATCH dan server membalas HTML baris yang sudah diperbarui.
+ */
+Alpine.data('halamanPelanggan', (config = {}) => {
+    /**
+     * Parameter query sesuai filter yang sedang aktif.
+     */
+    const parameterFilter = (state, halaman = 1) => {
+        const parameter = new URLSearchParams();
+
+        if (state.cari !== '') {
+            parameter.set('search', state.cari);
+        }
+
+        if (state.status !== 'semua') {
+            parameter.set('status', state.status);
+        }
+
+        parameter.set('per_page', String(state.perPage));
+
+        if (halaman > 1) {
+            parameter.set('page', String(halaman));
+        }
+
+        return parameter;
+    };
+
+    return {
+        // --- Filter & data tabel ---
+        cari: String(config.filters?.search ?? ''),
+        status: String(config.filters?.status ?? 'semua'),
+        perPage: Number(config.filters?.per_page ?? 10),
+        halaman: 1,
+
+        items: Array.isArray(config.items) ? config.items : [],
+        ringkasanData: { ...(config.ringkasan ?? {}) },
+
+        memuat: false,
+        permintaanTerakhir: 0,
+
+        // --- Notifikasi ringan ---
+        pesan: '',
+        pesanGagal: false,
+        timerPesan: null,
+
+        get adaFilter() {
+            return this.cari !== '' || this.status !== 'semua';
+        },
+
+        /**
+         * URL unduhan CSV mengikuti filter yang sedang aktif.
+         */
+        get urlEkspor() {
+            const query = parameterFilter(this).toString();
+
+            return query === '' ? config.eksporUrl : `${config.eksporUrl}?${query}`;
+        },
+
+        /**
+         * Pindah tab status di atas tabel. `semua` berarti tanpa filter.
+         */
+        pilihStatus(nilai) {
+            if (this.status === nilai) {
+                return;
+            }
+
+            this.status = nilai;
+            this.muatTabel();
+        },
+
+        /**
+         * Persentase untuk badge kartu statistik.
+         */
+        rasio(bagian, total) {
+            return persentase(bagian, total);
+        },
+
+        /**
+         * URL endpoint tabel sesuai filter yang sedang aktif.
+         */
+        urlTabel(halaman = 1) {
+            return `${config.tabelUrl}?${parameterFilter(this, halaman).toString()}`;
+        },
+
+        /**
+         * Ambil ulang kartu tabel (HTML + ringkasan) tanpa reload.
+         */
+        async muatTabel(halaman = 1) {
+            const urutan = ++this.permintaanTerakhir;
+
+            this.memuat = true;
+
+            try {
+                const { ok, data } = await kirim(this.urlTabel(halaman));
+
+                // Abaikan balasan lama kalau pengguna sudah mengetik lagi.
+                if (urutan !== this.permintaanTerakhir) {
+                    return;
+                }
+
+                if (!ok || typeof data.html !== 'string') {
+                    this.notifikasi(data.message ?? 'Gagal memuat data pelanggan.', true);
+
+                    return;
+                }
+
+                this.$refs.tabel.innerHTML = data.html;
+                this.items = Array.isArray(data.items) ? data.items : [];
+                this.ringkasanData = data.ringkasan ?? this.ringkasanData;
+                this.halaman = halaman;
+
+                if (data.url) {
+                    window.history.replaceState({}, '', data.url);
+                }
+            } catch {
+                this.notifikasi('Tidak dapat terhubung ke server.', true);
+            } finally {
+                this.memuat = false;
+            }
+        },
+
+        /**
+         * Pagination dirender server; kliknya dicegat agar tetap lewat AJAX.
+         */
+        tangkapKlik(event) {
+            const tautan = event.target.closest('[data-paginasi] a');
+
+            if (!tautan) {
+                return;
+            }
+
+            const url = new URL(tautan.href, window.location.origin);
+
+            if (url.origin !== window.location.origin || !url.pathname.endsWith('/admin/pelanggan')) {
+                return;
+            }
+
+            event.preventDefault();
+            this.muatTabel(Number(url.searchParams.get('page') ?? 1) || 1);
+        },
+
+        resetFilter() {
+            this.cari = '';
+            this.status = 'semua';
+            this.muatTabel();
+        },
+
+        /**
+         * Apakah item masih memenuhi filter status yang aktif?
+         */
+        cocokFilter(item) {
+            if (!item) {
+                return false;
+            }
+
+            return this.status === 'semua' || item.status_akun === this.status;
+        },
+
+        /**
+         * Aktifkan / nonaktifkan akun lewat AJAX setelah konfirmasi.
+         */
+        async ubahStatus(form) {
+            if (!window.confirm(form.dataset.pesan ?? 'Ubah status akun ini?')) {
+                return;
+            }
+
+            const tombol = form.querySelector('button[type="submit"]');
+
+            if (tombol) {
+                tombol.disabled = true;
+            }
+
+            try {
+                const { ok, data } = await kirim(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                });
+
+                if (!ok) {
+                    this.notifikasi(data.message ?? 'Gagal mengubah status akun.', true);
+
+                    return;
+                }
+
+                this.notifikasi(data.message ?? 'Status akun tersimpan.');
+                this.ringkasanData = data.ringkasan ?? this.ringkasanData;
+
+                const indeks = this.items.findIndex((item) => Number(item.id) === Number(data.id));
+
+                if (indeks !== -1 && data.item) {
+                    this.items[indeks] = data.item;
+                }
+
+                const baris = this.$refs.tabel.querySelector(`tr[data-pelanggan-id="${data.id}"]`);
+
+                // Kalau akun tidak lagi cocok dengan tab aktif, tabel diambil
+                // ulang supaya jumlah baris dan pagination tetap konsisten.
+                if (baris && this.cocokFilter(data.item) && typeof data.baris === 'string') {
+                    baris.outerHTML = data.baris;
+
+                    return;
+                }
+
+                this.muatTabel(this.halaman);
             } catch {
                 this.notifikasi('Tidak dapat terhubung ke server.', true);
             } finally {
