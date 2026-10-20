@@ -67,7 +67,7 @@ Route::middleware(['role:admin,owner,petugas'])
 
         // Pemesanan, verifikasi, denda, laporan — read-only untuk owner/petugas.
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
-        Route::get('/verifikasi', AdminVerifikasiController::class)->name('verifikasi.index');
+        Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
         Route::get('/denda', AdminDendaController::class)->name('denda.index');
         Route::get('/laporan', AdminLaporanController::class)->name('laporan.index');
 
@@ -78,6 +78,9 @@ Route::middleware(['role:admin,owner,petugas'])
         // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
         Route::middleware('role:admin')->group(function () {
             Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
+
+            Route::patch('/verifikasi/{pembayaran}/verifikasi', [AdminVerifikasiController::class, 'verifikasi'])->name('verifikasi.verifikasi');
+            Route::patch('/verifikasi/{pembayaran}/tolak', [AdminVerifikasiController::class, 'tolak'])->name('verifikasi.tolak');
 
             Route::post('/peralatan', [InventarisController::class, 'store'])->name('peralatan.store');
             Route::put('/peralatan/{alat}', [InventarisController::class, 'update'])->name('peralatan.update');
