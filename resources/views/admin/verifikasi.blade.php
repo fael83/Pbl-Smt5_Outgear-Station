@@ -148,7 +148,7 @@
                     teks(item.pelanggan_nama).includes(query) ||
                     teks(item.transaction_id_midtrans).includes(query);
 
-                return matchStatus && matchJenis && && matchSearch;
+                return matchStatus && matchJenis && matchSearch;
             });
         },
 
@@ -526,7 +526,7 @@
 
             <!-- Modal Content (All ERD Attributes) -->
             <template x-if="selectedItem">
-<           <div class="p-6 space-y-4 text-xs">
+          <div class="p-6 space-y-4 text-xs">
                 <div class="grid grid-cols-2 gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-200/80">
                     <div>
                         <span class="text-zinc-400 font-semibold block text-[10px] uppercase">ID Pembayaran (PK)</span>
@@ -589,7 +589,7 @@
 
                     <div class="flex justify-between items-center py-1.5 border-b border-zinc-100">
                         <span class="text-zinc-500 font-medium">Waktu Pembayaran</span>
-                        <span class="font-semibold text-zinc-700" x-text="item.waktu_bayar || '-'"></span>
+                        <span class="font-semibold text-zinc-700" x-text="selectedItem.waktu_bayar || '-'"></span>
                     </div>
                 </div>
 
