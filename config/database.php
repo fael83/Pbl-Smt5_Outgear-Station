@@ -101,6 +101,12 @@ return [
             // PostgreSQL sudah memakai "public" sebagai default.
             'search_path' => env('DB_SEARCH_PATH'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Koneksi persisten: handshake TCP + SSL + auth ke Supabase (Sydney)
+            // memakan beberapa round-trip (~2-3 detik). Dengan ini koneksi
+            // dipakai ulang antar request, jadi hanya dibayar sekali.
+            'options' => extension_loaded('pdo_pgsql') ? [
+                \PDO::ATTR_PERSISTENT => env('DB_PERSISTENT', true),
+            ] : [],
         ],
 
         'sqlsrv' => [

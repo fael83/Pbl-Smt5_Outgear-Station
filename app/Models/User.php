@@ -20,6 +20,16 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected static function booted(): void
+    {
+        $lupakan = static fn (self $user) => \Illuminate\Support\Facades\Cache::forget(
+            \App\Auth\CachedEloquentUserProvider::kunci($user->getKey())
+        );
+
+        static::saved($lupakan);
+        static::deleted($lupakan);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
