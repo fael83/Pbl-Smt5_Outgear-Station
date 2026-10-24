@@ -43,14 +43,19 @@ it('rejects a duplicate customer email without creating another account', functi
     $admin = User::factory()->admin()->create();
     User::factory()->customer()->create(['email' => 'pelanggan@example.test']);
 
-    $response = $this->actingAs($admin)->post(route('admin.pelanggan.store'), [
-        'name' => 'Pelanggan Baru',
-        'email' => 'pelanggan@example.test',
-        'password' => 'password-rahasia',
-        'password_confirmation' => 'password-rahasia',
-    ]);
+    $response = $this->followingRedirects()
+        ->actingAs($admin)
+        ->from(route('admin.pelanggan'))
+        ->post(route('admin.pelanggan.store'), [
+            'name' => 'Pelanggan Baru',
+            'email' => 'pelanggan@example.test',
+            'password' => 'password-rahasia',
+            'password_confirmation' => 'password-rahasia',
+        ]);
 
-    $response->assertSessionHasErrors('email');
+    $response->assertOk()
+        ->assertSee('modalTerbuka: true', false)
+        ->assertSee('Periksa kembali data pada kolom yang ditandai.');
     $this->assertDatabaseCount('users', 2);
 });
 
@@ -158,4 +163,15 @@ it('does not let a petugas create customer accounts', function () {
 
     $response->assertForbidden();
     $this->assertDatabaseCount('users', 1);
+});
+
+it('does not let a guest create customer accounts', function () {
+    $this->post(route('admin.pelanggan.store'), [
+        'name' => 'Pelanggan Baru',
+        'email' => 'pelanggan@example.test',
+        'password' => 'password-rahasia',
+        'password_confirmation' => 'password-rahasia',
+    ])->assertForbidden();
+
+    $this->assertDatabaseCount('users', 0);
 });
