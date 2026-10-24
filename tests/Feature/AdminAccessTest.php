@@ -28,6 +28,7 @@ it('mengizinkan tamu membuka panel admin tanpa login', function () {
     $this->get(route('admin.peralatan.index'))->assertOk();
     $this->getJson(route('admin.peralatan.tabel'))->assertOk();
     $this->get(route('admin.dashboard'))->assertOk();
+    $this->get(route('admin.profile'))->assertOk();
     $this->get(route('admin.pelanggan'))->assertOk();
     $this->get(route('admin.pemesanan'))->assertOk();
     $this->get(route('admin.verifikasi'))->assertOk();
@@ -47,6 +48,7 @@ it('menolak pelanggan mengakses seluruh route admin', function () {
     $alat = Alat::factory()->for($kategori)->create();
 
     $this->actingAs($pelanggan)->get(route('admin.peralatan.index'))->assertForbidden();
+    $this->actingAs($pelanggan)->get(route('admin.profile'))->assertForbidden();
     $this->actingAs($pelanggan)->getJson(route('admin.peralatan.tabel'))->assertForbidden();
     $this->actingAs($pelanggan)->post(route('admin.peralatan.store'), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pelanggan)->put(route('admin.peralatan.update', $alat), dataAlatValid($kategori))->assertForbidden();

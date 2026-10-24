@@ -24,9 +24,12 @@
     </script>
     @vite('resources/css/app.css')
 </head>
-<body class="text-slate-800 antialiased bg-portal-bg min-h-screen" 
+<body class="text-slate-800 antialiased bg-portal-bg min-h-screen font-sans"
+      x-init="$watch('search', () => currentPage = 1); $watch('selectedFilter', () => currentPage = 1); $watch('selectedJenis', () => currentPage = 1)"
       x-data="{
           search: '',
+          currentPage: 1,
+          perPage: 10,
           showSearchInput: false,
           showFilterDropdown: false,
           selectedFilter: 'Semua',
@@ -148,6 +151,7 @@
                       this.selectedItem.status_transaksi = 'berhasil';
                       this.selectedItem.waktu_bayar = item.waktu_bayar;
                   }
+                  this.currentPage = Math.min(this.currentPage, this.totalPages);
               }
           },
 
@@ -158,6 +162,7 @@
                   if (this.selectedItem && this.selectedItem.id === id) {
                       this.selectedItem.status_transaksi = 'gagal';
                   }
+                  this.currentPage = Math.min(this.currentPage, this.totalPages);
               }
           },
 
@@ -189,6 +194,15 @@
 
                   return matchStatus && matchJenis && matchSearch;
               });
+          },
+
+          get totalPages() {
+              return Math.max(1, Math.ceil(this.filteredList.length / this.perPage));
+          },
+
+          get paginatedList() {
+              const start = (this.currentPage - 1) * this.perPage;
+              return this.filteredList.slice(start, start + this.perPage);
           },
 
           get countPending() {
@@ -250,38 +264,32 @@
                 </div>
 
                 <!-- 3 KARTU STATISTIK RINGKASAN ATAS (MENUNGGU, SUKSES, GAGAL) -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Kartu 1: Menunggu Verifikasi -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-amber-600" x-text="countPending"></div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Menunggu Verifikasi</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Menunggu Verifikasi</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-amber-600" x-text="countPending"></div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                            Perlu Ditinjau
-                        </span>
+                        <div class="text-[11px] text-amber-600 font-bold pt-2 border-t border-zinc-100">Perlu Ditinjau</div>
                     </div>
 
                     <!-- Kartu 2: Terverifikasi (Sukses) -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-emerald-600" x-text="countBerhasil"></div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Terverifikasi (Sukses)</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Terverifikasi (Sukses)</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-emerald-600" x-text="countBerhasil"></div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Selesai
-                        </span>
+                        <div class="text-[11px] text-emerald-600 font-bold pt-2 border-t border-zinc-100">Selesai</div>
                     </div>
 
                     <!-- Kartu 3: Ditolak / Gagal -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-rose-600" x-text="countGagal"></div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Ditolak / Gagal</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Ditolak / Gagal</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-rose-600" x-text="countGagal"></div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                            Dibatalkan
-                        </span>
+                        <div class="text-[11px] text-rose-600 font-bold pt-2 border-t border-zinc-100">Dibatalkan</div>
                     </div>
                 </div>
 
@@ -381,7 +389,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100 font-medium text-zinc-700">
-                                <template x-for="item in filteredList" :key="item.id">
+                                <template x-for="item in paginatedList" :key="item.id">
                                     <tr class="hover:bg-zinc-50/80 transition">
                                         <!-- id (bigint PK - clean text tanpa kotak) -->
                                         <td class="p-4 text-center">
@@ -494,9 +502,12 @@
 
                                 <template x-if="filteredList.length === 0">
                                     <tr>
-                                        <td colspan="9" class="p-8 text-center text-zinc-400">
-                                            <div class="text-sm font-semibold">Tidak ada antrean pembayaran yang perlu diverifikasi.</div>
-                                            <div class="text-xs text-zinc-400 mt-1">Semua transaksi yang menunggu validasi telah selesai diproses.</div>
+                                        <td colspan="9" class="p-10 text-center">
+                                            <p class="text-3xl">💳</p>
+                                            <p class="mt-2 text-sm font-semibold text-[#1A2024]"
+                                               x-text="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua' ? 'Tidak ada pembayaran yang cocok dengan filter.' : 'Tidak ada antrean pembayaran untuk diverifikasi.'"></p>
+                                            <p class="mt-1 text-xs text-gray-500"
+                                               x-text="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua' ? 'Coba ubah kata kunci pencarian, status, atau jenis pembayaran.' : 'Transaksi yang menunggu validasi akan muncul di sini.'"></p>
                                         </td>
                                     </tr>
                                 </template>
@@ -505,17 +516,61 @@
                     </div>
 
                     <!-- PAGINATION FOOTER (Seperti Halaman Pelanggan) -->
-                    <div class="p-4 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-medium">
-                        <div>
-                            Menampilkan data ke <span class="font-bold text-zinc-900" x-text="filteredList.length > 0 ? '1 - ' + filteredList.length : '0'"></span> dari <span class="font-bold text-zinc-900" x-text="filteredList.length"></span> antrean
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-400 cursor-not-allowed">‹</button>
-                            <button class="w-8 h-8 rounded-lg bg-zinc-900 text-white font-bold flex items-center justify-center">1</button>
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">2</button>
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">3</button>
-                            <span class="px-1 text-zinc-400">...</span>
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">›</button>
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 px-5 py-4 border-t border-gray-100">
+                        <p class="text-xs text-gray-500">
+                            Menampilkan <span class="font-bold text-zinc-900" x-text="filteredList.length ? ((currentPage - 1) * perPage + 1) + '–' + Math.min(currentPage * perPage, filteredList.length) : '0'"></span>
+                            dari <span class="font-bold text-zinc-900" x-text="filteredList.length"></span> antrean
+                        </p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <label for="payment_per_page" class="text-xs text-gray-500">Baris per halaman:</label>
+                            <select id="payment_per_page" x-model.number="perPage" @change="currentPage = 1"
+                                    class="bg-[#F4EFEA]/60 border border-transparent rounded-lg px-2 py-1 text-xs text-[#1A2024] font-semibold focus:ring-2 focus:ring-[#15AEEA]">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                            <nav x-show="totalPages > 1" aria-label="Navigasi halaman pembayaran">
+                                <div class="flex gap-2 items-center justify-between sm:hidden">
+                                    <button type="button" @click="currentPage = Math.max(1, currentPage - 1)"
+                                            :disabled="currentPage === 1"
+                                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 leading-5 rounded-md hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-600">
+                                        Sebelumnya
+                                    </button>
+                                    <button type="button" @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                                            :disabled="currentPage === totalPages"
+                                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 leading-5 rounded-md hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-600">
+                                        Berikutnya
+                                    </button>
+                                </div>
+                                <div class="hidden sm:flex sm:items-center sm:justify-between">
+                                    <span class="inline-flex shadow-sm rounded-md">
+                                        <button type="button" @click="currentPage = Math.max(1, currentPage - 1)"
+                                                :disabled="currentPage === 1"
+                                                aria-label="Halaman sebelumnya"
+                                                class="inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md leading-5 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400">
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <template x-for="nomorHalaman in Array.from({ length: totalPages }, (_, index) => index + 1)" :key="nomorHalaman">
+                                            <button type="button" @click="currentPage = nomorHalaman" x-text="nomorHalaman"
+                                                    :aria-current="currentPage === nomorHalaman ? 'page' : null"
+                                                    :class="currentPage === nomorHalaman
+                                                        ? 'bg-gray-200 cursor-default'
+                                                        : 'bg-white hover:bg-gray-100'"
+                                                    class="inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-gray-700 border border-gray-300 leading-5"></button>
+                                        </template>
+                                        <button type="button" @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                                                :disabled="currentPage === totalPages"
+                                                aria-label="Halaman berikutnya"
+                                                class="inline-flex items-center px-2 py-2 -ml-px text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md leading-5 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400">
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </span>
+                                </div>
+                            </nav>
                         </div>
                     </div>
 

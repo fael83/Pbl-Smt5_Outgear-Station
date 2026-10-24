@@ -8,7 +8,7 @@
 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
     <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-b border-gray-100">
         <div>
-            <h2 class="text-sm font-bold font-heading text-[#1A2024]">Daftar Peralatan</h2>
+            <h2 class="text-sm font-bold text-[#1A2024]">Daftar Peralatan</h2>
             <p class="text-[11px] text-gray-400 mt-0.5">
                 Katalog alat, tarif sewa, dan posisi stok terkini.
             </p>

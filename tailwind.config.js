@@ -14,6 +14,7 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                heading: ['Space Grotesk', 'sans-serif'],
             },
             colors: {
                 // Warna kustom yang sebelumnya hanya didefinisikan lewat

@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OutGear Station - Data Pemesanan</title>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="text-slate-800 antialiased" x-data="{ showSearchInput: false, showFilterDropdown: false, selectedFilter: 'Semua' }">
+<body class="text-slate-800 antialiased font-sans" x-data="{ showSearchInput: false, showFilterDropdown: false, selectedFilter: {{ Js::from(match ($filters['status']) { 'menunggu_pembayaran' => 'Menunggu Bayar', 'berlangsung' => 'Berlangsung', 'selesai' => 'Selesai', 'dibatalkan' => 'Dibatalkan', 'dikonfirmasi' => 'Dikonfirmasi', default => 'Semua' }) }}, showCreateModal: {{ $errors->any() ? 'true' : 'false' }} }">
 
     <div class="flex min-h-screen">
 
@@ -39,6 +42,11 @@
 
             <!-- Isi Halaman Data Pemesanan -->
             <div class="p-8 space-y-6">
+                @if (session('success'))
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-700">
+                        {{ session('success') }}
+                    </div>
+                @endif
                 
                 <!-- Judul Utama & Aksi -->
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -47,59 +55,49 @@
                         <p class="text-xs text-zinc-500 mt-0.5">Kelola seluruh data booking & penyewaan peralatan outdoor</p>
                     </div>
                     <div class="flex items-center gap-2.5">
-                        <button class="bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5">
-                            <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Ekspor CSV
-                        </button>
-                        <button class="bg-portal-orange hover:bg-orange-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5">
+                    
+                        <button type="button" @click="showCreateModal = true" class="bg-portal-orange hover:bg-orange-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> + Tambah Pemesanan
                         </button>
                     </div>
                 </div>
 
                 <!-- 4 KARTU STATISTIK PEMESANAN -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Kartu 1: Booking Aktif -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-blue-700">38</div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Booking Aktif</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Booking Aktif</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-blue-700">{{ $pemesanan->isNotEmpty() ? $jumlahAktif : '38' }}</div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> +14% ↑
-                        </span>
+                        <div class="text-[11px] text-emerald-600 font-bold pt-2 border-t border-zinc-100">+14% ↑</div>
                     </div>
 
                     <!-- Kartu 2: Menunggu Pembayaran -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-amber-600">12</div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Menunggu Pembayaran</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Menunggu Pembayaran</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-amber-600">{{ $pemesanan->isNotEmpty() ? $jumlahMenungguPembayaran : '12' }}</div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                            Perlu Aksi
-                        </span>
+                        <div class="text-[11px] text-amber-600 font-bold pt-2 border-t border-zinc-100">Perlu Aksi</div>
                     </div>
 
                     <!-- Kartu 3: Sedang Berlangsung -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-blue-700">21</div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Sedang Berlangsung</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Sedang Berlangsung</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-blue-700">{{ $pemesanan->isNotEmpty() ? $jumlahBerlangsung : '21' }}</div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> Aktif
-                        </span>
+                        <div class="text-[11px] text-blue-700 font-bold pt-2 border-t border-zinc-100">Aktif</div>
                     </div>
 
                     <!-- Kartu 4: Selesai Bulan Ini -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-blue-700">156</div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Selesai Bulan Ini</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Selesai Bulan Ini</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-emerald-600">{{ $pemesanan->isNotEmpty() ? $jumlahSelesaiBulanIni : '156' }}</div>
                         </div>
-                        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200 flex items-center gap-1">
-                            ↗ +32 dari bln lalu
-                        </span>
+                        <div class="text-[11px] text-zinc-400 font-bold pt-2 border-t border-zinc-100">↗ +32 dari bln lalu</div>
                     </div>
                 </div>
 
@@ -116,8 +114,12 @@
                         <div class="flex items-center gap-2 relative">
                             <!-- Input Search Interaktif -->
                             <div x-show="showSearchInput" x-transition class="relative">
-                                <input id="tableSearchInput" type="text" placeholder="Cari pemesanan..." class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-orange w-48 sm:w-64">
-                                <svg class="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <form method="GET" action="{{ route('admin.pemesanan') }}" class="relative">
+                                    <input type="hidden" name="status" value="{{ $filters['status'] }}">
+                                    <input type="hidden" name="per_page" value="{{ $filters['per_page'] }}">
+                                    <input id="tableSearchInput" name="search" type="search" value="{{ $filters['search'] }}" placeholder="Cari pemesanan..." class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-orange w-48 sm:w-64">
+                                    <svg class="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </form>
                             </div>
 
                             <!-- Tombol Kaca Pembesar -->
@@ -134,26 +136,30 @@
                                 <!-- Dropdown Menu Filter -->
                                 <div x-show="showFilterDropdown" @click.away="showFilterDropdown = false" x-transition class="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
                                     <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Filter Status</div>
-                                    <button @click="selectedFilter = 'Semua'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                    <a href="{{ route('admin.pemesanan', array_filter(['search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
                                         <span>Semua Pemesanan</span>
                                         <span x-show="selectedFilter === 'Semua'" class="text-portal-orange font-bold">✓</span>
-                                    </button>
-                                    <button @click="selectedFilter = 'Menunggu Bayar'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-amber-700 flex items-center justify-between">
+                                    </a>
+                                    <a href="{{ route('admin.pemesanan', array_filter(['status' => 'menunggu_pembayaran', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-amber-700 flex items-center justify-between">
                                         <span>Menunggu Bayar</span>
                                         <span x-show="selectedFilter === 'Menunggu Bayar'" class="text-portal-orange font-bold">✓</span>
-                                    </button>
-                                    <button @click="selectedFilter = 'Berlangsung'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-blue-700 flex items-center justify-between">
+                                    </a>
+                                    <a href="{{ route('admin.pemesanan', array_filter(['status' => 'dikonfirmasi', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-blue-700 flex items-center justify-between">
+                                        <span>Dikonfirmasi</span>
+                                        <span x-show="selectedFilter === 'Dikonfirmasi'" class="text-portal-orange font-bold">✓</span>
+                                    </a>
+                                    <a href="{{ route('admin.pemesanan', array_filter(['status' => 'berlangsung', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-blue-700 flex items-center justify-between">
                                         <span>Berlangsung</span>
                                         <span x-show="selectedFilter === 'Berlangsung'" class="text-portal-orange font-bold">✓</span>
-                                    </button>
-                                    <button @click="selectedFilter = 'Selesai'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-emerald-700 flex items-center justify-between">
+                                    </a>
+                                    <a href="{{ route('admin.pemesanan', array_filter(['status' => 'selesai', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-emerald-700 flex items-center justify-between">
                                         <span>Selesai</span>
                                         <span x-show="selectedFilter === 'Selesai'" class="text-portal-orange font-bold">✓</span>
-                                    </button>
-                                    <button @click="selectedFilter = 'Dibatalkan'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-red-600 flex items-center justify-between">
+                                    </a>
+                                    <a href="{{ route('admin.pemesanan', array_filter(['status' => 'dibatalkan', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-red-600 flex items-center justify-between">
                                         <span>Dibatalkan</span>
                                         <span x-show="selectedFilter === 'Dibatalkan'" class="text-portal-orange font-bold">✓</span>
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -174,240 +180,95 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100 font-medium text-zinc-700">
-                                
-                                <!-- Baris 1: Rian Pratama - Menunggu Bayar -->
-                                <tr class="hover:bg-zinc-50/80 transition" x-show="selectedFilter === 'Semua' || selectedFilter === 'Menunggu Bayar'">
-                                    <td class="p-4 font-mono text-zinc-500 align-middle text-center">#OG-0891</td>
-                                    <td class="p-4 align-middle">
-                                        <div class="inline-flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-zinc-200 font-bold text-zinc-700 flex items-center justify-center text-[10px] overflow-hidden flex-shrink-0">
-                                                <img src="https://ui-avatars.com/api/?name=Rian+Pratama&background=e76f51&color=fff" alt="RP">
-                                            </div>
-                                            <div class="text-left">
-                                                <span class="font-bold text-zinc-900 block">Rian Pratama</span>
-                                                <span class="text-[11px] text-zinc-400">+62 812-4491-9921</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-zinc-600 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">3 item gear</div>
-                                        <div class="text-[11px] text-zinc-400">Tenda, Carrier, Sleeping Bag</div>
-                                    </td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">25 Okt - 28 Okt 2024</div>
-                                        <div class="text-[11px] text-amber-600">3 Hari Durasi</div>
-                                    </td>
-                                    <td class="p-4 font-bold text-zinc-900 align-middle text-center">Rp 385.000</td>
-                                    <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-block">Menunggu Bayar</span></td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            <button class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </button>
-                                            <button class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Batalkan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Baris 2: Nadia Safitri - Berlangsung -->
-                                <tr class="hover:bg-zinc-50/80 transition" x-show="selectedFilter === 'Semua' || selectedFilter === 'Berlangsung'">
-                                    <td class="p-4 font-mono text-zinc-500 align-middle text-center">#OG-0889</td>
-                                    <td class="p-4 align-middle">
-                                        <div class="inline-flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-zinc-200 font-bold text-zinc-700 flex items-center justify-center text-[10px] overflow-hidden flex-shrink-0">
-                                                <img src="https://ui-avatars.com/api/?name=Nadia+Safitri&background=2a9d8f&color=fff" alt="NS">
-                                            </div>
-                                            <div class="text-left">
-                                                <span class="font-bold text-zinc-900 block">Nadia Safitri</span>
-                                                <span class="text-[11px] text-zinc-400">+62 819-3321-1200</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-zinc-600 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">5 item gear</div>
-                                        <div class="text-[11px] text-zinc-400">Tenda, Carrier, Kompor, Nesting, Matras</div>
-                                    </td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">24 Okt - 27 Okt 2024</div>
-                                        <div class="text-[11px] text-blue-600">Sedang Digunakan</div>
-                                    </td>
-                                    <td class="p-4 font-bold text-zinc-900 align-middle text-center">Rp 520.000</td>
-                                    <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-block">Berlangsung</span></td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            <button class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </button>
-                                            <button class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Batalkan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Baris 3: Dimas Anggoro - Berlangsung -->
-                                <tr class="hover:bg-zinc-50/80 transition" x-show="selectedFilter === 'Semua' || selectedFilter === 'Berlangsung'">
-                                    <td class="p-4 font-mono text-zinc-500 align-middle text-center">#OG-0885</td>
-                                    <td class="p-4 align-middle">
-                                        <div class="inline-flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-zinc-200 font-bold text-zinc-700 flex items-center justify-center text-[10px] overflow-hidden flex-shrink-0">
-                                                <img src="https://ui-avatars.com/api/?name=Dimas+Anggoro&background=264653&color=fff" alt="DA">
-                                            </div>
-                                            <div class="text-left">
-                                                <span class="font-bold text-zinc-900 block">Dimas Anggoro</span>
-                                                <span class="text-[11px] text-zinc-400">+62 857-1234-5678</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-zinc-600 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">2 item gear</div>
-                                        <div class="text-[11px] text-zinc-400">Carrier, Sleeping Bag</div>
-                                    </td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">23 Okt - 26 Okt 2024</div>
-                                        <div class="text-[11px] text-blue-600">Sedang Digunakan</div>
-                                    </td>
-                                    <td class="p-4 font-bold text-zinc-900 align-middle text-center">Rp 240.000</td>
-                                    <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-block">Berlangsung</span></td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            <button class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </button>
-                                            <button class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Batalkan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Baris 4: Maya Sinta - Selesai -->
-                                <tr class="hover:bg-zinc-50/80 transition" x-show="selectedFilter === 'Semua' || selectedFilter === 'Selesai'">
-                                    <td class="p-4 font-mono text-zinc-500 align-middle text-center">#OG-0881</td>
-                                    <td class="p-4 align-middle">
-                                        <div class="inline-flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-zinc-200 font-bold text-zinc-700 flex items-center justify-center text-[10px] overflow-hidden flex-shrink-0">
-                                                <img src="https://ui-avatars.com/api/?name=Maya+Sinta&background=f4a261&color=fff" alt="MS">
-                                            </div>
-                                            <div class="text-left">
-                                                <span class="font-bold text-zinc-900 block">Maya Sinta</span>
-                                                <span class="text-[11px] text-zinc-400">+62 878-9012-3456</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-zinc-600 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">4 item gear</div>
-                                        <div class="text-[11px] text-zinc-400">Tenda, Carrier, Kompor, Headlamp</div>
-                                    </td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">21 Okt - 24 Okt 2024</div>
-                                        <div class="text-[11px] text-zinc-400">Selesai Normal</div>
-                                    </td>
-                                    <td class="p-4 font-bold text-zinc-900 align-middle text-center">Rp 460.000</td>
-                                    <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">Selesai</span></td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            <button class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </button>
-                                            <button class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Baris 5: Lolita Rein - Menunggu Bayar -->
-                                <tr class="hover:bg-zinc-50/80 transition" x-show="selectedFilter === 'Semua' || selectedFilter === 'Menunggu Bayar'">
-                                    <td class="p-4 font-mono text-zinc-500 align-middle text-center">#OG-0895</td>
-                                    <td class="p-4 align-middle">
-                                        <div class="inline-flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-zinc-200 font-bold text-zinc-700 flex items-center justify-center text-[10px] overflow-hidden flex-shrink-0">
-                                                <img src="https://ui-avatars.com/api/?name=Lolita+Rein&background=e9c46a&color=fff" alt="LR">
-                                            </div>
-                                            <div class="text-left">
-                                                <span class="font-bold text-zinc-900 block">Lolita Rein</span>
-                                                <span class="text-[11px] text-zinc-400">+62 813-2287-4390</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-zinc-600 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">2 item gear</div>
-                                        <div class="text-[11px] text-zinc-400">Tenda, Matras</div>
-                                    </td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">26 Okt - 29 Okt 2024</div>
-                                        <div class="text-[11px] text-amber-600">3 Hari Durasi</div>
-                                    </td>
-                                    <td class="p-4 font-bold text-zinc-900 align-middle text-center">Rp 195.000</td>
-                                    <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-block">Menunggu Bayar</span></td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            <button class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </button>
-                                            <button class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Batalkan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Baris 6: Jack Johnson - Dibatalkan -->
-                                <tr class="hover:bg-zinc-50/80 transition" x-show="selectedFilter === 'Semua' || selectedFilter === 'Dibatalkan'">
-                                    <td class="p-4 font-mono text-zinc-500 align-middle text-center">#OG-0878</td>
-                                    <td class="p-4 align-middle">
-                                        <div class="inline-flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-zinc-200 font-bold text-zinc-700 flex items-center justify-center text-[10px] overflow-hidden flex-shrink-0">
-                                                <img src="https://ui-avatars.com/api/?name=Jack+Johnson&background=e76f51&color=fff" alt="JJ">
-                                            </div>
-                                            <div class="text-left">
-                                                <span class="font-bold text-zinc-900 block">Jack Johnson</span>
-                                                <span class="text-[11px] text-zinc-400">+62 821-9901-2311</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-zinc-600 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900">1 item gear</div>
-                                        <div class="text-[11px] text-zinc-400">Carrier 50L</div>
-                                    </td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="font-semibold text-zinc-900 line-through text-zinc-400">20 Okt - 22 Okt 2024</div>
-                                        <div class="text-[11px] text-red-500">Dibatalkan Pelanggan</div>
-                                    </td>
-                                    <td class="p-4 font-bold text-zinc-400 align-middle text-center line-through">Rp 150.000</td>
-                                    <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200 inline-block">Dibatalkan</span></td>
-                                    <td class="p-4 align-middle text-center">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            <button class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </button>
-                                            <button class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
+                                @forelse ($pemesanan as $dataPemesanan)
+                                        @php
+                                            $labelStatus = match ($dataPemesanan->status) {
+                                                'menunggu_pembayaran' => 'Menunggu Bayar',
+                                                'dikonfirmasi' => 'Dikonfirmasi',
+                                                'berlangsung' => 'Berlangsung',
+                                                'selesai' => 'Selesai',
+                                                'dibatalkan' => 'Dibatalkan',
+                                                default => ucfirst(str_replace('_', ' ', $dataPemesanan->status)),
+                                            };
+                                            $kelasStatus = match ($dataPemesanan->status) {
+                                                'menunggu_pembayaran' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                                'dikonfirmasi', 'berlangsung' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                                'selesai' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                                'dibatalkan' => 'bg-red-50 text-red-700 border-red-200',
+                                                default => 'bg-zinc-100 text-zinc-700 border-zinc-200',
+                                            };
+                                        @endphp
+                                        <tr class="hover:bg-zinc-50/80 transition"
+                                            x-show="selectedFilter === 'Semua' || selectedFilter === {{ Js::from($labelStatus) }}">
+                                            <td class="p-4 font-mono text-zinc-500 align-middle text-center">#{{ $dataPemesanan->kode_pemesanan }}</td>
+                                            <td class="p-4 align-middle">
+                                                <div class="inline-flex items-center gap-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-[10px] font-bold text-white">
+                                                        {{ $dataPemesanan->pelanggan?->inisial() ?? 'PL' }}
+                                                    </div>
+                                                    <div class="text-left">
+                                                        <span class="block font-bold text-zinc-900">{{ $dataPemesanan->pelanggan?->name ?? 'Pelanggan tidak tersedia' }}</span>
+                                                        <span class="text-[11px] text-zinc-400">{{ $dataPemesanan->pelanggan?->no_telepon ?: '—' }}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="p-4 text-center align-middle text-zinc-600">
+                                                <div class="font-semibold text-zinc-900">{{ $dataPemesanan->detailPemesanan->sum('jumlah') }} item gear</div>
+                                                <div class="text-[11px] text-zinc-400">{{ $dataPemesanan->detailPemesanan->pluck('alat.nama')->filter()->implode(', ') ?: '—' }}</div>
+                                            </td>
+                                            <td class="p-4 text-center align-middle">
+                                                <div class="font-semibold text-zinc-900">{{ $dataPemesanan->tanggal_mulai->format('d/m/Y') }} - {{ $dataPemesanan->tanggal_selesai->format('d/m/Y') }}</div>
+                                                <div class="text-[11px] text-zinc-500">{{ $dataPemesanan->lamaSewa() }} Hari Durasi</div>
+                                            </td>
+                                            <td class="p-4 text-center align-middle font-bold text-zinc-900">Rp {{ number_format((float) $dataPemesanan->total_biaya, 0, ',', '.') }}</td>
+                                            <td class="p-4 text-center align-middle">
+                                                <span class="inline-block rounded-full border px-2.5 py-1 text-[11px] font-bold {{ $kelasStatus }}">{{ $labelStatus }}</span>
+                                            </td>
+                                            <td class="p-4 text-center align-middle text-zinc-400">—</td>
+                                        </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="p-10 text-center">
+                                            <p class="text-3xl">📋</p>
+                                            <p class="mt-2 text-sm font-semibold text-[#1A2024]">
+                                                {{ $filters['search'] !== '' || $filters['status'] !== 'semua' ? 'Tidak ada pemesanan yang cocok dengan filter.' : 'Belum ada data pemesanan.' }}
+                                            </p>
+                                            <p class="mt-1 text-xs text-gray-500">
+                                                {{ $filters['search'] !== '' || $filters['status'] !== 'semua'
+                                                    ? 'Coba ubah kata kunci pencarian atau status pemesanan.'
+                                                    : 'Tambahkan pemesanan pertama melalui tombol "+ Tambah Pemesanan".' }}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
 
                     <!-- PAGINATION FOOTER -->
-                    <div class="p-4 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-medium">
-                        <div>
-                            Menampilkan data ke <span class="font-bold text-zinc-900">1 - 6</span> dari <span class="font-bold text-zinc-900">227</span> pemesanan
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-400 cursor-not-allowed">‹</button>
-                            <button class="w-8 h-8 rounded-lg bg-zinc-900 text-white font-bold flex items-center justify-center">1</button>
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">2</button>
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">3</button>
-                            <span class="px-1 text-zinc-400">...</span>
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">38</button>
-                            <button class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">›</button>
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 px-5 py-4 border-t border-gray-100">
+                        <p class="text-xs text-gray-500">
+                            @if ($pemesanan->total() > 0)
+                                Menampilkan {{ $pemesanan->firstItem() }}–{{ $pemesanan->lastItem() }} dari {{ $pemesanan->total() }} pemesanan
+                            @else
+                                Tidak ada pemesanan untuk ditampilkan
+                            @endif
+                        </p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <form method="GET" action="{{ route('admin.pemesanan') }}" class="flex items-center gap-2">
+                                <input type="hidden" name="status" value="{{ $filters['status'] }}">
+                                <input type="hidden" name="search" value="{{ $filters['search'] }}">
+                                <label for="booking_per_page" class="text-xs text-gray-500">Baris per halaman:</label>
+                                <select id="booking_per_page" name="per_page" onchange="this.form.submit()"
+                                        class="bg-[#F4EFEA]/60 border border-transparent rounded-lg px-2 py-1 text-xs text-[#1A2024] font-semibold focus:ring-2 focus:ring-[#15AEEA]">
+                                    @foreach ([10, 25, 50] as $jumlahBaris)
+                                        <option value="{{ $jumlahBaris }}" @selected($filters['per_page'] === $jumlahBaris)>{{ $jumlahBaris }}</option>
+                                    @endforeach
+                                </select>
+                            </form>
+                            @if ($pemesanan->hasPages())
+                                <div data-paginasi>{{ $pemesanan->links() }}</div>
+                            @endif
                         </div>
                     </div>
 
@@ -415,6 +276,102 @@
 
             </div>
         </main>
+    </div>
+
+    <div x-cloak x-show="showCreateModal" x-transition.opacity
+         class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#1A2024]/50 p-4 md:p-8"
+         @keydown.escape.window="showCreateModal = false">
+        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl" @click.outside="showCreateModal = false">
+            <div class="flex items-start justify-between gap-4 border-b border-gray-100 p-5">
+                <div>
+                    <h2 class="text-lg font-bold text-[#1A2024]">Tambah Pemesanan</h2>
+                    <p class="mt-0.5 text-xs text-gray-500">Pilih pelanggan, jadwal, dan jumlah peralatan yang disewa.</p>
+                </div>
+                <button type="button" @click="showCreateModal = false"
+                        class="h-8 w-8 rounded-lg bg-gray-100 text-gray-500 transition hover:bg-gray-200">✕</button>
+            </div>
+
+            <form method="POST" action="{{ route('admin.pemesanan.store') }}" class="space-y-4 p-5">
+                @csrf
+                @if ($errors->any())
+                    <div class="space-y-1 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-700">
+                        <p class="font-semibold">Periksa kembali data berikut:</p>
+                        @foreach ($errors->all() as $pesanError)
+                            <p>{{ $pesanError }}</p>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label for="pelanggan_id" class="mb-1 block text-xs font-semibold text-[#1A2024]">Pelanggan</label>
+                        <select id="pelanggan_id" name="pelanggan_id" required
+                                class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
+                            <option value="">Pilih pelanggan</option>
+                            @foreach ($pelangganAktif as $dataPelanggan)
+                                <option value="{{ $dataPelanggan->id }}" @selected(old('pelanggan_id') == $dataPelanggan->id)>
+                                    {{ $dataPelanggan->name }} — {{ $dataPelanggan->email }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @if ($pelangganAktif->isEmpty())
+                            <p class="mt-1 text-[10px] text-amber-700">Belum ada pelanggan aktif. Tambahkan pelanggan terlebih dahulu.</p>
+                        @endif
+                    </div>
+                    <div>
+                        <label for="tanggal_mulai" class="mb-1 block text-xs font-semibold text-[#1A2024]">Tanggal Mulai</label>
+                        <input id="tanggal_mulai" name="tanggal_mulai" type="date" required min="{{ now()->toDateString() }}"
+                               value="{{ old('tanggal_mulai') }}"
+                               class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
+                    </div>
+                    <div>
+                        <label for="tanggal_selesai" class="mb-1 block text-xs font-semibold text-[#1A2024]">Tanggal Selesai</label>
+                        <input id="tanggal_selesai" name="tanggal_selesai" type="date" required min="{{ now()->toDateString() }}"
+                               value="{{ old('tanggal_selesai') }}"
+                               class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mb-2 flex items-center justify-between">
+                        <label class="text-xs font-semibold text-[#1A2024]">Peralatan dan Jumlah</label>
+                        <span class="text-[10px] text-gray-400">Kosongkan 0 untuk alat yang tidak dipilih</span>
+                    </div>
+                    <div class="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-gray-100 p-3">
+                        @forelse ($alatTersedia as $dataAlat)
+                            <div class="flex items-center justify-between gap-4 rounded-lg bg-[#F4EFEA]/40 px-3 py-2.5">
+                                <div class="min-w-0">
+                                    <p class="truncate text-xs font-semibold text-[#1A2024]">{{ $dataAlat->nama }}</p>
+                                    <p class="text-[10px] text-gray-500">
+                                        Rp {{ number_format((float) $dataAlat->tarif_per_hari, 0, ',', '.') }}/hari
+                                        · Stok {{ $dataAlat->stok_tersedia }}
+                                    </p>
+                                </div>
+                                <input name="items[{{ $dataAlat->id }}]" type="number" min="0" max="{{ $dataAlat->stok_tersedia }}"
+                                       value="{{ old('items.'.$dataAlat->id, 0) }}" aria-label="Jumlah {{ $dataAlat->nama }}"
+                                       class="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
+                            </div>
+                        @empty
+                            <p class="py-3 text-center text-xs text-gray-500">Belum ada peralatan dengan stok tersedia.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div>
+                    <label for="jumlah_dp" class="mb-1 block text-xs font-semibold text-[#1A2024]">Jumlah DP (Rp) <span class="font-normal text-gray-400">(opsional)</span></label>
+                    <input id="jumlah_dp" name="jumlah_dp" type="number" min="0" step="1000" value="{{ old('jumlah_dp', 0) }}"
+                           class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
+                    <p class="mt-1 text-[10px] text-gray-400">Total biaya dihitung otomatis dari durasi, jumlah, dan tarif alat.</p>
+                </div>
+
+                <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                    <button type="button" @click="showCreateModal = false"
+                            class="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-semibold text-[#1A2024] transition hover:bg-gray-200">Batal</button>
+                    <button type="submit" @disabled($pelangganAktif->isEmpty() || $alatTersedia->isEmpty())
+                            class="rounded-xl bg-[#D86B43] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#D86B43]/90 disabled:cursor-not-allowed disabled:opacity-50">Simpan Pemesanan</button>
+                </div>
+            </form>
+        </div>
     </div>
 
 </body>
