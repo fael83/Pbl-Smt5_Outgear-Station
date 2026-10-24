@@ -75,7 +75,7 @@ Route::middleware(['role:admin,owner,petugas'])
         Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
         Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
 
-        // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
+        // Aksi tulis dibatasi untuk admin yang login; tamu tetap diizinkan pada mode demo.
         Route::middleware('role:admin')->group(function () {
             Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
 

@@ -98,6 +98,8 @@ Alpine.data('halamanPeralatan', (config = {}) => {
         kondisi: String(config.filters?.kondisi ?? 'semua'),
         perPage: Number(config.filters?.per_page ?? 10),
         halaman: 1,
+        showSearchInput: String(config.filters?.search ?? '') !== '',
+        showFilterDropdown: false,
 
         items: Array.isArray(config.items) ? config.items : [],
         ringkasanData: { ...(config.ringkasan ?? {}) },

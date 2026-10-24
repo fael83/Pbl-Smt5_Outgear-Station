@@ -1,119 +1,166 @@
-@extends('layouts.panel')
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OutGear Station - Profil Admin</title>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'portal-sidebar': '#18181b',
+                        'portal-bg': '#f4f2ef',
+                        'portal-orange': '#EA580C',
+                        'portal-card': '#ffffff',
+                    }
+                }
+            }
+        }
+    </script>
+    @vite('resources/css/app.css')
+</head>
+<body class="bg-[#F8F6F2] text-slate-800 antialiased font-sans" x-data="{ editMode: false }">
 
-@section('content')
-<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex min-h-screen relative">
 
-    <!-- 1. Header Profil (Warna Putih Bersih & Terang) -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center gap-6">
-        <!-- Avatar -->
-        <div class="w-24 h-24 bg-orange-50 border border-orange-100 rounded-full flex items-center justify-center text-orange-600 text-4xl font-bold shadow-sm flex-shrink-0">
-            AD
-        </div>
-        
-        <!-- Info Singkat -->
-        <div class="text-center sm:text-left flex-1">
-            <h2 class="text-2xl font-bold text-gray-900 font-heading">Admin Toko</h2>
-            <p class="text-gray-500 mt-1 font-medium">admin@outgear.com</p>
+        @include('partials.sidebar-admin')
+
+        <!-- KONTEN UTAMA (Kanan) -->
+        <main class="flex-grow flex flex-col min-w-0">
             
-            <div class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-200 shadow-sm">
-                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Staff Aktif
-            </div>
-        </div>
+            <!-- Header Atas (Bersih, Sesuai Standar Portal) -->
+            <header class="sticky top-0 bg-[#F8F6F2]/90 backdrop-blur-md px-10 py-4 z-30 border-b border-zinc-200/60 flex items-center justify-between">
+                <div></div> <!-- Spacer kosong -->
 
-        <!-- Tombol -->
-        <div>
-            <button onclick="alert('Hubungi Owner untuk ganti sandi')" class="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                Ubah Sandi
-            </button>
-        </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 bg-white border border-zinc-200/80 px-4 py-2 rounded-full shadow-sm text-xs font-bold text-emerald-700">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Basecamp Malang • Online
+                    </div>
+                    <button class="p-2.5 bg-white border border-zinc-200/80 rounded-full text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 shadow-sm transition" title="Refresh">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                    <div class="w-9 h-9 rounded-full bg-zinc-900 text-white font-bold text-xs flex items-center justify-center border border-zinc-300 shadow-sm">DW</div>
+                </div>
+            </header>
+
+            <!-- Isi Halaman Profil -->
+            <div class="p-10 space-y-8 max-w-[100rem] mx-auto w-full">
+                
+                <!-- Judul Halaman & Tombol Aksi Edit -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-3xl font-black text-zinc-900 tracking-tight">Profil Administrator</h1>
+                        <p class="text-xs text-zinc-500 mt-1">Kelola informasi akun, kredensial login, dan pantau aktivitas operasional admin.</p>
+                    </div>
+
+                </div>
+
+                <!-- GRID KONTEN PROFIL (Gaya Modular Card Sesuai Referensi) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- KARTU KIRI (Lebar 4): Avatar & Kontak Singkat -->
+                    <div class="lg:col-span-4 bg-white p-8 rounded-3xl border border-zinc-200/80 shadow-sm flex flex-col items-center text-center space-y-5">
+                        <div class="relative">
+                            <div class="w-28 h-28 rounded-full bg-zinc-900 text-white font-black text-3xl flex items-center justify-center border-4 border-zinc-100 shadow-md">
+                                DW
+                            </div>
+                            <span class="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full" title="Online"></span>
+                        </div>
+
+                        <div>
+                            <h2 class="text-xl font-black text-zinc-900">Dewi Wahyuni</h2>
+                            <p class="text-xs font-bold text-portal-orange mt-0.5">Super Administrator</p>
+                        </div>
+
+                        <div class="w-full pt-4 border-t border-zinc-100 space-y-3 text-left text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="text-zinc-400 font-medium">Email</span>
+                                <span class="font-bold text-zinc-800">dewi.admin@outgear.com</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-zinc-400 font-medium">Telepon</span>
+                                <span class="font-bold text-zinc-800">+62 812-3456-7890</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-zinc-400 font-medium">Basecamp</span>
+                                <span class="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">Malang Pusat</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KARTU KANAN (Lebar 8): Informasi Detail & Keamanan -->
+                    <div class="lg:col-span-8 space-y-6">
+                        
+                        <!-- Informasi Umum -->
+                        <div class="bg-white p-8 rounded-3xl border border-zinc-200/80 shadow-sm space-y-6">
+                            <div class="flex items-center justify-between pb-4 border-b border-zinc-100">
+                                <h3 class="font-black text-zinc-900 text-sm">Informasi Akun & Sistem</h3>
+                                <span class="text-xs text-zinc-400">ID Admin: #ADM-001</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                                <div>
+                                    <label class="block text-zinc-400 font-bold mb-1.5">Nama Lengkap</label>
+                                    <input type="text" value="Dewi Wahyuni" :disabled="!editMode" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 font-semibold text-zinc-800 focus:outline-none focus:border-portal-orange transition disabled:bg-zinc-50/50">
+                                </div>
+                                <div>
+                                    <label class="block text-zinc-400 font-bold mb-1.5">Alamat Email</label>
+                                    <input type="email" value="dewi.admin@outgear.com" :disabled="!editMode" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 font-semibold text-zinc-800 focus:outline-none focus:border-portal-orange transition disabled:bg-zinc-50/50">
+                                </div>
+                                <div>
+                                    <label class="block text-zinc-400 font-bold mb-1.5">Nomor Handphone</label>
+                                    <input type="text" value="+62 812-3456-7890" :disabled="!editMode" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 font-semibold text-zinc-800 focus:outline-none focus:border-portal-orange transition disabled:bg-zinc-50/50">
+                                </div>
+                                <div>
+                                    <label class="block text-zinc-400 font-bold mb-1.5">Tanggal Bergabung</label>
+                                    <input type="text" value="15 Januari 2025" disabled class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 font-semibold text-zinc-500 cursor-not-allowed">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Keamanan & Ubah Password -->
+                        <div class="bg-white p-8 rounded-3xl border border-zinc-200/80 shadow-sm space-y-6">
+                            <div class="flex items-center justify-between pb-4 border-b border-zinc-100">
+                                <div>
+                                    <h3 class="font-black text-zinc-900 text-sm">Keamanan & Sandi</h3>
+                                    <p class="text-[11px] text-zinc-400 mt-0.5">Perbarui kata sandi secara berkala untuk menjaga keamanan portal admin.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                                <div>
+                                    <label class="block text-zinc-400 font-bold mb-1.5">Sandi Saat Ini</label>
+                                    <input type="password" placeholder="••••••••" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 font-semibold text-zinc-800 focus:outline-none focus:border-portal-orange transition">
+                                </div>
+                                <div>
+                                    <label class="block text-zinc-400 font-bold mb-1.5">Sandi Baru</label>
+                                    <input type="password" placeholder="••••••••" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 font-semibold text-zinc-800 focus:outline-none focus:border-portal-orange transition">
+                                </div>
+                                <div>
+                                    <label class="block text-zinc-400 font-bold mb-1.5">Konfirmasi Sandi Baru</label>
+                                    <input type="password" placeholder="••••••••" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 font-semibold text-zinc-800 focus:outline-none focus:border-portal-orange transition">
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end pt-2">
+                                <button class="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold py-2.5 px-5 rounded-xl transition shadow-sm">
+                                    Perbarui Kata Sandi
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
     </div>
 
-    <!-- 2. Alert Read-Only -->
-    <div class="bg-orange-50 border-l-4 border-orange-400 rounded-r-2xl p-4 flex items-start gap-3 shadow-sm">
-        <svg class="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <div>
-            <h4 class="font-bold text-orange-900 text-sm">Informasi Akun (Read-Only)</h4>
-            <p class="text-sm text-orange-800 mt-1">Sesuai kebijakan keamanan sistem, data profil dan hak akses Staff hanya dapat dikelola oleh <strong>Owner</strong>. Silakan ajukan perubahan jika terdapat ketidaksesuaian data.</p>
-        </div>
-    </div>
-
-    <!-- 3. Layout Grid 2 Kolom -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <!-- Kolom Kiri: Detail Identitas (Besar) -->
-        <div class="md:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div class="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
-                <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                <h3 class="font-bold text-gray-900 font-heading text-lg">Detail Identitas</h3>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nama Lengkap</label>
-                    <div class="bg-gray-50/50 px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium cursor-not-allowed">
-                        Admin Toko
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nomor Telepon / WA</label>
-                    <div class="bg-gray-50/50 px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium cursor-not-allowed">
-                        +62 813-7281-9922
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Alamat Email</label>
-                    <div class="bg-gray-50/50 px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium cursor-not-allowed">
-                        admin@outgear.com
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tanggal Bergabung</label>
-                    <div class="bg-gray-50/50 px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium cursor-not-allowed">
-                        12 Maret 2024
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Kolom Kanan: Otoritas Sistem (Kecil/Sidebar style) -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col">
-            <div class="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
-                <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                <h3 class="font-bold text-gray-900 font-heading text-lg">Otoritas Anda</h3>
-            </div>
-            
-            <div class="flex-1 space-y-4">
-                <div class="flex items-start gap-3">
-                    <div class="mt-0.5 bg-green-100 text-green-600 p-1 rounded-full"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>
-                    <div>
-                        <p class="text-sm font-bold text-gray-900">Kelola Transaksi</p>
-                        <p class="text-xs text-gray-500">Akses modul Kasir & POS</p>
-                    </div>
-                </div>
-                <div class="flex items-start gap-3">
-                    <div class="mt-0.5 bg-green-100 text-green-600 p-1 rounded-full"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>
-                    <div>
-                        <p class="text-sm font-bold text-gray-900">Verifikasi Booking</p>
-                        <p class="text-xs text-gray-500">Cek & proses pesanan</p>
-                    </div>
-                </div>
-                <div class="flex items-start gap-3 opacity-50">
-                    <div class="mt-0.5 bg-red-100 text-red-500 p-1 rounded-full"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></div>
-                    <div>
-                        <p class="text-sm font-bold text-gray-900 line-through">Ubah Master Data</p>
-                        <p class="text-xs text-gray-500">Hanya hak Owner</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-gray-100 text-center">
-                <span class="text-xs text-gray-500">Level Akses:</span>
-                <span class="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md ml-1 border border-orange-100">Staff Operasional</span>
-            </div>
-        </div>
-        
-    </div>
-</div>
-@endsection
+</body>
+</html>
