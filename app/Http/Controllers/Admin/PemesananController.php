@@ -3,160 +3,123 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StorePemesananRequest;
-use App\Models\Alat;
 use App\Models\Pemesanan;
-use App\Models\User;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * Halaman data booking/pemesanan pada panel admin.
+ * Halaman "Data Pemesanan" di panel admin.
+ *
+ * Semua angka statistik dan baris tabel dibaca langsung dari database
+ * (tabel pemesanan, users, detail_pemesanan, alat). Tidak ada data dummy.
  */
 class PemesananController extends Controller
 {
-    public function __invoke(Request $request): View
+    /** Jumlah baris per halaman. */
+    private const PER_HALAMAN = 10;
+
+    /**
+     * Status di database => label yang ditampilkan di filter dan badge.
+     * Urutan di sini menjadi urutan di dropdown filter.
+     */
+    public const LABEL_STATUS = [
+        'menunggu_pembayaran' => 'Menunggu Bayar',
+        'dikonfirmasi' => 'Dikonfirmasi',
+        'berlangsung' => 'Berlangsung',
+        'selesai' => 'Selesai',
+        'dibatalkan' => 'Dibatalkan',
+    ];
+
+    public function index(Request $request): View
     {
-        $barisPerHalaman = $request->integer('per_page', 10);
-        $barisPerHalaman = in_array($barisPerHalaman, [10, 25, 50], true) ? $barisPerHalaman : 10;
-        $status = $request->query('status', 'semua');
-        $status = in_array($status, [
-            'menunggu_pembayaran',
-            'dikonfirmasi',
-            'berlangsung',
-            'selesai',
-            'dibatalkan',
-        ], true) ? $status : 'semua';
-        $cari = trim((string) $request->query('search', ''));
+        $request->validate([
+            'status' => ['nullable', 'string'],
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
 
-        $query = Pemesanan::query()->with(['pelanggan', 'detailPemesanan.alat']);
-
-        if ($status !== 'semua') {
-            $query->where('status', $status);
+        // Filter status hanya diterima kalau cocok dengan status yang valid.
+        $status = $request->query('status');
+        if (! array_key_exists((string) $status, self::LABEL_STATUS)) {
+            $status = null;
         }
 
-        if ($cari !== '') {
-            $query->where(function ($query) use ($cari): void {
-                $query->where('kode_pemesanan', 'like', "%{$cari}%")
-                    ->orWhereHas('pelanggan', function ($pelangganQuery) use ($cari): void {
-                        $pelangganQuery->where('name', 'like', "%{$cari}%")
-                            ->orWhere('no_telepon', 'like', "%{$cari}%")
-                            ->orWhere('email', 'like', "%{$cari}%");
-                    })
-                    ->orWhereHas('detailPemesanan.alat', function ($alatQuery) use ($cari): void {
-                        $alatQuery->where('nama', 'like', "%{$cari}%");
-                    });
-            });
-        }
+        $kataKunci = trim((string) $request->query('q', ''));
+
+        $pemesanan = Pemesanan::query()
+            ->with([
+                'pelanggan:id,name,no_telepon',
+                'detailPemesanan:id,pemesanan_id,alat_id,jumlah',
+                'detailPemesanan.alat:id,nama',
+            ])
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($kataKunci !== '', function ($query) use ($kataKunci) {
+                // Satu grup where supaya OR di bawah tidak membocorkan filter status.
+                $query->where(function ($grup) use ($kataKunci) {
+                    $grup->whereLike('kode_pemesanan', "%{$kataKunci}%")
+                        ->orWhereHas('pelanggan', function ($pelanggan) use ($kataKunci) {
+                            $pelanggan->whereLike('name', "%{$kataKunci}%")
+                                ->orWhereLike('no_telepon', "%{$kataKunci}%");
+                        })
+                        ->orWhereHas('detailPemesanan.alat', function ($alat) use ($kataKunci) {
+                            $alat->whereLike('nama', "%{$kataKunci}%");
+                        });
+                });
+            })
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(self::PER_HALAMAN)
+            ->withQueryString();
 
         return view('admin.pemesanan', [
-            'pemesanan' => $query->latest()->paginate($barisPerHalaman)->withQueryString(),
-            'pelangganAktif' => User::query()
-                ->where('role', 'customer')
-                ->where('status_akun', 'aktif')
-                ->orderBy('name')
-                ->get(),
-            'alatTersedia' => Alat::query()
-                ->where('stok_tersedia', '>', 0)
-                ->orderBy('nama')
-                ->get(),
-            'jumlahAktif' => Pemesanan::query()
-                ->whereIn('status', ['dikonfirmasi', 'berlangsung'])
-                ->count(),
-            'jumlahMenungguPembayaran' => Pemesanan::query()
-                ->where('status', 'menunggu_pembayaran')
-                ->count(),
-            'jumlahBerlangsung' => Pemesanan::query()
-                ->where('status', 'berlangsung')
-                ->count(),
-            'jumlahSelesaiBulanIni' => Pemesanan::query()
-                ->where('status', 'selesai')
-                ->whereMonth('tanggal_selesai', now()->month)
-                ->whereYear('tanggal_selesai', now()->year)
-                ->count(),
-            'filters' => [
-                'search' => $cari,
-                'status' => $status,
-                'per_page' => $barisPerHalaman,
-            ],
+            'pemesanan' => $pemesanan,
+            'statistik' => $this->statistik(),
+            'labelStatus' => self::LABEL_STATUS,
+            'statusAktif' => $status,
+            'kataKunci' => $kataKunci,
         ]);
     }
 
-    public function store(StorePemesananRequest $request): RedirectResponse
+    /**
+     * Angka untuk 4 kartu statistik di bagian atas halaman.
+     *
+     * @return array<string, int>
+     */
+    private function statistik(): array
     {
-        $data = $request->validated();
-        $jumlahItem = collect($data['items'])
-            ->map(fn (string|int $jumlah): int => (int) $jumlah)
-            ->filter(fn (int $jumlah): bool => $jumlah > 0);
+        $perStatus = Pemesanan::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
-        if ($jumlahItem->isEmpty()) {
-            throw ValidationException::withMessages([
-                'items' => 'Pilih setidaknya satu peralatan untuk pemesanan.',
-            ]);
-        }
+        $menunggu = (int) ($perStatus['menunggu_pembayaran'] ?? 0);
+        $dikonfirmasi = (int) ($perStatus['dikonfirmasi'] ?? 0);
+        $berlangsung = (int) ($perStatus['berlangsung'] ?? 0);
 
-        $alatTerpilih = DB::transaction(function () use ($data, $jumlahItem): Pemesanan {
-            $alat = Alat::query()
-                ->whereKey($jumlahItem->keys())
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
+        $bulanIni = Carbon::now();
+        $bulanLalu = Carbon::now()->subMonthNoOverflow();
 
-            foreach ($jumlahItem as $alatId => $jumlah) {
-                $itemAlat = $alat->get($alatId);
+        $selesaiBulanIni = $this->hitungSelesaiPadaBulan($bulanIni);
+        $selesaiBulanLalu = $this->hitungSelesaiPadaBulan($bulanLalu);
 
-                if ($itemAlat === null || $jumlah > $itemAlat->stok_tersedia) {
-                    throw ValidationException::withMessages([
-                        "items.{$alatId}" => 'Jumlah peralatan melebihi stok yang tersedia.',
-                    ]);
-                }
-            }
+        return [
+            // "Aktif" = semua pesanan yang belum selesai atau dibatalkan.
+            'aktif' => $menunggu + $dikonfirmasi + $berlangsung,
+            'menunggu_pembayaran' => $menunggu,
+            'berlangsung' => $berlangsung,
+            'selesai_bulan_ini' => $selesaiBulanIni,
+            'selisih_selesai' => $selesaiBulanIni - $selesaiBulanLalu,
+        ];
+    }
 
-            $lamaSewa = (int) Carbon::parse($data['tanggal_mulai'])
-                ->diffInDays(Carbon::parse($data['tanggal_selesai'])) + 1;
-            $totalBiaya = $jumlahItem->sum(
-                fn (int $jumlah, int|string $alatId): float => $alat->get($alatId)->tarif_per_hari * $jumlah * $lamaSewa,
-            );
-            $jumlahDp = (float) ($data['jumlah_dp'] ?? 0);
-
-            if ($jumlahDp > $totalBiaya) {
-                throw ValidationException::withMessages([
-                    'jumlah_dp' => 'Jumlah DP tidak boleh melebihi total biaya pemesanan.',
-                ]);
-            }
-
-            $pemesanan = Pemesanan::create([
-                'kode_pemesanan' => 'OG-'.Str::upper((string) Str::ulid()),
-                'user_id' => $data['pelanggan_id'],
-                'tanggal_mulai' => $data['tanggal_mulai'],
-                'tanggal_selesai' => $data['tanggal_selesai'],
-                'total_biaya' => $totalBiaya,
-                'jumlah_dp' => $jumlahDp,
-                'status' => 'menunggu_pembayaran',
-            ]);
-
-            foreach ($jumlahItem as $alatId => $jumlah) {
-                $itemAlat = $alat->get($alatId);
-
-                $pemesanan->detailPemesanan()->create([
-                    'alat_id' => $itemAlat->id,
-                    'jumlah' => $jumlah,
-                    'tarif_per_hari' => $itemAlat->tarif_per_hari,
-                    'subtotal' => $jumlah * $itemAlat->tarif_per_hari * $lamaSewa,
-                ]);
-            }
-
-            return $pemesanan;
-        });
-
-        return redirect()
-            ->route('admin.pemesanan')
-            ->with('success', "Pemesanan {$alatTerpilih->kode_pemesanan} berhasil ditambahkan.");
+    /** Jumlah pemesanan berstatus selesai yang tanggal_selesai-nya jatuh di bulan tersebut. */
+    private function hitungSelesaiPadaBulan(Carbon $bulan): int
+    {
+        return Pemesanan::query()
+            ->where('status', 'selesai')
+            ->whereYear('tanggal_selesai', $bulan->year)
+            ->whereMonth('tanggal_selesai', $bulan->month)
+            ->count();
     }
 }

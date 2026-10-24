@@ -1,5 +1,7 @@
+
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +25,7 @@
             <div class="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center font-black text-white shadow-xl shadow-brand/30 text-base tracking-wider group-hover:scale-105 transition-transform duration-200">
                 OS
             </div>
+
             <div>
                 <span class="font-black text-base tracking-wide text-white leading-tight block">OutGear Station</span>
                 <span class="text-[11px] text-gray-400 tracking-widest uppercase font-semibold block">Rental & Outdoor Equipment</span>
@@ -81,6 +84,7 @@
                     <a href="{{ route('register') }}" class="text-xs font-black bg-brand hover:bg-brand-hover text-white px-4 py-2.5 rounded-xl transition shadow-md shadow-brand/20">Daftar</a>
                 </div>
             @endauth
+
         </div>
     </nav>
 
@@ -90,4 +94,5 @@
     </main>
 
 </body>
+
 </html>

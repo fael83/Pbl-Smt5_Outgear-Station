@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,6 +95,8 @@
             <button class="w-11 h-11 rounded-2xl bg-gray-800 text-gray-300 flex items-center justify-center text-sm hover:bg-gray-700 hover:text-white transition border border-gray-700/60 shadow-sm">
                 👤
             </button>
+        </form>
+        @endauth
         </div>
     </nav>
 
@@ -297,4 +300,5 @@
     </footer>
 
 </body>
+
 </html>
