@@ -3,26 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OutGear Station - Laporan Operasional</title>
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'portal-sidebar': '#18181b',
-                        'portal-bg': '#f4f2ef',
-                        'portal-orange': '#EA580C',
-                        'portal-card': '#ffffff',
-                    }
-                }
-            }
-        }
-    </script>
-    @vite('resources/css/app.css')
+    <title>OutGear Station - Laporan</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-[#F8F6F2] text-slate-800 antialiased font-sans" x-data="{ tipeLaporan: 'pendapatan' }">
 

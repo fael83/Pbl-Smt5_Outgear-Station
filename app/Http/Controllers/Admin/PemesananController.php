@@ -88,38 +88,35 @@ class PemesananController extends Controller
      */
     private function statistik(): array
     {
-        $perStatus = Pemesanan::query()
-            ->selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        // Di-cache 1 menit: sebelumnya 4 query ke Supabase di setiap buka halaman.
+        return Cache::remember('pemesanan.statistik', now()->addMinute(), function (): array {
+            $bulanIni = Carbon::now();
+            $bulanLalu = Carbon::now()->subMonthNoOverflow();
 
-        $menunggu = (int) ($perStatus['menunggu_pembayaran'] ?? 0);
-        $dikonfirmasi = (int) ($perStatus['dikonfirmasi'] ?? 0);
-        $berlangsung = (int) ($perStatus['berlangsung'] ?? 0);
+            $hasil = Pemesanan::query()
+                ->selectRaw("COALESCE(SUM(CASE WHEN status = 'menunggu_pembayaran' THEN 1 ELSE 0 END), 0) AS menunggu")
+                ->selectRaw("COALESCE(SUM(CASE WHEN status = 'dikonfirmasi' THEN 1 ELSE 0 END), 0) AS dikonfirmasi")
+                ->selectRaw("COALESCE(SUM(CASE WHEN status = 'berlangsung' THEN 1 ELSE 0 END), 0) AS berlangsung")
+                ->selectRaw("COALESCE(SUM(CASE WHEN status = 'selesai' AND tanggal_selesai >= ? AND tanggal_selesai < ? THEN 1 ELSE 0 END), 0) AS selesai_ini", [
+                    $bulanIni->copy()->startOfMonth(), $bulanIni->copy()->startOfMonth()->addMonth(),
+                ])
+                ->selectRaw("COALESCE(SUM(CASE WHEN status = 'selesai' AND tanggal_selesai >= ? AND tanggal_selesai < ? THEN 1 ELSE 0 END), 0) AS selesai_lalu", [
+                    $bulanLalu->copy()->startOfMonth(), $bulanLalu->copy()->startOfMonth()->addMonth(),
+                ])
+                ->toBase()
+                ->first();
 
-        $bulanIni = Carbon::now();
-        $bulanLalu = Carbon::now()->subMonthNoOverflow();
+            $menunggu = (int) $hasil->menunggu;
+            $dikonfirmasi = (int) $hasil->dikonfirmasi;
+            $berlangsung = (int) $hasil->berlangsung;
 
-        $selesaiBulanIni = $this->hitungSelesaiPadaBulan($bulanIni);
-        $selesaiBulanLalu = $this->hitungSelesaiPadaBulan($bulanLalu);
-
-        return [
-            // "Aktif" = semua pesanan yang belum selesai atau dibatalkan.
-            'aktif' => $menunggu + $dikonfirmasi + $berlangsung,
-            'menunggu_pembayaran' => $menunggu,
-            'berlangsung' => $berlangsung,
-            'selesai_bulan_ini' => $selesaiBulanIni,
-            'selisih_selesai' => $selesaiBulanIni - $selesaiBulanLalu,
-        ];
-    }
-
-    /** Jumlah pemesanan berstatus selesai yang tanggal_selesai-nya jatuh di bulan tersebut. */
-    private function hitungSelesaiPadaBulan(Carbon $bulan): int
-    {
-        return Pemesanan::query()
-            ->where('status', 'selesai')
-            ->whereYear('tanggal_selesai', $bulan->year)
-            ->whereMonth('tanggal_selesai', $bulan->month)
-            ->count();
+            return [
+                'aktif' => $menunggu + $dikonfirmasi + $berlangsung,
+                'menunggu_pembayaran' => $menunggu,
+                'berlangsung' => $berlangsung,
+                'selesai_bulan_ini' => (int) $hasil->selesai_ini,
+                'selisih_selesai' => (int) $hasil->selesai_ini - (int) $hasil->selesai_lalu,
+            ];
+        });
     }
 }
