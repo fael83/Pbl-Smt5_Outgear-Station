@@ -496,6 +496,7 @@ Alpine.data('halamanPelanggan', (config = {}) => {
         status: String(config.filters?.status ?? 'semua'),
         perPage: Number(config.filters?.per_page ?? 10),
         halaman: 1,
+        modalTerbuka: Boolean(config.modalTerbuka),
 
         items: Array.isArray(config.items) ? config.items : [],
         ringkasanData: { ...(config.ringkasan ?? {}) },

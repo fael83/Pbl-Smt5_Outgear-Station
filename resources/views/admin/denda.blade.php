@@ -99,7 +99,7 @@
                         <div class="flex items-center gap-2.5">
                             <!-- Input Search -->
                             <div class="relative">
-                                <form method="GET" action="{{ route('admin.denda') }}" class="relative">
+                                <form method="GET" action="{{ route('admin.denda.index') }}" class="relative">
                                     <input type="hidden" name="status" value="{{ $filters['status'] }}">
                                     <input type="hidden" name="per_page" value="{{ $filters['per_page'] }}">
                                     <input type="search" name="search" value="{{ $filters['search'] }}" placeholder="Cari ID denda / referensi..." class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-4 py-2.5 pl-9 focus:outline-none focus:border-portal-orange transition w-64">
@@ -116,9 +116,9 @@
                                 <!-- Dropdown Menu Filter -->
                                 <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-2xl shadow-xl py-2 z-50 text-xs font-medium">
                                     <div class="px-4 py-1.5 text-[10px] font-black text-zinc-400 uppercase tracking-wider">Status Pembayaran</div>
-                                    <a href="{{ route('admin.denda', array_filter(['search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Semua Status</a>
-                                    <a href="{{ route('admin.denda', array_filter(['status' => 'belum_dibayar', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Belum Lunas</a>
-                                    <a href="{{ route('admin.denda', array_filter(['status' => 'lunas', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Lunas</a>
+                                    <a href="{{ route('admin.denda.index', array_filter(['search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Semua Status</a>
+                                    <a href="{{ route('admin.denda.index', array_filter(['status' => 'belum_dibayar', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Belum Lunas</a>
+                                    <a href="{{ route('admin.denda.index', array_filter(['status' => 'lunas', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Lunas</a>
                                 </div>
                             </div>
                         </div>
@@ -214,7 +214,7 @@
                             @endif
                         </p>
                         <div class="flex flex-wrap items-center gap-3">
-                            <form method="GET" action="{{ route('admin.denda') }}" class="flex items-center gap-2">
+                            <form method="GET" action="{{ route('admin.denda.index') }}" class="flex items-center gap-2">
                                 <input type="hidden" name="status" value="{{ $filters['status'] }}">
                                 <input type="hidden" name="search" value="{{ $filters['search'] }}">
                                 <label for="fine_per_page" class="text-xs text-gray-500">Baris per halaman:</label>

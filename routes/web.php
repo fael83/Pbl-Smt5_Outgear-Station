@@ -75,9 +75,10 @@ Route::middleware(['role:admin,owner,petugas'])
         Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
         Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
 
-        // Aksi tulis dibatasi untuk admin yang login; tamu tetap diizinkan pada mode demo.
+        // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
         Route::middleware('role:admin')->group(function () {
             Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
+            Route::post('/pelanggan', [AdminPelangganController::class, 'store'])->name('pelanggan.store');
 
             Route::patch('/verifikasi/{pembayaran}/verifikasi', [AdminVerifikasiController::class, 'verifikasi'])->name('verifikasi.verifikasi');
             Route::patch('/verifikasi/{pembayaran}/tolak', [AdminVerifikasiController::class, 'tolak'])->name('verifikasi.tolak');
@@ -87,7 +88,6 @@ Route::middleware(['role:admin,owner,petugas'])
             Route::delete('/peralatan/{alat}', [InventarisController::class, 'destroy'])->name('peralatan.destroy');
         });
     });
-
 
 Route::middleware('role:owner')
     ->prefix('owner')

@@ -32,11 +32,7 @@
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<<<<<<< HEAD
-<body class="text-slate-800 antialiased font-sans" x-data="{ showSearchInput: false, showFilterDropdown: false, selectedFilter: {{ Js::from(match ($filters['status']) { 'menunggu_pembayaran' => 'Menunggu Bayar', 'berlangsung' => 'Berlangsung', 'selesai' => 'Selesai', 'dibatalkan' => 'Dibatalkan', 'dikonfirmasi' => 'Dikonfirmasi', default => 'Semua' }) }}, showCreateModal: {{ $errors->any() ? 'true' : 'false' }} }">
-=======
 <body class="text-slate-800 antialiased">
->>>>>>> 27c785179cf6b0e39b9311e3b5d88c45f9e4507b
 
     <div class="flex min-h-screen">
 
@@ -308,102 +304,6 @@
 
             </div>
         </main>
-    </div>
-
-    <div x-cloak x-show="showCreateModal" x-transition.opacity
-         class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#1A2024]/50 p-4 md:p-8"
-         @keydown.escape.window="showCreateModal = false">
-        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl" @click.outside="showCreateModal = false">
-            <div class="flex items-start justify-between gap-4 border-b border-gray-100 p-5">
-                <div>
-                    <h2 class="text-lg font-bold text-[#1A2024]">Tambah Pemesanan</h2>
-                    <p class="mt-0.5 text-xs text-gray-500">Pilih pelanggan, jadwal, dan jumlah peralatan yang disewa.</p>
-                </div>
-                <button type="button" @click="showCreateModal = false"
-                        class="h-8 w-8 rounded-lg bg-gray-100 text-gray-500 transition hover:bg-gray-200">✕</button>
-            </div>
-
-            <form method="POST" action="{{ route('admin.pemesanan.store') }}" class="space-y-4 p-5">
-                @csrf
-                @if ($errors->any())
-                    <div class="space-y-1 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-700">
-                        <p class="font-semibold">Periksa kembali data berikut:</p>
-                        @foreach ($errors->all() as $pesanError)
-                            <p>{{ $pesanError }}</p>
-                        @endforeach
-                    </div>
-                @endif
-
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div class="md:col-span-2">
-                        <label for="pelanggan_id" class="mb-1 block text-xs font-semibold text-[#1A2024]">Pelanggan</label>
-                        <select id="pelanggan_id" name="pelanggan_id" required
-                                class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            <option value="">Pilih pelanggan</option>
-                            @foreach ($pelangganAktif as $dataPelanggan)
-                                <option value="{{ $dataPelanggan->id }}" @selected(old('pelanggan_id') == $dataPelanggan->id)>
-                                    {{ $dataPelanggan->name }} — {{ $dataPelanggan->email }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @if ($pelangganAktif->isEmpty())
-                            <p class="mt-1 text-[10px] text-amber-700">Belum ada pelanggan aktif. Tambahkan pelanggan terlebih dahulu.</p>
-                        @endif
-                    </div>
-                    <div>
-                        <label for="tanggal_mulai" class="mb-1 block text-xs font-semibold text-[#1A2024]">Tanggal Mulai</label>
-                        <input id="tanggal_mulai" name="tanggal_mulai" type="date" required min="{{ now()->toDateString() }}"
-                               value="{{ old('tanggal_mulai') }}"
-                               class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                    </div>
-                    <div>
-                        <label for="tanggal_selesai" class="mb-1 block text-xs font-semibold text-[#1A2024]">Tanggal Selesai</label>
-                        <input id="tanggal_selesai" name="tanggal_selesai" type="date" required min="{{ now()->toDateString() }}"
-                               value="{{ old('tanggal_selesai') }}"
-                               class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                    </div>
-                </div>
-
-                <div>
-                    <div class="mb-2 flex items-center justify-between">
-                        <label class="text-xs font-semibold text-[#1A2024]">Peralatan dan Jumlah</label>
-                        <span class="text-[10px] text-gray-400">Kosongkan 0 untuk alat yang tidak dipilih</span>
-                    </div>
-                    <div class="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-gray-100 p-3">
-                        @forelse ($alatTersedia as $dataAlat)
-                            <div class="flex items-center justify-between gap-4 rounded-lg bg-[#F4EFEA]/40 px-3 py-2.5">
-                                <div class="min-w-0">
-                                    <p class="truncate text-xs font-semibold text-[#1A2024]">{{ $dataAlat->nama }}</p>
-                                    <p class="text-[10px] text-gray-500">
-                                        Rp {{ number_format((float) $dataAlat->tarif_per_hari, 0, ',', '.') }}/hari
-                                        · Stok {{ $dataAlat->stok_tersedia }}
-                                    </p>
-                                </div>
-                                <input name="items[{{ $dataAlat->id }}]" type="number" min="0" max="{{ $dataAlat->stok_tersedia }}"
-                                       value="{{ old('items.'.$dataAlat->id, 0) }}" aria-label="Jumlah {{ $dataAlat->nama }}"
-                                       class="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            </div>
-                        @empty
-                            <p class="py-3 text-center text-xs text-gray-500">Belum ada peralatan dengan stok tersedia.</p>
-                        @endforelse
-                    </div>
-                </div>
-
-                <div>
-                    <label for="jumlah_dp" class="mb-1 block text-xs font-semibold text-[#1A2024]">Jumlah DP (Rp) <span class="font-normal text-gray-400">(opsional)</span></label>
-                    <input id="jumlah_dp" name="jumlah_dp" type="number" min="0" step="1000" value="{{ old('jumlah_dp', 0) }}"
-                           class="w-full rounded-xl border border-transparent bg-[#F4EFEA]/60 px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                    <p class="mt-1 text-[10px] text-gray-400">Total biaya dihitung otomatis dari durasi, jumlah, dan tarif alat.</p>
-                </div>
-
-                <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
-                    <button type="button" @click="showCreateModal = false"
-                            class="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-semibold text-[#1A2024] transition hover:bg-gray-200">Batal</button>
-                    <button type="submit" @disabled($pelangganAktif->isEmpty() || $alatTersedia->isEmpty())
-                            class="rounded-xl bg-[#D86B43] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#D86B43]/90 disabled:cursor-not-allowed disabled:opacity-50">Simpan Pemesanan</button>
-                </div>
-            </form>
-        </div>
     </div>
 
 </body>

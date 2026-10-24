@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StorePelangganRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -56,7 +57,7 @@ class PelangganController extends Controller
      * Ringkasan pelanggan dipakai di setiap request tetapi jarang berubah.
      * Database berada di Supabase (satu round-trip bisa lebih dari 1 detik),
      * jadi hasilnya disimpan sebentar di cache dan dihapus setiap ada
-     * perubahan status akun.
+     * perubahan data akun.
      */
     private const CACHE_RINGKASAN = 'pelanggan.ringkasan';
 
@@ -97,6 +98,28 @@ class PelangganController extends Controller
             'ringkasan' => $this->ringkasan(),
             'url' => route('admin.pelanggan', $this->parameterQuery($filters, true)),
         ]);
+    }
+
+    /**
+     * Simpan akun pelanggan baru ke tabel users.
+     */
+    public function store(StorePelangganRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $pelanggan = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'no_telepon' => $data['no_telepon'] ?? null,
+            'password' => $data['password'],
+            'role' => Role::Customer,
+            'status_akun' => 'aktif',
+        ]);
+
+        $this->lupakanCache();
+
+        return $this->kembaliKeDaftar($request)
+            ->with('success', "Akun pelanggan \"{$pelanggan->name}\" berhasil ditambahkan.");
     }
 
     /**
@@ -404,7 +427,7 @@ class PelangganController extends Controller
     }
 
     /**
-     * Hapus cache yang terpengaruh perubahan status akun.
+     * Hapus cache yang terpengaruh perubahan data akun.
      */
     private function lupakanCache(): void
     {
