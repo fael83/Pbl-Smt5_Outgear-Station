@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>OutGear Station - Verifikasi Pembayaran</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -15,131 +16,76 @@
           selectedJenis: 'Semua',
           modalDetail: false,
           selectedItem: null,
-          pembayaranList: [
-              @if(isset($pembayaranDb) && $pembayaranDb->isNotEmpty())
-                  @foreach($pembayaranDb as $p)
-                  {
-                      id: {{ $p->id }},
-                      pemesanan_id: {{ $p->pemesanan_id }},
-                      kode_pemesanan: '{{ $p->pemesanan?->kode_pemesanan ?? '#ORD-' . str_pad($p->pemesanan_id, 4, '0', STR_PAD_LEFT) }}',
-                      pelanggan_nama: '{{ $p->pemesanan?->pelanggan?->name ?? 'Pelanggan #' . $p->pemesanan_id }}',
-                      pelanggan_telp: '{{ $p->pemesanan?->pelanggan?->no_telepon ?? '-' }}',
-                      transaction_id_midtrans: '{{ $p->transaction_id ?? ($p->midtrans ?? 'MID-' . date('Ymd', strtotime($p->created_at ?? now())) . '-' . str_pad($p->id, 4, '0', STR_PAD_LEFT)) }}',
-                      jenis_pembayaran: '{{ $p->jenis_pembayaran }}',
-                      metode_pembayaran: '{{ $p->metode_pembayaran }}',
-                      jumlah: {{ (float) $p->jumlah }},
-                      status_transaksi: '{{ $p->status_transaksi }}',
-                      waktu_bayar: '{{ $p->waktu_bayar ? \Carbon\Carbon::parse($p->waktu_bayar)->translatedFormat('d M Y, H:i') : '-' }}'
-                  },
-                  @endforeach
-              @endif
-              {
-                  id: 2,
-                  pemesanan_id: 2,
-                  kode_pemesanan: 'ORD-DEMO-0002',
-                  pelanggan_nama: 'Fajar Hidayat',
-                  pelanggan_telp: '0812-3456-7890',
-                  transaction_id_midtrans: 'MID-TRX-20261018-0892',
-                  jenis_pembayaran: 'dp',
-                  metode_pembayaran: 'qris',
-                  jumlah: 250000,
-                  status_transaksi: 'pending',
-                  waktu_bayar: '18 Okt 2026, 13:45'
-              },
-              {
-                  id: 3,
-                  pemesanan_id: 2,
-                  kode_pemesanan: 'ORD-DEMO-0002',
-                  pelanggan_nama: 'Fajar Hidayat',
-                  pelanggan_telp: '0812-3456-7890',
-                  transaction_id_midtrans: '-',
-                  jenis_pembayaran: 'pelunasan',
-                  metode_pembayaran: 'cash',
-                  jumlah: 250000,
-                  status_transaksi: 'pending',
-                  waktu_bayar: '-'
-              },
-              {
-                  id: 4,
-                  pemesanan_id: 1,
-                  kode_pemesanan: 'ORD-DEMO-0001',
-                  pelanggan_nama: 'Budi Pelanggan',
-                  pelanggan_telp: '0811-0000-0004',
-                  transaction_id_midtrans: 'MID-TRX-20261018-0899',
-                  jenis_pembayaran: 'denda',
-                  metode_pembayaran: 'qris',
-                  jumlah: 45000,
-                  status_transaksi: 'berhasil',
-                  waktu_bayar: '12 Okt 2026, 16:20'
-              },
-              {
-                  id: 5,
-                  pemesanan_id: 3,
-                  kode_pemesanan: 'ORD-0894',
-                  pelanggan_nama: 'Anisa Tri Utami',
-                  pelanggan_telp: '0857-1122-3344',
-                  transaction_id_midtrans: 'MID-TRX-20261018-0901',
-                  jenis_pembayaran: 'dp',
-                  metode_pembayaran: 'qris',
-                  jumlah: 420000,
-                  status_transaksi: 'pending',
-                  waktu_bayar: '18 Okt 2026, 14:02'
-              },
-              {
-                  id: 6,
-                  pemesanan_id: 4,
-                  kode_pemesanan: 'ORD-0870',
-                  pelanggan_nama: 'Rian Pratama',
-                  pelanggan_telp: '0813-9876-5432',
-                  transaction_id_midtrans: '-',
-                  jenis_pembayaran: 'pelunasan',
-                  metode_pembayaran: 'cash',
-                  jumlah: 190000,
-                  status_transaksi: 'berhasil',
-                  waktu_bayar: '17 Okt 2026, 11:15'
-              },
-              {
-                  id: 7,
-                  pemesanan_id: 5,
-                  kode_pemesanan: 'ORD-0865',
-                  pelanggan_nama: 'Dewi Sartika',
-                  pelanggan_telp: '0821-4455-6677',
-                  transaction_id_midtrans: 'MID-TRX-20261016-0850',
-                  jenis_pembayaran: 'dp',
-                  metode_pembayaran: 'qris',
-                  jumlah: 310000,
-                  status_transaksi: 'gagal',
-                  waktu_bayar: '16 Okt 2026, 09:12'
-              }
-          ],
+          pembayaranList: {{ Js::from($pembayaranList) }},
           
           formatRupiah(val) {
               return 'Rp ' + Number(val).toLocaleString('id-ID');
           },
 
-          verifikasi(id) {
-              const item = this.pembayaranList.find(p => p.id === id);
-              if (item) {
-                  item.status_transaksi = 'berhasil';
-                  if (item.waktu_bayar === '-') {
-                      const now = new Date();
-                      item.waktu_bayar = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + 
-                                         now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                  }
-                  if (this.selectedItem && this.selectedItem.id === id) {
-                      this.selectedItem.status_transaksi = 'berhasil';
-                      this.selectedItem.waktu_bayar = item.waktu_bayar;
-                  }
+          /**
+           * Kirim aksi verifikasi/tolak ke server dan baca balasan JSON-nya.
+           */
+          async kirimAksi(url) {
+              try {
+                  const respons = await fetch(url, {
+                      method: 'PATCH',
+                      credentials: 'same-origin',
+                      headers: {
+                          Accept: 'application/json',
+                          'X-Requested-With': 'XMLHttpRequest',
+                          'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
+                      },
+                  });
+
+                  return { ok: respons.ok, data: await respons.json() };
+              } catch {
+                  return { ok: false, data: { message: 'Tidak dapat terhubung ke server.' } };
               }
           },
 
-          tolak(id) {
+          async verifikasi(id) {
               const item = this.pembayaranList.find(p => p.id === id);
-              if (item) {
-                  item.status_transaksi = 'gagal';
-                  if (this.selectedItem && this.selectedItem.id === id) {
-                      this.selectedItem.status_transaksi = 'gagal';
-                  }
+
+              if (!item) {
+                  return;
+              }
+
+              const { ok, data } = await this.kirimAksi(item.url_verifikasi);
+
+              if (!ok) {
+                  window.alert(data.message ?? 'Gagal memverifikasi pembayaran.');
+
+                  return;
+              }
+
+              item.status_transaksi = data.status_transaksi;
+              item.waktu_bayar = data.waktu_bayar ?? item.waktu_bayar;
+
+              if (this.selectedItem && this.selectedItem.id === id) {
+                  this.selectedItem.status_transaksi = item.status_transaksi;
+                  this.selectedItem.waktu_bayar = item.waktu_bayar;
+              }
+          },
+
+          async tolak(id) {
+              const item = this.pembayaranList.find(p => p.id === id);
+
+              if (!item) {
+                  return;
+              }
+
+              const { ok, data } = await this.kirimAksi(item.url_tolak);
+
+              if (!ok) {
+                  window.alert(data.message ?? 'Gagal menolak pembayaran.');
+
+                  return;
+              }
+
+              item.status_transaksi = data.status_transaksi;
+
+              if (this.selectedItem && this.selectedItem.id === id) {
+                  this.selectedItem.status_transaksi = item.status_transaksi;
               }
           },
 
