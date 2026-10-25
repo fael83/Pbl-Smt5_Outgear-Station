@@ -150,10 +150,10 @@ Route::middleware('role:petugas')
     ->group(function () {
         Route::get('/dashboard', [PetugasDashboardController::class,'index',])->name('dashboard');
         Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
-    Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
-    Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
-    Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
-    Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+        Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
+        Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
+        Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
+        Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
     });
 
     

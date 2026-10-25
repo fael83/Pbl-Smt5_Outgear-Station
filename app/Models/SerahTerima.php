@@ -27,4 +27,9 @@ class SerahTerima extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function detailSerahTerima()
+    {
+        return $this->hasMany(DetailSerahTerima::class, 'serah_terima_id');
+    }
 }
