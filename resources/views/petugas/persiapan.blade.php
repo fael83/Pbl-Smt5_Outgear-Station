@@ -63,10 +63,9 @@
                 </div>
             </div>
 
-           <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Diambil / Proses</span>
                 <div class="my-2">
-                    <!-- Perhatikan bagian x-text di bawah ini -->
                     <p class="text-3xl font-black font-heading text-amber-600" x-text="ringkasanData.siap_diserahkan">0</p>
                 </div>
                 <div class="text-[11px] text-amber-700 font-bold pt-2 border-t border-zinc-100">
@@ -187,6 +186,86 @@
                 </form>
             </div>
         </div>
+
+        <!-- MODAL POP-UP DETAIL ALAT (SUPABASE) -->
+        <div x-cloak x-show="modalDetailTerbuka" x-transition.opacity
+             class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1A2024]/50 p-4 md:p-8"
+             @keydown.escape.window="tutupModalDetail()">
+            <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden" @click.outside="tutupModalDetail()">
+                <div class="flex items-start justify-between gap-4 p-5 border-b border-gray-100 bg-zinc-50/50">
+                    <div>
+                        <h2 class="text-lg font-bold text-[#1A2024] flex items-center gap-2">
+                            Rincian Alat Serah Terima <span class="text-[#D86B43]" x-text="itemAktif ? '#' + itemAktif.id : ''"></span>
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Informasi lengkap penyewa dan peralatan outdoor berdasarkan data Supabase.</p>
+                    </div>
+                    <button type="button" @click="tutupModalDetail()" class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">✕</button>
+                </div>
+
+                <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200/60 text-xs">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-0.5">Nama Sesuai KTP</span>
+                            <p class="font-bold text-zinc-900" x-text="itemAktif?.nama_ktp"></p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-0.5">Nomor KTP (NIK)</span>
+                            <p class="font-mono text-zinc-700 font-semibold" x-text="itemAktif?.nomor_ktp"></p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-0.5">Waktu Serah Terima</span>
+                            <p class="text-zinc-700 font-semibold" x-text="itemAktif?.waktu_serah_terima"></p>
+                        </div>
+                    </div>
+
+                    <div class="border border-zinc-200/70 rounded-xl overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-zinc-50 text-zinc-400 text-[10px] uppercase tracking-wider font-bold border-b border-zinc-200/60">
+                                    <th class="py-3 px-4">No</th>
+                                    <th class="py-3 px-4">Nama Alat</th>
+                                    <th class="py-3 px-4 text-center">Jumlah Disiapkan</th>
+                                    <th class="py-3 px-4 text-center">Kondisi Awal</th>
+                                    <th class="py-3 px-4 text-right">Tarif / Hari</th>
+                                    <th class="py-3 px-4 text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-100 text-xs text-zinc-700 font-medium">
+                                <template x-for="(detailSt, index) in (itemAktif?.detail_serah_terima || [])" :key="detailSt.id">
+                                    <tr class="hover:bg-zinc-50/50 transition">
+                                        <td class="py-3 px-4 font-mono text-zinc-400" x-text="index + 1"></td>
+                                        <td class="py-3 px-4 font-bold text-zinc-900" x-text="detailSt.detail_pemesanan?.alat?.nama_alat || 'Alat tidak ditemukan'"></td>
+                                        <td class="py-3 px-4 text-center font-bold">
+                                            <span class="px-2 py-0.5 rounded bg-zinc-100 font-mono text-xs" x-text="detailSt.jumlah_disiapkan"></span>
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold"
+                                                  :class="detailSt.kondisi_awal === 'baik' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'"
+                                                  x-text="detailSt.kondisi_awal === 'baik' ? 'Baik' : 'Kurang Baik'">
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right font-mono" x-text="'Rp ' + Number(detailSt.detail_pemesanan?.tarif_per_hari || 0).toLocaleString('id-ID')"></td>
+                                        <td class="py-3 px-4 text-right font-mono font-bold text-zinc-900" x-text="'Rp ' + Number(detailSt.detail_pemesanan?.subtotal || 0).toLocaleString('id-ID')"></td>
+                                    </tr>
+                                </template>
+                                <template x-if="!itemAktif?.detail_serah_terima || itemAktif.detail_serah_terima.length === 0">
+                                    <tr>
+                                        <td colspan="6" class="py-8 text-center text-zinc-400 italic">Belum ada rincian alat yang tercatat.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end px-6 py-4 bg-gray-50 border-t border-gray-100">
+                    <button type="button" @click="tutupModalDetail()"
+                            class="px-4 py-2 bg-gray-200 text-zinc-700 text-xs font-semibold rounded-xl hover:bg-gray-300 transition">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Skrip Alpine.js untuk Halaman Persiapan / Serah Terima -->
@@ -202,6 +281,9 @@
                 perPage: config.filters.per_page,
                 
                 modalTerbuka: config.punyaError,
+                modalDetailTerbuka: false,
+                itemAktif: null,
+
                 mode: config.modeAwal,
                 formUrl: config.modeAwal === 'edit' ? config.updateUrlAwal : config.createUrl,
                 form: config.nilaiAwal,
@@ -245,8 +327,18 @@
                     this.modalTerbuka = true;
                 },
 
+                bukaDetail(item) {
+                    this.itemAktif = item;
+                    this.modalDetailTerbuka = true;
+                },
+
                 tutupModal() {
                     this.modalTerbuka = false;
+                },
+
+                tutupModalDetail() {
+                    this.modalDetailTerbuka = false;
+                    this.itemAktif = null;
                 },
 
                 tampilkanPesan(teks, gagal = false) {
@@ -345,22 +437,14 @@
                 },
 
                 tangkapKlik(e) {
-                    const tombolEdit = e.target.closest('[data-aksi="edit"]');
-                    if (tombolEdit) {
+                    const tombolDetail = e.target.closest('[data-aksi="detail"]');
+                    if (tombolDetail) {
                         e.preventDefault();
-                        const rawItem = tombolEdit.getAttribute('data-item');
+                        const rawItem = tombolDetail.getAttribute('data-item');
                         try {
                             const item = JSON.parse(rawItem);
-                            this.bukaEdit(item);
+                            this.bukaDetail(item);
                         } catch(err) { console.error(err); }
-                        return;
-                    }
-
-                    const tombolHapus = e.target.closest('[data-aksi="hapus"]');
-                    if (tombolHapus) {
-                        e.preventDefault();
-                        const id = tombolHapus.getAttribute('data-id');
-                        this.hapus(id);
                         return;
                     }
 

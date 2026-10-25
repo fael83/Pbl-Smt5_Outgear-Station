@@ -52,16 +52,11 @@
                             </span>
                         </td>
                         <td class="py-4 px-6 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <button type="button" data-aksi="edit" data-item="{{ json_encode($item) }}"
-                                        class="px-2.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition text-[11px] font-bold">
-                                    Edit
-                                </button>
-                                <button type="button" data-aksi="hapus" data-id="{{ $item->id }}"
-                                        class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition text-[11px] font-bold">
-                                    Hapus
-                                </button>
-                            </div>
+                            <button type="button" 
+                                    @click="bukaDetail({{ $item->load(['detailSerahTerima.detailPemesanan.alat', 'petugas']) }})"
+                                    class="px-3 py-1.5 rounded-xl bg-[#15AEEA]/10 text-[#15AEEA] hover:bg-[#15AEEA]/20 transition text-[11px] font-bold inline-flex items-center gap-1">
+                                    Detail Alat
+                            </button>
                         </td>
                     </tr>
                 @empty
