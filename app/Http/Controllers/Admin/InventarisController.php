@@ -81,6 +81,7 @@ class InventarisController extends Controller
                 'daftarAlat' => $daftarAlat,
                 'filters' => $filters,
                 'adaFilter' => $this->adaFilter($filters),
+                'daftarKategori' => $this->daftarKategori(),
             ])->render(),
             'items' => $this->dataAlat($daftarAlat),
             'ringkasan' => $this->ringkasan(),

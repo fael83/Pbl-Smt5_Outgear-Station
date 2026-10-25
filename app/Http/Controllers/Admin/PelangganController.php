@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePelangganRequest;
+use App\Http\Requests\Admin\UpdatePelangganRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +26,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * - render penuh  -> GET /admin/pelanggan (view + partial tabel);
  * - interaksi JS  -> GET /admin/pelanggan/tabel (JSON berisi HTML tabel saja);
- * - ubah status   -> PATCH /admin/pelanggan/{pelanggan}/status;
+ * - tambah akun   -> POST /admin/pelanggan;
+ * - edit akun     -> PUT /admin/pelanggan/{pelanggan};
+ * - hapus akun    -> DELETE /admin/pelanggan/{pelanggan} (ditolak jika ada riwayat);
  * - unduh data    -> GET /admin/pelanggan/ekspor (CSV sesuai filter aktif).
  *
  * Tanpa JavaScript, form filter dan form status tetap terkirim seperti biasa.
@@ -123,10 +126,46 @@ class PelangganController extends Controller
     }
 
     /**
-     * Aktifkan / nonaktifkan akun pelanggan.
-     *
-     * Status baru dikirim lewat input tersembunyi pada form di setiap baris
-     * tabel, sehingga aksi ini idempoten dan tetap bekerja tanpa JavaScript.
+     * Perbarui data profil pelanggan tanpa mengubah peran atau status akun.
+     */
+    public function update(UpdatePelangganRequest $request, User $pelanggan): RedirectResponse
+    {
+        abort_unless($pelanggan->isCustomer(), 404);
+
+        $pelanggan->update($request->validated());
+
+        return $this->kembaliKeDaftar($request)
+            ->with('success', "Data pelanggan \"{$pelanggan->name}\" berhasil diperbarui.");
+    }
+
+    /**
+     * Hapus pelanggan yang belum memiliki riwayat transaksi atau operasional.
+     */
+    public function destroy(Request $request, User $pelanggan): RedirectResponse
+    {
+        abort_unless($pelanggan->isCustomer(), 404);
+
+        if (
+            $pelanggan->pemesanan()->exists()
+            || $pelanggan->pengembalian()->exists()
+            || $pelanggan->serahTerima()->exists()
+            || $pelanggan->aturanDenda()->exists()
+        ) {
+            return $this->kembaliKeDaftar($request)
+                ->with('error', 'Pelanggan tidak dapat dihapus karena memiliki riwayat transaksi atau operasional.');
+        }
+
+        $namaPelanggan = $pelanggan->name;
+        $pelanggan->delete();
+        $this->lupakanCache();
+
+        return $this->kembaliKeDaftar($request)
+            ->with('success', "Pelanggan \"{$namaPelanggan}\" berhasil dihapus.");
+    }
+
+    /**
+     * Pertahankan endpoint status untuk integrasi yang sudah ada; aksi ini tidak
+     * lagi ditampilkan di halaman data pelanggan.
      */
     public function ubahStatus(Request $request, User $pelanggan): RedirectResponse|JsonResponse
     {

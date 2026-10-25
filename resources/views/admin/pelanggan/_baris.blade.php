@@ -9,9 +9,6 @@
 @php
     $aktif = $pelanggan->status_akun === 'aktif';
 
-    // Tombol aksi mengirim status tujuan, bukan status saat ini, sehingga form
-    // tetap idempoten walau halaman sudah lama dibuka.
-    $statusTujuan = $aktif ? 'nonaktif' : 'aktif';
     $jumlahPemesanan = (int) ($pelanggan->pemesanan_count ?? 0);
 
     $status = $aktif
@@ -34,12 +31,14 @@
             </div>
             <div class="min-w-0">
                 <p class="font-semibold text-[#1A2024] truncate max-w-[200px]">{{ $pelanggan->name }}</p>
-                <p class="text-[10px] text-gray-400 truncate max-w-[200px]">{{ $pelanggan->email }}</p>
             </div>
         </div>
     </td>
     <td class="p-3.5 font-semibold text-[#1A2024] whitespace-nowrap">
         #PL-{{ str_pad((string) $pelanggan->id, 3, '0', STR_PAD_LEFT) }}
+    </td>
+    <td class="p-3.5 text-gray-600 whitespace-nowrap">
+        {{ $pelanggan->email }}
     </td>
     <td class="p-3.5 text-gray-600 whitespace-nowrap">
         {{ filled($pelanggan->no_telepon) ? $pelanggan->no_telepon : '-' }}
@@ -49,9 +48,6 @@
             {{ $jumlahPemesanan }} booking
         </span>
     </td>
-    <td class="p-3.5 text-gray-500 whitespace-nowrap">
-        {{ $pelanggan->created_at?->translatedFormat('d M Y') ?? '-' }}
-    </td>
     <td class="p-3.5 text-center whitespace-nowrap">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full border {{ $status['kelas'] }}">
             <span class="w-1.5 h-1.5 rounded-full {{ $status['titik'] }}"></span>
@@ -59,24 +55,29 @@
         </span>
     </td>
     <td class="p-3.5 text-right whitespace-nowrap">
-        {{-- Tanpa JavaScript form ini tetap terkirim seperti biasa (POST + _method PATCH). --}}
-        <form method="POST" action="{{ route('admin.pelanggan.status', $pelanggan) }}" class="inline"
-              @submit.prevent="ubahStatus($el)"
-              data-pesan="{{ $aktif
-                  ? 'Nonaktifkan akun "'.$pelanggan->name.'"? Pelanggan tidak bisa masuk sampai akun diaktifkan kembali.'
-                  : 'Aktifkan kembali akun "'.$pelanggan->name.'"?' }}">
-            @csrf
-            @method('PATCH')
-            <input type="hidden" name="status_akun" value="{{ $statusTujuan }}">
-            <input type="hidden" name="search" value="{{ $filters['search'] }}">
-            <input type="hidden" name="status" value="{{ $filters['status'] }}">
-            <input type="hidden" name="per_page" value="{{ $filters['per_page'] }}">
-            <button type="submit"
-                    class="px-3 py-1.5 rounded-lg font-semibold transition {{ $aktif
-                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' }}">
-                {{ $aktif ? 'Nonaktifkan' : 'Aktifkan' }}
+        <div class="inline-flex items-center justify-end gap-2">
+            <button type="button"
+                    @click="bukaEdit($el)"
+                    data-update-url="{{ route('admin.pelanggan.update', $pelanggan) }}"
+                    data-pelanggan-id="{{ $pelanggan->id }}"
+                    data-nama="{{ $pelanggan->name }}"
+                    data-email="{{ $pelanggan->email }}"
+                    data-no-telepon="{{ $pelanggan->no_telepon }}"
+                    class="rounded-lg bg-[#15AEEA]/15 px-3 py-1.5 font-semibold text-[#15AEEA] transition hover:bg-[#15AEEA]/25">
+                Edit
             </button>
-        </form>
+            <form method="POST" action="{{ route('admin.pelanggan.destroy', $pelanggan) }}" class="inline"
+                  onsubmit="return confirm('Hapus akun pelanggan ini? Akun dengan riwayat transaksi tidak dapat dihapus.');">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="search" value="{{ $filters['search'] }}">
+                <input type="hidden" name="status" value="{{ $filters['status'] }}">
+                <input type="hidden" name="per_page" value="{{ $filters['per_page'] }}">
+                <button type="submit"
+                        class="rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-red-600 transition hover:bg-red-100">
+                    Hapus
+                </button>
+            </form>
+        </div>
     </td>
 </tr>

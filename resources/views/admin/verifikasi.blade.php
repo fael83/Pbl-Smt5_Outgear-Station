@@ -6,7 +6,7 @@
     <title>OutGear Station - Verifikasi Pembayaran</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="text-slate-800 antialiased bg-portal-bg min-h-screen" 
+<body class="admin-theme antialiased min-h-screen"
       x-data="{
           search: '',
           showSearchInput: false,
@@ -337,6 +337,13 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <template x-if="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua'">
+                                <button @click="search = ''; selectedFilter = 'Semua'; selectedJenis = 'Semua'" 
+                                        class="text-xs font-semibold text-portal-orange hover:underline px-1" title="Reset filter">
+                                    Reset
+                                </button>
+                            </template>
                         </div>
                     </div>
 

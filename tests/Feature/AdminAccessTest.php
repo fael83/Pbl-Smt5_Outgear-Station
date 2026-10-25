@@ -59,6 +59,11 @@ it('menolak pelanggan mengakses seluruh route admin', function () {
     $this->actingAs($pelanggan)->post(route('admin.peralatan.store'), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pelanggan)->put(route('admin.peralatan.update', $alat), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pelanggan)->delete(route('admin.peralatan.destroy', $alat))->assertForbidden();
+    $this->actingAs($pelanggan)->put(route('admin.pelanggan.update', $pelanggan), [
+        'name' => 'Tidak Boleh',
+        'email' => 'tidak-boleh@example.test',
+    ])->assertForbidden();
+    $this->actingAs($pelanggan)->delete(route('admin.pelanggan.destroy', $pelanggan))->assertForbidden();
 });
 
 it('mengizinkan :peran melihat data peralatan tetapi tidak menulis', function (string $peran) {
@@ -83,6 +88,11 @@ it('mengizinkan :peran melihat data peralatan tetapi tidak menulis', function (s
     $this->actingAs($pengguna)->post(route('admin.peralatan.store'), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pengguna)->put(route('admin.peralatan.update', $alat), dataAlatValid($kategori))->assertForbidden();
     $this->actingAs($pengguna)->delete(route('admin.peralatan.destroy', $alat))->assertForbidden();
+    $this->actingAs($pengguna)->put(route('admin.pelanggan.update', $target), [
+        'name' => 'Tidak Boleh',
+        'email' => 'tidak-boleh@example.test',
+    ])->assertForbidden();
+    $this->actingAs($pengguna)->delete(route('admin.pelanggan.destroy', $target))->assertForbidden();
 
     $this->assertDatabaseCount('alat', 1);
 })->with(['petugas', 'owner']);
