@@ -23,6 +23,8 @@ use App\Http\Controllers\Owner\DendaController;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
 
+use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
+
 /*
 |--------------------------------------------------------------------------
 | Webhook & halaman publik
@@ -133,5 +135,24 @@ Route::middleware('role:owner')
         Route::put('/kelola-staff/{id}', [StaffController::class, 'updateStaff'])->name('kelola-staff.update');
         Route::delete('/kelola-staff/{id}', [StaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
     });
+
+
+/*
+|--------------------------------------------------------------------------
+| Panel Petugas Gudang
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('role:petugas')
+    ->prefix('petugas')
+    ->name('petugas.')
+    ->group(function () {
+        Route::get('/dashboard', [
+            PetugasDashboardController::class,
+            'index',
+        ])->name('dashboard');
+    });
+
+    
 
 require __DIR__.'/auth.php';
