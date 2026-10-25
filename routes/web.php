@@ -12,17 +12,23 @@ use App\Http\Controllers\BookingSayaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\OutGearBotController;
-use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\LaporanController;
+
+use App\Http\Controllers\Owner\HargaController;
+use App\Http\Controllers\Owner\StaffController;
+use App\Http\Controllers\Owner\DendaController;
+use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
 
 /*
 |--------------------------------------------------------------------------
 | Webhook & halaman publik
 |--------------------------------------------------------------------------
 */
+
 Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook'])->name('wa.webhook');
 
 Route::get('/', BerandaController::class)->name('beranda');
@@ -95,25 +101,37 @@ Route::middleware(['role:admin,owner,petugas'])
         });
     });
 
+
+///OWNERRR
+
 Route::middleware('role:owner')
     ->prefix('owner')
     ->name('owner.')
     ->group(function () {
+
+        // Dashboard Owner
+        Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
+
+        // Laporan Penyewaan
+        Route::get('/laporan', [OwnerLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/export', [OwnerLaporanController::class, 'exportPdf'])->name('laporan.export');
+        Route::get('/laporan/export-csv', [OwnerLaporanController::class, 'exportCsv'])->name('laporan.export-csv');
+
         // Kelola Harga Sewa / Tarif Alat
-        Route::get('/harga-sewa', [OwnerController::class, 'hargaSewa'])->name('harga-sewa.index');
-        Route::put('/harga-sewa/{id}', [OwnerController::class, 'updateHargaSewa'])->name('harga-sewa.update');
+        Route::get('/harga-sewa', [HargaController::class, 'hargaSewa'])->name('harga-sewa.index');
+        Route::put('/harga-sewa/{id}', [HargaController::class, 'updateHargaSewa'])->name('harga-sewa.update');
 
         // Kelola Aturan Denda
-        Route::get('/aturan-denda', [OwnerController::class, 'aturanDenda'])->name('aturan-denda.index');
-        Route::put('/aturan-denda/{id}', [OwnerController::class, 'updateAturanDenda'])->name('aturan-denda.update');
+        Route::get('/aturan-denda', [DendaController::class, 'aturanDenda'])->name('aturan-denda.index');
+        Route::put('/aturan-denda/{id}', [DendaController::class, 'updateAturanDenda'])->name('aturan-denda.update');
 
         // Kelola Staff
-        Route::get('/kelola-staff', [OwnerController::class, 'kelolaStaff'])->name('kelola-staff.index');
-        Route::get('/kelola-staff/tambah', [OwnerController::class, 'createStaff'])->name('kelola-staff.create');
-        Route::post('/kelola-staff', [OwnerController::class, 'storeStaff'])->name('kelola-staff.store');
-        Route::get('/kelola-staff/{id}/edit', [OwnerController::class, 'editStaff'])->name('kelola-staff.edit');
-        Route::put('/kelola-staff/{id}', [OwnerController::class, 'updateStaff'])->name('kelola-staff.update');
-        Route::delete('/kelola-staff/{id}', [OwnerController::class, 'destroyStaff'])->name('kelola-staff.destroy');
+        Route::get('/kelola-staff', [StaffController::class, 'kelolaStaff'])->name('kelola-staff.index');
+        Route::get('/kelola-staff/tambah', [StaffController::class, 'createStaff'])->name('kelola-staff.create');
+        Route::post('/kelola-staff', [StaffController::class, 'storeStaff'])->name('kelola-staff.store');
+        Route::get('/kelola-staff/{id}/edit', [StaffController::class, 'editStaff'])->name('kelola-staff.edit');
+        Route::put('/kelola-staff/{id}', [StaffController::class, 'updateStaff'])->name('kelola-staff.update');
+        Route::delete('/kelola-staff/{id}', [StaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
     });
 
 require __DIR__.'/auth.php';
