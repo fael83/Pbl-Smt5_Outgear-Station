@@ -11,7 +11,7 @@
 <body class="admin-theme font-sans antialiased min-h-screen flex flex-col">
     <div class="flex flex-1 min-h-screen">
         <!-- Sidebar navigasi -->
-        @if(auth()->check() && auth()->user()->role === 'petugas')
+        @if(auth()->check() && (auth()->user()->role === 'petugas' || optional(auth()->user()->role)->value === 'petugas' || auth()->user()->role == 'petugas'))
             @includeIf('partials.sidebar-petugas')
         @else
             @includeIf('partials.sidebar-admin')
