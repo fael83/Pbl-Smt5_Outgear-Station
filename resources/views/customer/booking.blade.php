@@ -1,4 +1,3 @@
-
 @extends('layouts.customer')
 
 @section('title', 'Booking Saya - OutGear Station')
@@ -13,28 +12,17 @@
             <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Booking & Status Penyewaan</h1>
             <p class="text-xs sm:text-sm text-gray-500 mt-1">Pantau riwayat, jadwal pengambilan, dan status perlengkapan outdoor kamu.</p>
         </div>
-        <div>
-            <a href="/katalog" class="bg-brand hover:bg-brand-hover text-white text-xs font-bold px-4.5 py-3 rounded-2xl transition shadow-lg shadow-brand/20 inline-flex items-center gap-2">
+        
+        <!-- Tombol Sewa Alat Baru (Diposisikan Rapi) -->
+        <div class="shrink-0">
+            <a href="{{ route('katalog') }}" class="bg-brand hover:bg-brand-hover text-white text-xs font-bold px-5 py-3 rounded-2xl transition shadow-lg shadow-brand/20 inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 <span>Sewa Alat Baru</span>
             </a>
         </div>
-
-        <!-- Tombol Sewa Alat -->
-        <a href="/katalog"
-           class="inline-flex items-center justify-center gap-2 px-4 py-2.5
-                  bg-brand hover:bg-brand-hover text-white rounded-lg
-                  text-sm font-semibold transition self-start sm:self-auto">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                 viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Sewa Alat
-        </a>
     </div>
 
-    <!-- Filter Tab Status (Minimalis Modern) -->
+    <!-- Filter Tab Status -->
     <div class="flex items-center gap-2 border-b border-gray-200 pb-4 mb-8 text-xs font-bold">
         <button @click="activeTab = 'semua'" 
                 :class="activeTab === 'semua' ? 'bg-gray-900 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'"
@@ -60,7 +48,7 @@
         <div x-show="activeTab === 'semua' || activeTab === 'proses'" 
              class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-200 shadow-sm hover:shadow-md transition duration-300">
             
-            <!-- Top Info: Kode Booking & Status -->
+            <!-- Top Info -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-2">
                 <div class="flex items-center gap-3">
                     <span class="font-mono text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-lg border border-gray-200/60">#BK-20261013</span>
@@ -74,7 +62,7 @@
                 </div>
             </div>
 
-            <!-- Main Content: Nama Barang & Jadwal -->
+            <!-- Content -->
             <div class="py-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div class="space-y-2 flex-1">
                     <h3 class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug">
@@ -92,7 +80,7 @@
                 </div>
             </div>
 
-            <!-- Footer: Catatan & Tombol Aksi -->
+            <!-- Footer -->
             <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <p class="text-xs text-amber-700 bg-amber-50/80 px-3.5 py-2 rounded-xl border border-amber-200/60 flex items-center gap-2">
                     <span>⚠️</span>
@@ -106,13 +94,12 @@
                         Bantuan CS
                     </button>
                 </div>
-
             </div>
-        </article>
+        </div>
 
         <!-- Kartu 2: Selesai -->
         <div x-show="activeTab === 'semua' || activeTab === 'selesai'" 
-             class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-200 shadow-sm opacity-9ains hover:opacity-100 transition duration-300">
+             class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-200 shadow-sm opacity-90 hover:opacity-100 transition duration-300">
             
             <!-- Top Info -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-2">
@@ -127,7 +114,7 @@
                 </div>
             </div>
 
-            <!-- Main Content -->
+            <!-- Content -->
             <div class="py-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div class="space-y-2 flex-1">
                     <h3 class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug">
@@ -136,15 +123,6 @@
                     <p class="text-xs text-gray-500">
                         Jadwal Ambil: <strong class="text-gray-800">2 Sep 2026</strong> — Kembali: <strong class="text-gray-800">4 Sep 2026</strong> (2 Hari)
                     </p>
-
-                    <a href="/katalog"
-                       class="inline-flex items-center justify-center
-                              px-3.5 py-2 rounded-lg border border-gray-200
-                              text-gray-700 text-xs font-semibold
-                              hover:bg-gray-50 transition self-start sm:self-auto">
-                        Sewa Lagi
-                    </a>
-
                 </div>
 
                 <div class="text-left md:text-right shrink-0">
@@ -156,11 +134,11 @@
             <!-- Footer -->
             <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <span class="text-xs text-gray-400">Seluruh unit telah dikembalikan dalam kondisi baik.</span>
-                <a href="/katalog" class="px-4 py-2 border border-gray-200 hover:bg-brand hover:text-white hover:border-brand text-gray-700 rounded-xl text-xs font-bold transition">
+                <a href="{{ route('katalog') }}" class="px-4 py-2 border border-gray-200 hover:bg-brand hover:text-white hover:border-brand text-gray-700 rounded-xl text-xs font-bold transition">
                     Sewa Lagi
                 </a>
             </div>
-        </article>
+        </div>
 
     </div>
 </div>

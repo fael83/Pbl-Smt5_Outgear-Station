@@ -9,7 +9,8 @@ it('menampilkan halaman katalog tanpa login', function () {
     $this->get(route('katalog'))
         ->assertOk()
         ->assertSee('Katalog Sewa Alat Outdoor')
-        ->assertSee('Panduan Sewa');
+        ->assertSee('Panduan Sewa')
+        ->assertSee('href="'.route('profile.edit').'"', false);
 });
 
 it('menampilkan seluruh inventaris termasuk alat yang stoknya habis', function () {

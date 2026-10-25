@@ -47,12 +47,6 @@
                 <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">2</span>
             </a>
 
-            <!-- Chatbot & Bantuan -->
-            <a href="#" 
-               class="text-gray-300 hover:text-brand transition-colors duration-200">
-                Chatbot & Bantuan
-            </a>
-
             <!-- Panduan Sewa -->
             <a href="/panduan-sewa" 
                class="{{ request()->is('panduan-sewa*') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200">

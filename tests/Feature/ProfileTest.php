@@ -10,7 +10,29 @@ test('profile page is displayed', function () {
         ->actingAs($user)
         ->get('/profile');
 
-    $response->assertOk();
+    $response
+        ->assertOk()
+        ->assertSee('Informasi Profil')
+        ->assertSee($user->name);
+});
+
+test('guest is asked to login before returning to the profile page', function () {
+    $user = User::factory()->create();
+
+    $this->get('/profile')
+        ->assertRedirect('/login');
+
+    $response = $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect('/profile');
+
+    $this->get('/profile')
+        ->assertOk()
+        ->assertSee('Informasi Profil')
+        ->assertSee($user->name);
 });
 
 test('profile information can be updated', function () {
