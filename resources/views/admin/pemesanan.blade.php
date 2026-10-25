@@ -27,12 +27,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OutGear Station - Data Pemesanan</title>
-    <style>
-        [x-cloak] { display: none !important; }
-    </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="text-slate-800 antialiased">
+<body class="admin-theme antialiased font-sans" x-data="{ showSearchInput: {{ $kataKunci !== '' ? 'true' : 'false' }}, showFilterDropdown: false }">
 
     <div class="flex min-h-screen">
 
@@ -129,40 +125,82 @@
                 <!-- STATUS BOARD / TABEL DATA PEMESANAN -->
                 <div class="bg-white rounded-2xl border border-zinc-200/80 shadow-sm overflow-hidden">
 
-                    <!-- Header Action Board: pencarian + filter status -->
-                    <form method="GET" action="{{ route('admin.pemesanan') }}"
-                          class="p-5 border-b border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <!-- Header Action Board (Kaca Pembesar & Icon Filter seperti di Verifikasi) -->
+                    <div class="p-5 border-b border-zinc-100 flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3">
                             <h3 class="font-bold text-zinc-900 text-base">Daftar Pemesanan</h3>
                             <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg">
-                                {{ number_format($pemesanan->total(), 0, ',', '.') }} data
+                                Filter: <span class="font-bold text-zinc-800">{{ $statusAktif ? ($labelStatus[$statusAktif] ?? 'Semua') : 'Semua Status' }}</span>
+                            </span>
+                            <span class="text-xs font-medium text-zinc-400">
+                                ({{ number_format($pemesanan->total(), 0, ',', '.') }} data)
                             </span>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-2">
-                            <input type="text" name="q" value="{{ $kataKunci }}" maxlength="100"
-                                   placeholder="Cari kode, pelanggan, alat..."
-                                   class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-portal-orange w-48 sm:w-64">
+                        <div class="flex items-center gap-2 relative">
+                            <!-- Input Search Interaktif -->
+                            <form method="GET" action="{{ route('admin.pemesanan') }}" class="flex items-center gap-2">
+                                @if ($statusAktif)
+                                    <input type="hidden" name="status" value="{{ $statusAktif }}">
+                                @endif
+                                <div x-show="showSearchInput" x-transition class="relative">
+                                    <input id="pemesananSearchInput" 
+                                           type="text" 
+                                           name="q"
+                                           value="{{ $kataKunci }}"
+                                           placeholder="Cari ID / pelanggan / alat..." 
+                                           class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-orange w-48 sm:w-64">
+                                    <svg class="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
 
-                            <select name="status" onchange="this.form.submit()"
-                                    class="bg-white border border-zinc-300 text-xs font-medium text-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-portal-orange">
-                                <option value="">Semua Status</option>
-                                @foreach ($labelStatus as $kunciStatus => $namaStatus)
-                                    <option value="{{ $kunciStatus }}" @selected($statusAktif === $kunciStatus)>{{ $namaStatus }}</option>
-                                @endforeach
-                            </select>
+                                <!-- Tombol Kaca Pembesar -->
+                                <button type="button" 
+                                        @click="showSearchInput = !showSearchInput; if(showSearchInput) { $nextTick(() => document.getElementById('pemesananSearchInput')?.focus()) }" 
+                                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
+                                        title="Cari pemesanan">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </button>
+                            </form>
+                            
+                            <!-- Tombol Filter Interaktif -->
+                            <div class="relative">
+                                <button @click="showFilterDropdown = !showFilterDropdown" 
+                                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
+                                        title="Filter Status Pemesanan">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                                </button>
 
-                            <button type="submit"
-                                    class="bg-zinc-900 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition">
-                                Cari
-                            </button>
+                                <!-- Dropdown Menu Filter -->
+                                <div x-show="showFilterDropdown" 
+                                     @click.away="showFilterDropdown = false" 
+                                     x-transition 
+                                     class="absolute right-0 mt-2 w-52 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
+                                    <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Filter Status Pemesanan</div>
+                                    <a href="{{ route('admin.pemesanan', array_filter(['q' => $kataKunci])) }}" 
+                                       class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                        <span>Semua Status</span>
+                                        @if (!$statusAktif)
+                                            <span class="text-portal-orange font-bold">✓</span>
+                                        @endif
+                                    </a>
+                                    @foreach ($labelStatus as $kunciStatus => $namaStatus)
+                                        <a href="{{ route('admin.pemesanan', array_filter(['status' => $kunciStatus, 'q' => $kataKunci])) }}" 
+                                           class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                            <span>{{ $namaStatus }}</span>
+                                            @if ($statusAktif === $kunciStatus)
+                                                <span class="text-portal-orange font-bold">✓</span>
+                                            @endif
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
 
                             @if ($statusAktif || $kataKunci !== '')
                                 <a href="{{ route('admin.pemesanan') }}"
-                                   class="text-xs font-semibold text-portal-orange hover:underline px-1">Reset</a>
+                                   class="text-xs font-semibold text-portal-orange hover:underline px-1" title="Reset filter">Reset</a>
                             @endif
                         </div>
-                    </form>
+                    </div>
 
                     <!-- TABEL PEMESANAN -->
                     <div class="overflow-x-auto">

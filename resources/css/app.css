@@ -4,9 +4,28 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --portal-sidebar-rgb: 24 24 27;
+    --portal-bg-rgb: 244 239 234;
+    --portal-brand-rgb: 216 107 67;
+    --portal-brand-hover-rgb: 194 90 52;
+    --portal-card-rgb: 255 255 255;
+    --portal-ink-rgb: 26 32 36;
+    --portal-dark-card-rgb: 21 26 29;
+    --portal-bglight-rgb: 251 249 246;
+}
+
 body {
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #f4f2ef;
+    font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+}
+
+body.admin-theme {
+    background-color: rgb(var(--portal-bg-rgb));
+    color: rgb(var(--portal-ink-rgb));
+}
+
+[x-cloak] {
+    display: none !important;
 }
 
 aside::-webkit-scrollbar {
@@ -21,15 +40,15 @@ aside::-webkit-scrollbar-thumb {
 /* Global Brand Colors */
 @layer utilities {
     .bg-brand {
-        background-color: #BE5103; 
+        background-color: rgb(var(--portal-brand-rgb));
     }
     .bg-brand-hover:hover {
-        background-color: #A34302;
+        background-color: rgb(var(--portal-brand-hover-rgb));
     }
     .text-brand {
-        color: #BE5103;
+        color: rgb(var(--portal-brand-rgb));
     }
     .border-brand {
-        border-color: #BE5103;
+        border-color: rgb(var(--portal-brand-rgb));
     }
 }

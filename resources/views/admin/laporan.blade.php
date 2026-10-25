@@ -6,7 +6,7 @@
     <title>OutGear Station - Laporan</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#F8F6F2] text-slate-800 antialiased font-sans" x-data="{ tipeLaporan: 'pendapatan' }">
+<body class="admin-theme antialiased font-sans" x-data="{ tipeLaporan: 'pendapatan', search: '', showSearchInput: false, showFilterDropdown: false }">
 
     <div class="flex min-h-screen relative">
 
@@ -16,7 +16,7 @@
         <main class="flex-grow flex flex-col min-w-0">
             
             <!-- Header Atas (Bersih) -->
-            <header class="sticky top-0 bg-[#F8F6F2]/90 backdrop-blur-md px-10 py-4 z-30 border-b border-zinc-200/60 flex items-center justify-between">
+            <header class="sticky top-0 bg-portal-bg/90 backdrop-blur-md px-10 py-4 z-30 border-b border-zinc-200/60 flex items-center justify-between">
                 <div></div> <!-- Spacer kosong -->
 
                 <div class="flex items-center gap-3">
@@ -43,16 +43,21 @@
 
                     <!-- Tombol Ekspor PDF & Excel -->
                     <div class="flex items-center gap-2.5 self-start md:self-auto">
-                        <button class="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 text-xs font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center gap-2">
+                        <!-- Tombol Excel -->
+                        <a href="{{ route('admin.laporan.excel') }}" 
+                           class="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 text-xs font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center gap-2">
                             <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             Export Excel
-                        </button>
-                        <button class="bg-zinc-900 hover:bg-portal-orange text-white text-xs font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center gap-2">
+                        </a>
+
+                        <!-- Tombol PDF -->
+                        <a href="{{ route('admin.laporan.pdf') }}" 
+                           class="bg-zinc-900 hover:bg-portal-orange text-white text-xs font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                             Cetak PDF
-                        </button>
+                        </a>
                     </div>
-                </div>
+                </div> <!-- END / Penutup div judul & tombol ekspor -->
 
                 <!-- 4 KARTU RINGKASAN LAPORAN (ANGKA BERWARNA & TIDAK HITAM) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -96,7 +101,7 @@
                 <!-- TABEL DATA LAPORAN -->
                 <div class="bg-white rounded-3xl border border-zinc-200/80 shadow-sm overflow-hidden">
                     
-                    <!-- Filter Periode & Kategori Laporan (TABEL TAB DIBERSIHKAN DARI TYPO) -->
+                    <!-- Filter Periode & Kategori Laporan -->
                     <div class="p-6 border-b border-zinc-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div class="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0">
                             <button @click="tipeLaporan = 'pendapatan'" :class="tipeLaporan === 'pendapatan' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
@@ -110,11 +115,61 @@
                             </button>
                         </div>
 
-                        <!-- Filter Rentang Tanggal -->
-                        <div class="flex items-center gap-2">
-                            <input type="date" value="2026-10-01" class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-3.5 py-2 font-medium text-zinc-700">
-                            <span class="text-xs text-zinc-400 font-bold">s/d</span>
-                            <input type="date" value="2026-10-31" class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-3.5 py-2 font-medium text-zinc-700">
+                        <!-- Filter Rentang Tanggal & Search Filter -->
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <input type="date" value="2026-10-01" class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-3.5 py-2 font-medium text-zinc-700">
+                                <span class="text-xs text-zinc-400 font-bold">s/d</span>
+                                <input type="date" value="2026-10-31" class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-3.5 py-2 font-medium text-zinc-700">
+                            </div>
+
+                            <div class="flex items-center gap-2 relative">
+                                <!-- Input Search Interaktif -->
+                                <div x-show="showSearchInput" x-transition class="relative">
+                                    <input id="laporanSearchInput" 
+                                           type="text" 
+                                           x-model="search"
+                                           placeholder="Cari transaksi / denda..." 
+                                           class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-orange w-40 sm:w-52">
+                                    <svg class="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
+
+                                <!-- Tombol Kaca Pembesar -->
+                                <button @click="showSearchInput = !showSearchInput; if(showSearchInput) { $nextTick(() => document.getElementById('laporanSearchInput')?.focus()) }" 
+                                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
+                                        title="Cari di laporan">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </button>
+                                
+                                <!-- Tombol Filter Interaktif -->
+                                <div class="relative">
+                                    <button @click="showFilterDropdown = !showFilterDropdown" 
+                                            class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
+                                            title="Filter Jenis Laporan">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                                    </button>
+
+                                    <!-- Dropdown Menu Filter -->
+                                    <div x-show="showFilterDropdown" 
+                                         @click.away="showFilterDropdown = false" 
+                                         x-transition 
+                                         class="absolute right-0 mt-2 w-52 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
+                                        <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Pilih Jenis Laporan</div>
+                                        <button @click="tipeLaporan = 'pendapatan'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                            <span>Ringkasan Pendapatan</span>
+                                            <span x-show="tipeLaporan === 'pendapatan'" class="text-portal-orange font-bold">✓</span>
+                                        </button>
+                                        <button @click="tipeLaporan = 'penyewaan'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                            <span>Histori Penyewaan</span>
+                                            <span x-show="tipeLaporan === 'penyewaan'" class="text-portal-orange font-bold">✓</span>
+                                        </button>
+                                        <button @click="tipeLaporan = 'denda'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                            <span>Laporan Denda</span>
+                                            <span x-show="tipeLaporan === 'denda'" class="text-portal-orange font-bold">✓</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

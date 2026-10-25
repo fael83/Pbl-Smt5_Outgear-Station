@@ -17,19 +17,15 @@ export default {
                 heading: ['Space Grotesk', 'sans-serif'],
             },
             colors: {
-                // Warna kustom yang sebelumnya hanya didefinisikan lewat
-                // <script> tailwind.config di dalam view (Tailwind CDN).
-                // Sekarang masuk ke build Vite supaya CDN tidak diperlukan.
-                'portal-sidebar': '#18181b',
-                'portal-bg': '#f4f2ef',
-                'portal-orange': '#e05a3f',
-                'portal-card': '#ffffff',
-
-                brand: '#D86B43',
-                'brand-hover': '#c25a34',
-                dark: '#1A2024',
-                'dark-card': '#151A1D',
-                bglight: '#FBF9F6',
+                'portal-sidebar': 'rgb(var(--portal-sidebar-rgb) / <alpha-value>)',
+                'portal-bg': 'rgb(var(--portal-bg-rgb) / <alpha-value>)',
+                'portal-orange': 'rgb(var(--portal-brand-rgb) / <alpha-value>)',
+                'portal-card': 'rgb(var(--portal-card-rgb) / <alpha-value>)',
+                brand: 'rgb(var(--portal-brand-rgb) / <alpha-value>)',
+                'brand-hover': 'rgb(var(--portal-brand-hover-rgb) / <alpha-value>)',
+                dark: 'rgb(var(--portal-ink-rgb) / <alpha-value>)',
+                'dark-card': 'rgb(var(--portal-dark-card-rgb) / <alpha-value>)',
+                bglight: 'rgb(var(--portal-bglight-rgb) / <alpha-value>)',
             },
         },
     },

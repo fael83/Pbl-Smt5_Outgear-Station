@@ -29,9 +29,44 @@ it('menampilkan data pelanggan langsung dari database', function () {
         ->assertOk()
         ->assertSee('Data Pelanggan')
         ->assertSee('Rizky Pratama')
+        ->assertSee('Email')
         ->assertSee('rizky.pratama@example.com')
         ->assertSee('081234567890')
+        ->assertDontSee('Bergabung')
+        ->assertSee('Edit')
+        ->assertSee('Hapus')
+        ->assertDontSee('Nonaktifkan')
+        ->assertSee(route('admin.pelanggan.update', $pelanggan), false)
+        ->assertSee(route('admin.pelanggan.destroy', $pelanggan), false)
         ->assertSee('#PL-'.str_pad((string) $pelanggan->id, 3, '0', STR_PAD_LEFT));
+});
+
+it('menampilkan semua akun pelanggan dalam halaman pertama', function () {
+    User::factory()->customer()->count(7)->sequence(
+        ['name' => 'Pelanggan Satu', 'email' => 'satu@example.test'],
+        ['name' => 'Pelanggan Dua', 'email' => 'dua@example.test'],
+        ['name' => 'Pelanggan Tiga', 'email' => 'tiga@example.test'],
+        ['name' => 'Pelanggan Empat', 'email' => 'empat@example.test'],
+        ['name' => 'Pelanggan Lima', 'email' => 'lima@example.test'],
+        ['name' => 'Pelanggan Enam', 'email' => 'enam@example.test'],
+        ['name' => 'Pelanggan Tujuh', 'email' => 'tujuh@example.test'],
+    )->create();
+
+    $response = $this->get(route('admin.pelanggan'))->assertOk();
+
+    $response->assertSee('7 pelanggan');
+    foreach ([
+        'Satu' => 'satu',
+        'Dua' => 'dua',
+        'Tiga' => 'tiga',
+        'Empat' => 'empat',
+        'Lima' => 'lima',
+        'Enam' => 'enam',
+        'Tujuh' => 'tujuh',
+    ] as $nama => $email) {
+        $response->assertSee("Pelanggan {$nama}")
+            ->assertSee("{$email}@example.test");
+    }
 });
 
 it('tidak menampilkan akun staf internal di daftar pelanggan', function () {
@@ -165,7 +200,9 @@ it('menonaktifkan pelanggan lewat ajax', function () {
 
     expect($response->json('baris'))
         ->toContain('Akun Uji Nonaktif')
-        ->toContain('Aktifkan');
+        ->toContain('Edit')
+        ->toContain('Hapus')
+        ->not->toContain('Nonaktifkan');
 
     $this->assertDatabaseHas('users', [
         'id' => $pelanggan->id,
@@ -209,6 +246,87 @@ it('menolak mengubah status akun staf internal', function () {
         'id' => $petugas->id,
         'status_akun' => 'aktif',
     ]);
+});
+
+it('mengubah data pelanggan tanpa mengubah status akun atau peran', function () {
+    $pelanggan = buatPelanggan([
+        'name' => 'Nama Lama',
+        'email' => 'lama@example.test',
+        'status_akun' => 'nonaktif',
+    ]);
+
+    $response = $this->put(route('admin.pelanggan.update', $pelanggan), [
+        'name' => 'Nama Baru',
+        'email' => 'baru@example.test',
+        'no_telepon' => '081299887766',
+        'role' => 'admin',
+        'status_akun' => 'aktif',
+    ]);
+
+    $response->assertRedirect(route('admin.pelanggan'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('users', [
+        'id' => $pelanggan->id,
+        'name' => 'Nama Baru',
+        'email' => 'baru@example.test',
+        'no_telepon' => '081299887766',
+        'role' => 'customer',
+        'status_akun' => 'nonaktif',
+    ]);
+});
+
+it('menolak email pelanggan yang sudah dipakai saat mengedit', function () {
+    $pelanggan = buatPelanggan(['email' => 'pelanggan.lama@example.test']);
+    buatPelanggan(['email' => 'pelanggan.lain@example.test']);
+
+    $response = $this->from(route('admin.pelanggan'))
+        ->put(route('admin.pelanggan.update', $pelanggan), [
+            'name' => 'Nama Baru',
+            'email' => 'pelanggan.lain@example.test',
+            'no_telepon' => '081299887766',
+        ]);
+
+    $response->assertRedirect(route('admin.pelanggan'))
+        ->assertSessionHasErrors('email');
+
+    $this->assertDatabaseHas('users', [
+        'id' => $pelanggan->id,
+        'email' => 'pelanggan.lama@example.test',
+    ]);
+});
+
+it('menolak mengedit akun staf dari halaman pelanggan', function () {
+    $admin = User::factory()->admin()->create();
+    $petugas = User::factory()->petugas()->create();
+
+    $this->actingAs($admin)->put(route('admin.pelanggan.update', $petugas), [
+        'name' => 'Nama Diubah',
+        'email' => $petugas->email,
+    ])->assertNotFound();
+
+    expect($petugas->refresh()->name)->not->toBe('Nama Diubah');
+});
+
+it('menghapus pelanggan yang tidak memiliki riwayat terkait', function () {
+    $pelanggan = buatPelanggan(['name' => 'Akun Tanpa Booking']);
+
+    $this->delete(route('admin.pelanggan.destroy', $pelanggan))
+        ->assertRedirect(route('admin.pelanggan'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseMissing('users', ['id' => $pelanggan->id]);
+});
+
+it('menjaga akun pelanggan yang memiliki riwayat booking', function () {
+    $pelanggan = buatPelanggan(['name' => 'Akun Dengan Booking']);
+    Pemesanan::factory()->for($pelanggan, 'pelanggan')->create();
+
+    $this->delete(route('admin.pelanggan.destroy', $pelanggan))
+        ->assertRedirect(route('admin.pelanggan'))
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseHas('users', ['id' => $pelanggan->id]);
 });
 
 it('mengekspor pelanggan sesuai filter sebagai csv', function () {
