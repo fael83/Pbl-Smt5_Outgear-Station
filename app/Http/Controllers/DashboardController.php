@@ -5,19 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-/**
- * Titik masuk setelah login: arahkan pengguna ke halaman sesuai perannya.
- */
 class DashboardController extends Controller
 {
+    /**
+     * Arahkan pengguna ke dashboard sesuai perannya.
+     */
     public function __invoke(Request $request): RedirectResponse
     {
-        // Tim internal (admin, owner, petugas) memakai panel admin,
-        // sedangkan pelanggan kembali ke katalog.
-        if ($request->user()?->isStaff()) {
-            return redirect()->route('admin.dashboard');
+        $user = $request->user();
+
+        if (! $user) {
+            return redirect()->route('login');
         }
 
-        return redirect('/katalog');
+        return match ($user->role->value ?? $user->role) {
+            'admin' => redirect()->route('admin.dashboard'),
+            'owner' => redirect()->route('owner.dashboard'),
+            'petugas' => redirect()->route('petugas.dashboard'),
+            default => redirect()->route('katalog'),
+        };
     }
 }

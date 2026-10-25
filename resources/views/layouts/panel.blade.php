@@ -11,7 +11,11 @@
 <body class="admin-theme font-sans antialiased min-h-screen flex flex-col">
     <div class="flex flex-1 min-h-screen">
         <!-- Sidebar navigasi -->
-        @includeIf('partials.sidebar-admin')
+        @if(auth()->check() && auth()->user()->role === 'petugas')
+            @includeIf('partials.sidebar-petugas')
+        @else
+            @includeIf('partials.sidebar-admin')
+        @endif
 
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col min-w-0">
