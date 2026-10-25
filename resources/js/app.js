@@ -98,6 +98,13 @@ Alpine.data('halamanPeralatan', (config = {}) => {
         kondisi: String(config.filters?.kondisi ?? 'semua'),
         perPage: Number(config.filters?.per_page ?? 10),
         halaman: 1,
+        showSearchInput: String(config.filters?.search ?? '') !== '',
+        showFilterDropdown: false,
+        kategoriMap: { ...(config.kategoriMap ?? {}) },
+
+        get namaKategoriAktif() {
+            return this.kategoriMap[this.kategori] ?? '';
+        },
 
         items: Array.isArray(config.items) ? config.items : [],
         ringkasanData: { ...(config.ringkasan ?? {}) },
@@ -152,6 +159,16 @@ Alpine.data('halamanPeralatan', (config = {}) => {
             }
 
             this.kondisi = nilai;
+            this.muatTabel();
+        },
+
+        pilihKategori(nilai) {
+            const strNilai = String(nilai ?? '');
+            if (this.kategori === strNilai) {
+                return;
+            }
+
+            this.kategori = strNilai;
             this.muatTabel();
         },
 
@@ -494,12 +511,46 @@ Alpine.data('halamanPelanggan', (config = {}) => {
         status: String(config.filters?.status ?? 'semua'),
         perPage: Number(config.filters?.per_page ?? 10),
         halaman: 1,
+        showSearchInput: String(config.filters?.search ?? '') !== '',
+        showFilterDropdown: false,
+        modalTerbuka: Boolean(config.modalTerbuka),
+        formMode: String(config.formMode ?? 'create'),
+        formAction: String(config.createUrl ?? ''),
+        nilaiForm: { ...(config.oldValues ?? {}) },
 
         items: Array.isArray(config.items) ? config.items : [],
         ringkasanData: { ...(config.ringkasan ?? {}) },
 
         memuat: false,
         permintaanTerakhir: 0,
+
+        init() {
+            if (this.formMode === 'edit' && this.nilaiForm.id) {
+                this.formAction = config.updateUrlTemplate.replace(
+                    '__ID__',
+                    encodeURIComponent(String(this.nilaiForm.id)),
+                );
+            }
+        },
+
+        bukaTambah() {
+            this.formMode = 'create';
+            this.formAction = config.createUrl;
+            this.nilaiForm = { id: null, name: '', email: '', no_telepon: '' };
+            this.modalTerbuka = true;
+        },
+
+        bukaEdit(tombol) {
+            this.formMode = 'edit';
+            this.formAction = tombol.dataset.updateUrl;
+            this.nilaiForm = {
+                id: tombol.dataset.pelangganId,
+                name: tombol.dataset.nama,
+                email: tombol.dataset.email,
+                no_telepon: tombol.dataset.noTelepon ?? '',
+            };
+            this.modalTerbuka = true;
+        },
 
         // --- Notifikasi ringan ---
         pesan: '',
@@ -606,72 +657,6 @@ Alpine.data('halamanPelanggan', (config = {}) => {
             this.cari = '';
             this.status = 'semua';
             this.muatTabel();
-        },
-
-        /**
-         * Apakah item masih memenuhi filter status yang aktif?
-         */
-        cocokFilter(item) {
-            if (!item) {
-                return false;
-            }
-
-            return this.status === 'semua' || item.status_akun === this.status;
-        },
-
-        /**
-         * Aktifkan / nonaktifkan akun lewat AJAX setelah konfirmasi.
-         */
-        async ubahStatus(form) {
-            if (!window.confirm(form.dataset.pesan ?? 'Ubah status akun ini?')) {
-                return;
-            }
-
-            const tombol = form.querySelector('button[type="submit"]');
-
-            if (tombol) {
-                tombol.disabled = true;
-            }
-
-            try {
-                const { ok, data } = await kirim(form.action, {
-                    method: 'POST',
-                    body: new FormData(form),
-                });
-
-                if (!ok) {
-                    this.notifikasi(data.message ?? 'Gagal mengubah status akun.', true);
-
-                    return;
-                }
-
-                this.notifikasi(data.message ?? 'Status akun tersimpan.');
-                this.ringkasanData = data.ringkasan ?? this.ringkasanData;
-
-                const indeks = this.items.findIndex((item) => Number(item.id) === Number(data.id));
-
-                if (indeks !== -1 && data.item) {
-                    this.items[indeks] = data.item;
-                }
-
-                const baris = this.$refs.tabel.querySelector(`tr[data-pelanggan-id="${data.id}"]`);
-
-                // Kalau akun tidak lagi cocok dengan tab aktif, tabel diambil
-                // ulang supaya jumlah baris dan pagination tetap konsisten.
-                if (baris && this.cocokFilter(data.item) && typeof data.baris === 'string') {
-                    baris.outerHTML = data.baris;
-
-                    return;
-                }
-
-                this.muatTabel(this.halaman);
-            } catch {
-                this.notifikasi('Tidak dapat terhubung ke server.', true);
-            } finally {
-                if (tombol) {
-                    tombol.disabled = false;
-                }
-            }
         },
 
         notifikasi(pesan, gagal = false) {

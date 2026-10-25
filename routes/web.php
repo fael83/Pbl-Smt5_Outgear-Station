@@ -15,6 +15,7 @@ use App\Http\Controllers\OutGearBotController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\LaporanController;
 
 use App\Http\Controllers\Owner\HargaController;
 use App\Http\Controllers\Owner\StaffController;
@@ -65,6 +66,7 @@ Route::middleware(['role:admin,owner,petugas'])
     ->name('admin.')
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
+        Route::view('/profile', 'admin.profile')->name('profile');
 
         // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
         Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
@@ -76,6 +78,8 @@ Route::middleware(['role:admin,owner,petugas'])
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
         Route::get('/denda', AdminDendaController::class)->name('denda.index');
         Route::get('/laporan', AdminLaporanController::class)->name('laporan.index');
+        Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
+        Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');
 
         // Data Alat & Stok. Dipakai oleh menu "Data Peralatan" di sidebar admin.
         Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
@@ -84,6 +88,9 @@ Route::middleware(['role:admin,owner,petugas'])
         // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
         Route::middleware('role:admin')->group(function () {
             Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
+            Route::post('/pelanggan', [AdminPelangganController::class, 'store'])->name('pelanggan.store');
+            Route::put('/pelanggan/{pelanggan}', [AdminPelangganController::class, 'update'])->name('pelanggan.update');
+            Route::delete('/pelanggan/{pelanggan}', [AdminPelangganController::class, 'destroy'])->name('pelanggan.destroy');
 
             Route::patch('/verifikasi/{pembayaran}/verifikasi', [AdminVerifikasiController::class, 'verifikasi'])->name('verifikasi.verifikasi');
             Route::patch('/verifikasi/{pembayaran}/tolak', [AdminVerifikasiController::class, 'tolak'])->name('verifikasi.tolak');
@@ -126,3 +133,5 @@ Route::middleware('role:owner')
         Route::put('/kelola-staff/{id}', [StaffController::class, 'updateStaff'])->name('kelola-staff.update');
         Route::delete('/kelola-staff/{id}', [StaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
     });
+
+require __DIR__.'/auth.php';

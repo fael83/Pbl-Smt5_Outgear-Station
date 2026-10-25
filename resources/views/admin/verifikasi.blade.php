@@ -6,7 +6,7 @@
     <title>OutGear Station - Verifikasi Pembayaran</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="text-slate-800 antialiased bg-portal-bg min-h-screen" 
+<body class="admin-theme antialiased min-h-screen"
       x-data="{
           search: '',
           showSearchInput: false,
@@ -232,38 +232,32 @@
                 </div>
 
                 <!-- 3 KARTU STATISTIK RINGKASAN ATAS (MENUNGGU, SUKSES, GAGAL) -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Kartu 1: Menunggu Verifikasi -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-amber-600" x-text="countPending"></div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Menunggu Verifikasi</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Menunggu Verifikasi</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-amber-600" x-text="countPending"></div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                            Perlu Ditinjau
-                        </span>
+                        <div class="text-[11px] text-amber-600 font-bold pt-2 border-t border-zinc-100">Perlu Ditinjau</div>
                     </div>
 
                     <!-- Kartu 2: Terverifikasi (Sukses) -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-emerald-600" x-text="countBerhasil"></div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Terverifikasi (Sukses)</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Terverifikasi (Sukses)</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-emerald-600" x-text="countBerhasil"></div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Selesai
-                        </span>
+                        <div class="text-[11px] text-emerald-600 font-bold pt-2 border-t border-zinc-100">Selesai</div>
                     </div>
 
                     <!-- Kartu 3: Ditolak / Gagal -->
-                    <div class="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="text-3xl font-black text-rose-600" x-text="countGagal"></div>
-                            <div class="text-xs font-semibold text-zinc-400 mt-1">Ditolak / Gagal</div>
+                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Ditolak / Gagal</span>
+                        <div class="my-2">
+                            <div class="text-3xl font-black font-heading text-rose-600" x-text="countGagal"></div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                            Dibatalkan
-                        </span>
+                        <div class="text-[11px] text-rose-600 font-bold pt-2 border-t border-zinc-100">Dibatalkan</div>
                     </div>
                 </div>
 
@@ -343,6 +337,13 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <template x-if="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua'">
+                                <button @click="search = ''; selectedFilter = 'Semua'; selectedJenis = 'Semua'" 
+                                        class="text-xs font-semibold text-portal-orange hover:underline px-1" title="Reset filter">
+                                    Reset
+                                </button>
+                            </template>
                         </div>
                     </div>
 
@@ -476,9 +477,12 @@
 
                                 <template x-if="filteredList.length === 0">
                                     <tr>
-                                        <td colspan="9" class="p-8 text-center text-zinc-400">
-                                            <div class="text-sm font-semibold">Tidak ada antrean pembayaran yang perlu diverifikasi.</div>
-                                            <div class="text-xs text-zinc-400 mt-1">Semua transaksi yang menunggu validasi telah selesai diproses.</div>
+                                        <td colspan="9" class="p-10 text-center">
+                                            <p class="text-3xl">💳</p>
+                                            <p class="mt-2 text-sm font-semibold text-[#1A2024]"
+                                               x-text="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua' ? 'Tidak ada pembayaran yang cocok dengan filter.' : 'Tidak ada antrean pembayaran untuk diverifikasi.'"></p>
+                                            <p class="mt-1 text-xs text-gray-500"
+                                               x-text="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua' ? 'Coba ubah kata kunci pencarian, status, atau jenis pembayaran.' : 'Transaksi yang menunggu validasi akan muncul di sini.'"></p>
                                         </td>
                                     </tr>
                                 </template>

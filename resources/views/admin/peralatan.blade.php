@@ -44,10 +44,6 @@
 @endphp
 
 @section('content')
-    <style>
-        [x-cloak] { display: none !important; }
-    </style>
-
     <div class="space-y-6"
          x-data="halamanPeralatan({
             createUrl: {{ Js::from(route('admin.peralatan.store')) }},
@@ -59,23 +55,20 @@
             modeAwal: {{ Js::from($modeAwal) }},
             alatIdAwal: {{ $alatIdAwal }},
             updateUrlAwal: {{ Js::from($updateUrlAwal) }},
+            kategoriMap: {{ Js::from(collect($daftarKategori ?? [])->pluck('nama', 'id')->mapWithKeys(fn ($nama, $id) => [(string) $id => $nama])->all()) }},
             punyaError: {{ $errors->any() ? 'true' : 'false' }}
          })">
 
         <!-- Judul & Aksi -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-black font-heading text-[#1A2024] tracking-tight">Data Peralatan</h1>
+                <h1 class="text-2xl font-black text-[#1A2024] tracking-tight">Data Peralatan</h1>
                 <p class="text-xs text-gray-500 mt-1 max-w-2xl">
                     Manajemen katalog master alat outdoor, tarif sewa harian, nilai pengganti, dan status
                     ketersediaan unit. Semua angka di halaman ini dibaca langsung dari database.
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('admin.peralatan.index') }}" @click.prevent="muatTabel()"
-                   class="px-4 py-2.5 bg-white border border-gray-200 text-[#1A2024] text-xs font-semibold rounded-xl hover:bg-gray-50 transition shadow-sm">
-                    Muat Ulang
-                </a>
                 <button type="button" @click="bukaTambah()"
                         class="px-4 py-2.5 bg-[#D86B43] text-white text-xs font-bold rounded-xl hover:bg-[#D86B43]/90 transition shadow-md">
                     + Tambah Peralatan
@@ -85,115 +78,52 @@
 
         <!-- Kartu Statistik (dihitung dari tabel alat) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-3xl font-black font-heading text-emerald-600"
-                           x-text="ringkasanData.unit_tersedia">{{ $ringkasan['unit_tersedia'] }}</p>
-                        <p class="text-[11px] font-semibold text-gray-400 mt-1">Unit Tersedia</p>
-                    </div>
-                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap"
-                          x-text="rasio(ringkasanData.unit_tersedia, ringkasanData.total_unit) + '% siap'">
-                        {{ $ringkasan['total_unit'] > 0 ? round($ringkasan['unit_tersedia'] / $ringkasan['total_unit'] * 100, 1) : 0 }}% siap
-                    </span>
+            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Unit Tersedia</span>
+                <div class="my-2">
+                    <p class="text-3xl font-black font-heading text-emerald-600"
+                       x-text="ringkasanData.unit_tersedia">{{ $ringkasan['unit_tersedia'] }}</p>
+                </div>
+                <div class="text-[11px] text-emerald-700 font-bold pt-2 border-t border-zinc-100"
+                     x-text="rasio(ringkasanData.unit_tersedia, ringkasanData.total_unit) + '% siap'">
+                    {{ $ringkasan['total_unit'] > 0 ? round($ringkasan['unit_tersedia'] / $ringkasan['total_unit'] * 100, 1) : 0 }}% siap
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-3xl font-black font-heading text-[#15AEEA]"
-                           x-text="ringkasanData.unit_disewa">{{ $ringkasan['unit_disewa'] }}</p>
-                        <p class="text-[11px] font-semibold text-gray-400 mt-1">Sedang Disewa</p>
-                    </div>
-                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 whitespace-nowrap"
-                          x-text="rasio(ringkasanData.unit_disewa, ringkasanData.total_unit) + '% aktif'">
-                        {{ $ringkasan['total_unit'] > 0 ? round($ringkasan['unit_disewa'] / $ringkasan['total_unit'] * 100, 1) : 0 }}% aktif
-                    </span>
+            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Sedang Disewa</span>
+                <div class="my-2">
+                    <p class="text-3xl font-black font-heading text-blue-700"
+                       x-text="ringkasanData.unit_disewa">{{ $ringkasan['unit_disewa'] }}</p>
+                </div>
+                <div class="text-[11px] text-sky-700 font-bold pt-2 border-t border-zinc-100"
+                     x-text="rasio(ringkasanData.unit_disewa, ringkasanData.total_unit) + '% aktif'">
+                    {{ $ringkasan['total_unit'] > 0 ? round($ringkasan['unit_disewa'] / $ringkasan['total_unit'] * 100, 1) : 0 }}% aktif
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-3xl font-black font-heading text-[#D86B43]"
-                           x-text="ringkasanData.unit_rusak">{{ $ringkasan['unit_rusak'] }}</p>
-                        <p class="text-[11px] font-semibold text-gray-400 mt-1">Unit Rusak</p>
-                    </div>
-                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-orange-50 text-[#D86B43] border border-orange-200 whitespace-nowrap">
-                        <span x-text="ringkasanData.alat_rusak">{{ $ringkasan['alat_rusak'] }}</span> jenis alat
-                    </span>
+            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Unit Rusak</span>
+                <div class="my-2">
+                    <p class="text-3xl font-black font-heading text-rose-600"
+                       x-text="ringkasanData.unit_rusak">{{ $ringkasan['unit_rusak'] }}</p>
+                </div>
+                <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100">
+                    <span x-text="ringkasanData.alat_rusak">{{ $ringkasan['alat_rusak'] }}</span> jenis alat
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-3xl font-black font-heading text-[#1A2024]"
-                           x-text="ringkasanData.total_unit">{{ $ringkasan['total_unit'] }}</p>
-                        <p class="text-[11px] font-semibold text-gray-400 mt-1">Total Unit Terdaftar</p>
-                    </div>
-                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
-                        <span x-text="ringkasanData.total_alat">{{ $ringkasan['total_alat'] }}</span> jenis alat
-                    </span>
+            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Unit Terdaftar</span>
+                <div class="my-2">
+                    <p class="text-3xl font-black font-heading text-blue-700"
+                       x-text="ringkasanData.total_unit">{{ $ringkasan['total_unit'] }}</p>
+                </div>
+                <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100">
+                    <span x-text="ringkasanData.total_alat">{{ $ringkasan['total_alat'] }}</span> jenis alat
                 </div>
             </div>
         </div>
-
-        <!-- Toolbar: tab status, pencarian, dan filter kategori (server-side ke database) -->
-        <form method="GET" action="{{ route('admin.peralatan.index') }}" @submit.prevent="muatTabel()"
-              class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
-            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0">
-                    @foreach ($tabStatus as $tab)
-                        <a href="{{ $tab['url'] }}"
-                           @click.prevent="pilihKondisi({{ Js::from($tab['kunci']) }})"
-                           :class="kondisi === {{ Js::from($tab['kunci']) }}
-                               ? 'bg-[#1A2024] text-white font-bold shadow-sm'
-                               : 'bg-[#F4EFEA]/70 text-gray-600 hover:bg-[#F4EFEA] font-medium'"
-                           class="px-3.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition">
-                            {{ $tab['label'] }}
-                            (<span x-text="ringkasanData.{{ $tab['kunci_ringkasan'] }}">{{ $ringkasan[$tab['kunci_ringkasan']] }}</span>)
-                        </a>
-                    @endforeach
-                </div>
-
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <div class="relative flex-1 min-w-0 sm:w-72">
-                        <span class="absolute left-3.5 top-2.5 text-gray-400 text-xs">🔍</span>
-                        <input type="search" name="search" x-model="cari" @input.debounce.400ms="muatTabel()"
-                               value="{{ $filters['search'] }}"
-                               placeholder="Cari nama alat, kategori, atau #AL-001..."
-                               class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                    </div>
-
-                    <select name="kategori" x-model="kategori" @change="muatTabel()"
-                            class="bg-[#F4EFEA]/60 border border-transparent rounded-xl px-3 py-2.5 text-xs text-[#1A2024] font-medium focus:ring-2 focus:ring-[#15AEEA] sm:w-48">
-                        <option value="">Semua Kategori</option>
-                        @foreach ($daftarKategori as $kategoriAlat)
-                            <option value="{{ $kategoriAlat->id }}" @selected($filters['kategori'] === (int) $kategoriAlat->id)>
-                                {{ $kategoriAlat->nama }} ({{ $kategoriAlat->alat_count }})
-                            </option>
-                        @endforeach
-                    </select>
-
-                    {{-- Nilai cadangan supaya form tetap berfungsi tanpa JavaScript. --}}
-                    <input type="hidden" name="kondisi" :value="kondisi" value="{{ $filters['kondisi'] }}">
-                    <input type="hidden" name="per_page" :value="perPage" value="{{ $filters['per_page'] }}">
-
-                    <div class="flex items-center gap-2">
-                        <button type="submit"
-                                class="px-4 py-2.5 bg-[#1A2024] text-white text-xs font-semibold rounded-xl hover:bg-[#1A2024]/90 transition shadow-sm">
-                            Terapkan
-                        </button>
-                        <a href="{{ route('admin.peralatan.index') }}" x-show="adaFilter" x-cloak @click.prevent="resetFilter()"
-                           class="px-4 py-2.5 bg-gray-100 text-[#1A2024] text-xs font-semibold rounded-xl hover:bg-gray-200 transition">
-                            Reset
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </form>
 
         <!-- Tabel Data Peralatan (diperbarui lewat AJAX, tanpa reload halaman) -->
         <div class="relative">
@@ -222,7 +152,7 @@
             <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl" @click.outside="tutupModal()">
                 <div class="flex items-start justify-between gap-4 p-5 border-b border-gray-100">
                     <div>
-                        <h2 class="text-lg font-bold font-heading text-[#1A2024]"
+                        <h2 class="text-lg font-bold text-[#1A2024]"
                             x-text="mode === 'edit' ? 'Edit Data Alat' : 'Tambah Alat Baru'">Tambah Alat Baru</h2>
                         <p class="text-xs text-gray-500 mt-0.5">
                             Stok tersedia dihitung otomatis: total − disewa − rusak.

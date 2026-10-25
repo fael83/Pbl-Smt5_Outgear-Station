@@ -18,5 +18,10 @@ it('renders the admin dashboard and its statistics', function () {
         ->assertSee('Dashboard Operasional')
         ->assertSee('Booking Aktif')
         ->assertSee('Perlu Verifikasi')
-        ->assertSee('Verifikasi Pembayaran');
+        ->assertSee('Verifikasi Pembayaran')
+        ->assertSee('href="'.route('admin.profile').'"', false);
+
+    $this->get(route('admin.profile'))
+        ->assertOk()
+        ->assertSee('Profil Administrator');
 });

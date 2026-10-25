@@ -6,19 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Admin Panel' }} - Outgear Station</title>
     
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F4EFEA; color: #1A2024; }
-        h1, h2, h3, .font-heading { font-family: 'Space Grotesk', sans-serif; }
-    </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col">
+<body class="admin-theme font-sans antialiased min-h-screen flex flex-col">
     <div class="flex flex-1 min-h-screen">
         <!-- Sidebar navigasi -->
         @includeIf('partials.sidebar-admin')
