@@ -4,27 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OutGear Station - Profil Admin</title>
-    <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'portal-sidebar': '#18181b',
-                        'portal-bg': '#f4f2ef',
-                        'portal-orange': '#EA580C',
-                        'portal-card': '#ffffff',
-                    }
-                }
-            }
-        }
-    </script>
     @vite('resources/css/app.css')
 </head>
-<body class="bg-[#F8F6F2] text-slate-800 antialiased font-sans" x-data="{ editMode: false }">
+<body class="admin-theme antialiased font-sans" x-data="{ editMode: false }">
 
     <div class="flex min-h-screen relative">
 
@@ -34,7 +17,7 @@
         <main class="flex-grow flex flex-col min-w-0">
             
             <!-- Header Atas (Bersih, Sesuai Standar Portal) -->
-            <header class="sticky top-0 bg-[#F8F6F2]/90 backdrop-blur-md px-10 py-4 z-30 border-b border-zinc-200/60 flex items-center justify-between">
+            <header class="sticky top-0 bg-portal-bg/90 backdrop-blur-md px-10 py-4 z-30 border-b border-zinc-200/60 flex items-center justify-between">
                 <div></div> <!-- Spacer kosong -->
 
                 <div class="flex items-center gap-3">

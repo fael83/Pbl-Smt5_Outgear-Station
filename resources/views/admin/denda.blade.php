@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OutGear Station - Kelola Denda</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-[#F8F6F2] text-slate-800 antialiased font-sans" x-data="{ activeTab: {{ Js::from(match ($filters['status']) { 'belum_dibayar' => 'Belum Lunas', 'lunas' => 'Lunas', default => 'Semua' }) }}, showFilterMenu: false }">
+<body class="admin-theme antialiased font-sans" x-data="{ showSearchInput: {{ $filters['search'] !== '' ? 'true' : 'false' }}, showFilterDropdown: false }">
 
     <div class="flex min-h-screen relative">
 
@@ -16,7 +15,7 @@
         <main class="flex-grow flex flex-col min-w-0">
             
             <!-- Header Atas (Bersih, Sesuai Referensi) -->
-            <header class="sticky top-0 bg-[#F8F6F2]/90 backdrop-blur-md px-10 py-4 z-30 border-b border-zinc-200/60 flex items-center justify-between">
+            <header class="sticky top-0 bg-portal-bg/90 backdrop-blur-md px-10 py-4 z-30 border-b border-zinc-200/60 flex items-center justify-between">
                 <div></div> <!-- Spacer kosong agar sisi kanan tetap rapi -->
 
                 <div class="flex items-center gap-3">
@@ -89,38 +88,86 @@
                 <!-- TABEL DATA DENDA -->
                 <div class="bg-white rounded-3xl border border-zinc-200/80 shadow-sm overflow-hidden">
                     
-                    <!-- Search & Filter Bar (Menggunakan Ikon Filter Khas Referensi) -->
-                    <div class="p-6 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <!-- Header Action Board (Kaca Pembesar & Icon Filter seperti di Verifikasi) -->
+                    <div class="p-5 border-b border-zinc-100 flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3">
-                            <h3 class="font-black text-zinc-900 text-sm">Daftar Tagihan Denda</h3>
-                            <span class="text-xs font-bold text-zinc-500 bg-zinc-100 px-3 py-1 rounded-xl">Filter: <span x-text="activeTab" class="text-zinc-900"></span></span>
+                            <h3 class="font-bold text-zinc-900 text-base">Daftar Tagihan Denda</h3>
+                            <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg">
+                                Filter: <span class="font-bold text-zinc-800">{{ match ($filters['status']) { 'belum_dibayar' => 'Belum Lunas', 'lunas' => 'Lunas', default => 'Semua Status' } }}</span>
+                            </span>
+                            <span class="text-xs font-medium text-zinc-400">
+                                ({{ number_format($denda->total(), 0, ',', '.') }} data)
+                            </span>
                         </div>
 
-                        <div class="flex items-center gap-2.5">
-                            <!-- Input Search -->
-                            <div class="relative">
-                                <form method="GET" action="{{ route('admin.denda.index') }}" class="relative">
-                                    <input type="hidden" name="status" value="{{ $filters['status'] }}">
-                                    <input type="hidden" name="per_page" value="{{ $filters['per_page'] }}">
-                                    <input type="search" name="search" value="{{ $filters['search'] }}" placeholder="Cari ID denda / referensi..." class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-4 py-2.5 pl-9 focus:outline-none focus:border-portal-orange transition w-64">
-                                    <svg class="w-4 h-4 text-zinc-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                </form>
-                            </div>
+                        <div class="flex items-center gap-2 relative">
+                            <!-- Input Search Interaktif -->
+                            <form method="GET" action="{{ route('admin.denda.index') }}" class="flex items-center gap-2">
+                                <input type="hidden" name="status" value="{{ $filters['status'] }}">
+                                <input type="hidden" name="per_page" value="{{ $filters['per_page'] }}">
+                                
+                                <div x-show="showSearchInput" x-transition class="relative">
+                                    <input id="dendaSearchInput" 
+                                           type="text" 
+                                           name="search"
+                                           value="{{ $filters['search'] }}"
+                                           placeholder="Cari ID / pemesanan..." 
+                                           class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-orange w-48 sm:w-64">
+                                    <svg class="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
 
-                            <!-- Tombol Ikon Filter Dropdown -->
-                            <div class="relative" x-data="{ open: false }">
-                                <button @click="open = !open" class="p-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-600 transition flex items-center justify-center shadow-sm" title="Filter Data">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707v4.172a1 1 0 01-1.447.894l-4-2A1 1 0 017 18v-3.586a1 1 0 00-.293-.707L.293 7.293A1 1 0 010 6.586V4z"></path></svg>
+                                <!-- Tombol Kaca Pembesar -->
+                                <button type="button" 
+                                        @click="showSearchInput = !showSearchInput; if(showSearchInput) { $nextTick(() => document.getElementById('dendaSearchInput')?.focus()) }" 
+                                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
+                                        title="Cari tagihan denda">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </button>
+                            </form>
+                            
+                            <!-- Tombol Filter Interaktif -->
+                            <div class="relative">
+                                <button type="button"
+                                        @click="showFilterDropdown = !showFilterDropdown" 
+                                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
+                                        title="Filter Status Pembayaran Denda">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                                 </button>
 
                                 <!-- Dropdown Menu Filter -->
-                                <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-2xl shadow-xl py-2 z-50 text-xs font-medium">
-                                    <div class="px-4 py-1.5 text-[10px] font-black text-zinc-400 uppercase tracking-wider">Status Pembayaran</div>
-                                    <a href="{{ route('admin.denda.index', array_filter(['search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Semua Status</a>
-                                    <a href="{{ route('admin.denda.index', array_filter(['status' => 'belum_dibayar', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Belum Lunas</a>
-                                    <a href="{{ route('admin.denda.index', array_filter(['status' => 'lunas', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" class="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700">Lunas</a>
+                                <div x-show="showFilterDropdown" 
+                                     @click.away="showFilterDropdown = false" 
+                                     x-transition 
+                                     class="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
+                                    <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Status Pembayaran</div>
+                                    <a href="{{ route('admin.denda.index', array_filter(['search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" 
+                                       class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                        <span>Semua Status</span>
+                                        @if ($filters['status'] === 'semua')
+                                            <span class="text-portal-orange font-bold">✓</span>
+                                        @endif
+                                    </a>
+                                    <a href="{{ route('admin.denda.index', array_filter(['status' => 'belum_dibayar', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" 
+                                       class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-amber-700 flex items-center justify-between">
+                                        <span>Belum Lunas</span>
+                                        @if ($filters['status'] === 'belum_dibayar')
+                                            <span class="text-portal-orange font-bold">✓</span>
+                                        @endif
+                                    </a>
+                                    <a href="{{ route('admin.denda.index', array_filter(['status' => 'lunas', 'search' => $filters['search'], 'per_page' => $filters['per_page'] !== 10 ? $filters['per_page'] : null])) }}" 
+                                       class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-emerald-700 flex items-center justify-between">
+                                        <span>Lunas</span>
+                                        @if ($filters['status'] === 'lunas')
+                                            <span class="text-portal-orange font-bold">✓</span>
+                                        @endif
+                                    </a>
                                 </div>
                             </div>
+
+                            @if ($filters['status'] !== 'semua' || $filters['search'] !== '')
+                                <a href="{{ route('admin.denda.index') }}"
+                                   class="text-xs font-semibold text-portal-orange hover:underline px-1" title="Reset filter">Reset</a>
+                            @endif
                         </div>
                     </div>
 

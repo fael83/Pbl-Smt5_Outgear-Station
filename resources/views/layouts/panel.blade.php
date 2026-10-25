@@ -7,12 +7,8 @@
     <title>{{ $title ?? 'Admin Panel' }} - Outgear Station</title>
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <style>
-        body { background-color: #F4EFEA; color: #1A2024; }
-    </style>
 </head>
-<body class="font-sans antialiased min-h-screen flex flex-col">
+<body class="admin-theme font-sans antialiased min-h-screen flex flex-col">
     <div class="flex flex-1 min-h-screen">
         <!-- Sidebar navigasi -->
         @includeIf('partials.sidebar-admin')
