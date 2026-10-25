@@ -24,6 +24,7 @@ use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
 
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
+use App\Http\Controllers\Petugas\PersiapanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -147,10 +148,12 @@ Route::middleware('role:petugas')
     ->prefix('petugas')
     ->name('petugas.')
     ->group(function () {
-        Route::get('/dashboard', [
-            PetugasDashboardController::class,
-            'index',
-        ])->name('dashboard');
+        Route::get('/dashboard', [PetugasDashboardController::class,'index',])->name('dashboard');
+        Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
+    Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
+    Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
+    Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
+    Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
     });
 
     

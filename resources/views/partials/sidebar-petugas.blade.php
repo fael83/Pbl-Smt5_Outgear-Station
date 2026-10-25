@@ -1,272 +1,86 @@
-@extends('layouts.panel', ['title' => 'Data Peralatan'])
-
 @php
-    // Nilai awal form modal. Dipakai juga untuk membuka kembali modal ketika
-    // validasi server gagal (jalur tanpa JavaScript).
-    $nilaiAwal = [
-        'nama' => old('nama', ''),
-        'kategori_id' => (string) old('kategori_id', ''),
-        'deskripsi' => old('deskripsi', ''),
-        'tarif_per_hari' => old('tarif_per_hari', ''),
-        'nilai_pengganti' => old('nilai_pengganti', ''),
-        'stok_total' => old('stok_total', ''),
-        'stok_rusak' => old('stok_rusak', ''),
-    ];
+    $penggunaPanel = auth()->user();
 
-    $modeAwal = (string) old('form_mode', 'create');
-    $alatIdAwal = (int) old('alat_id', 0);
-    $updateUrlAwal = $alatIdAwal > 0 ? route('admin.peralatan.update', $alatIdAwal) : null;
-
-    $filterAwal = [
-        'search' => $filters['search'],
-        'kategori' => (string) ($filters['kategori'] ?: ''),
-        'kondisi' => $filters['kondisi'],
-        'per_page' => (string) $filters['per_page'],
-    ];
-
-    // Tab status di atas tabel. `url` menjadi fallback saat JavaScript mati,
-    // sedangkan klik normal ditangani Alpine lewat pilihKondisi().
-    $tabStatus = collect([
-        ['kunci' => 'semua', 'label' => 'Semua', 'kunci_ringkasan' => 'total_alat'],
-        ['kunci' => 'tersedia', 'label' => 'Siap Sewa', 'kunci_ringkasan' => 'alat_tersedia'],
-        ['kunci' => 'habis', 'label' => 'Stok Habis', 'kunci_ringkasan' => 'alat_habis'],
-        ['kunci' => 'rusak', 'label' => 'Perlu Perbaikan', 'kunci_ringkasan' => 'alat_rusak'],
-    ])->map(function (array $tab) use ($filters): array {
-        $tab['url'] = route('admin.peralatan.index', array_filter([
-            'search' => $filters['search'],
-            'kategori' => $filters['kategori'] ?: null,
-            'kondisi' => $tab['kunci'] === 'semua' ? null : $tab['kunci'],
-            'per_page' => $filters['per_page'],
-        ], static fn ($nilai): bool => $nilai !== null && $nilai !== ''));
-
-        return $tab;
-    })->all();
+    // Badge sidebar petugas (bisa disesuaikan dengan kebutuhan query tugas gudang jika ada)
+    $badgePetugas = \Illuminate\Support\Facades\Cache::remember(
+        'sidebar:badge:petugas',
+        now()->addMinutes(5),
+        static fn (): array => [
+            // Contoh: mengambil data barang perlu dicek atau pemesanan hari ini
+            'tugas_masuk' => \App\Models\Pemesanan::query()->whereDate('tanggal_mulai', today())->count(),
+        ],
+    );
+    $jumlahTugasHariIni = $badgePetugas['tugas_masuk'];
 @endphp
-
-@section('content')
-    <div class="space-y-6"
-         x-data="halamanPeralatan({
-            createUrl: {{ Js::from(route('admin.peralatan.store')) }},
-            tabelUrl: {{ Js::from(route('admin.peralatan.tabel')) }},
-            items: {{ Js::from($dataAlat) }},
-            filters: {{ Js::from($filterAwal) }},
-            ringkasan: {{ Js::from($ringkasan) }},
-            nilaiAwal: {{ Js::from($nilaiAwal) }},
-            modeAwal: {{ Js::from($modeAwal) }},
-            alatIdAwal: {{ $alatIdAwal }},
-            updateUrlAwal: {{ Js::from($updateUrlAwal) }},
-            kategoriMap: {{ Js::from(collect($daftarKategori ?? [])->pluck('nama', 'id')->mapWithKeys(fn ($nama, $id) => [(string) $id => $nama])->all()) }},
-            punyaError: {{ $errors->any() ? 'true' : 'false' }}
-         })">
-
-        <!-- Judul & Aksi -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<aside class="sticky top-0 h-screen w-64 bg-portal-sidebar text-white flex flex-col flex-shrink-0 z-40 select-none">
+    
+    <!-- Logo & Brand -->
+    <div class="p-6 border-b border-zinc-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-portal-orange flex items-center justify-center font-black text-white text-sm shadow-md">OS</div>
             <div>
-                <h1 class="text-2xl font-black text-[#1A2024] tracking-tight">Data Peralatan</h1>
-                <p class="text-xs text-gray-500 mt-1 max-w-2xl">
-                    Manajemen katalog master alat outdoor, tarif sewa harian, nilai pengganti, dan status
-                    ketersediaan unit. Semua angka di halaman ini dibaca langsung dari database.
-                </p>
-            </div>
-            
-            <!-- Tombol Tambah Peralatan (Hanya tampil untuk Admin) -->
-            @if(auth()->user()->role === 'admin')
-                <div class="flex items-center gap-2">
-                    <button type="button" @click="bukaTambah()"
-                            class="px-4 py-2.5 bg-[#D86B43] text-white text-xs font-bold rounded-xl hover:bg-[#D86B43]/90 transition shadow-md">
-                        + Tambah Peralatan
-                    </button>
-                </div>
-            @endif
-        </div>
-
-        <!-- Kartu Statistik (dihitung dari tabel alat) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Unit Tersedia</span>
-                <div class="my-2">
-                    <p class="text-3xl font-black font-heading text-emerald-600"
-                       x-text="ringkasanData.unit_tersedia">{{ $ringkasan['unit_tersedia'] }}</p>
-                </div>
-                <div class="text-[11px] text-emerald-700 font-bold pt-2 border-t border-zinc-100"
-                     x-text="rasio(ringkasanData.unit_tersedia, ringkasanData.total_unit) + '% siap'">
-                    {{ $ringkasan['total_unit'] > 0 ? round($ringkasan['unit_tersedia'] / $ringkasan['total_unit'] * 100, 1) : 0 }}% siap
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Sedang Disewa</span>
-                <div class="my-2">
-                    <p class="text-3xl font-black font-heading text-blue-700"
-                       x-text="ringkasanData.unit_disewa">{{ $ringkasan['unit_disewa'] }}</p>
-                </div>
-                <div class="text-[11px] text-sky-700 font-bold pt-2 border-t border-zinc-100"
-                     x-text="rasio(ringkasanData.unit_disewa, ringkasanData.total_unit) + '% aktif'">
-                    {{ $ringkasan['total_unit'] > 0 ? round($ringkasan['unit_disewa'] / $ringkasan['total_unit'] * 100, 1) : 0 }}% aktif
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Unit Rusak</span>
-                <div class="my-2">
-                    <p class="text-3xl font-black font-heading text-rose-600"
-                       x-text="ringkasanData.unit_rusak">{{ $ringkasan['unit_rusak'] }}</p>
-                </div>
-                <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100">
-                    <span x-text="ringkasanData.alat_rusak">{{ $ringkasan['alat_rusak'] }}</span> jenis alat
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Unit Terdaftar</span>
-                <div class="my-2">
-                    <p class="text-3xl font-black font-heading text-blue-700"
-                       x-text="ringkasanData.total_unit">{{ $ringkasan['total_unit'] }}</p>
-                </div>
-                <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100">
-                    <span x-text="ringkasanData.total_alat">{{ $ringkasan['total_alat'] }}</span> jenis alat
-                </div>
+                <h1 class="font-extrabold text-sm tracking-wide text-white leading-tight">OutGear Station</h1>
+                <span class="text-[9px] tracking-widest text-portal-orange font-bold uppercase">PETUGAS GUDANG</span>
             </div>
         </div>
-
-        <!-- Tabel Data Peralatan (diperbarui lewat AJAX, tanpa reload halaman) -->
-        <div class="relative">
-            <div x-ref="tabel" @click="tangkapKlik($event)" :class="memuat ? 'opacity-60' : ''" class="transition-opacity">
-                @include('admin.peralatan._tabel')
-            </div>
-
-            <div x-cloak x-show="memuat" class="absolute inset-x-0 top-0 flex justify-center pt-16 pointer-events-none">
-                <div class="flex items-center gap-2 bg-[#1A2024] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg">
-                    <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    Memuat data…
-                </div>
-            </div>
-        </div>
-
-        <!-- Notifikasi ringan setelah simpan/hapus -->
-        <div x-cloak x-show="pesan" x-transition.opacity
-             class="fixed bottom-6 right-6 z-[60] max-w-sm px-4 py-3 rounded-xl shadow-lg text-xs font-semibold"
-             :class="pesanGagal ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'">
-            <span x-text="pesan"></span>
-        </div>
-
-        <!-- Modal Tambah / Edit Alat -->
-        <div x-cloak x-show="modalTerbuka" x-transition.opacity
-             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#1A2024]/50 p-4 md:p-8"
-             @keydown.escape.window="tutupModal()">
-            <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl" @click.outside="tutupModal()">
-                <div class="flex items-start justify-between gap-4 p-5 border-b border-gray-100">
-                    <div>
-                        <h2 class="text-lg font-bold text-[#1A2024]"
-                            x-text="mode === 'edit' ? 'Edit Data Alat' : 'Tambah Alat Baru'">Tambah Alat Baru</h2>
-                        <p class="text-xs text-gray-500 mt-0.5">
-                            Stok tersedia dihitung otomatis: total − disewa − rusak.
-                        </p>
-                    </div>
-                    <button type="button" @click="tutupModal()"
-                            class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">✕</button>
-                </div>
-
-                <form x-ref="formAlat" method="POST" :action="formUrl" @submit.prevent="simpan($el)" class="p-5 space-y-4">
-                    @csrf
-                    <template x-if="mode === 'edit'">
-                        <input type="hidden" name="_method" value="PUT">
-                    </template>
-                    <input type="hidden" name="form_mode" :value="mode">
-                    <input type="hidden" name="alat_id" :value="form.id ?? ''">
-                    <input type="hidden" name="search" :value="cari">
-                    <input type="hidden" name="kategori" :value="kategori">
-                    <input type="hidden" name="kondisi" :value="kondisi">
-                    <input type="hidden" name="per_page" :value="perPage">
-
-                    @if ($errors->any())
-                        <div class="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-xs text-red-700 space-y-1">
-                            <p class="font-semibold">Periksa kembali data berikut:</p>
-                            @foreach ($errors->all() as $pesanError)
-                                <p>{{ $pesanError }}</p>
-                            @endforeach
-                        </div>
-                    @endif
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="md:col-span-2">
-                            <label for="nama" class="block text-xs font-semibold text-[#1A2024] mb-1">Nama Alat</label>
-                            <input type="text" id="nama" name="nama" x-model="form.nama" required
-                                   class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.nama" x-text="errors.nama"></p>
-                        </div>
-
-                        <div>
-                            <label for="kategori_id" class="block text-xs font-semibold text-[#1A2024] mb-1">Kategori</label>
-                            <select id="kategori_id" name="kategori_id" x-model="form.kategori_id" required
-                                    class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                                <option value="">Pilih kategori</option>
-                                @foreach ($daftarKategori as $kategoriAlat)
-                                    <option value="{{ $kategoriAlat->id }}">{{ $kategoriAlat->nama }}</option>
-                                @endforeach
-                            </select>
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.kategori_id" x-text="errors.kategori_id"></p>
-                        </div>
-
-                        <div>
-                            <label for="tarif_per_hari" class="block text-xs font-semibold text-[#1A2024] mb-1">Tarif / Hari (Rp)</label>
-                            <input type="number" id="tarif_per_hari" name="tarif_per_hari" x-model="form.tarif_per_hari"
-                                   min="0" step="1000" required
-                                   class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.tarif_per_hari" x-text="errors.tarif_per_hari"></p>
-                        </div>
-
-                        <div>
-                            <label for="nilai_pengganti" class="block text-xs font-semibold text-[#1A2024] mb-1">Nilai Pengganti (Rp)</label>
-                            <input type="number" id="nilai_pengganti" name="nilai_pengganti" x-model="form.nilai_pengganti"
-                                   min="0" step="1000" required
-                                   class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.nilai_pengganti" x-text="errors.nilai_pengganti"></p>
-                        </div>
-
-                        <div>
-                            <label for="stok_total" class="block text-xs font-semibold text-[#1A2024] mb-1">Stok Total (unit)</label>
-                            <input type="number" id="stok_total" name="stok_total" x-model="form.stok_total"
-                                   min="0" step="1" required
-                                   class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.stok_total" x-text="errors.stok_total"></p>
-                        </div>
-
-                        <div>
-                            <label for="stok_rusak" class="block text-xs font-semibold text-[#1A2024] mb-1">Stok Rusak (unit)</label>
-                            <input type="number" id="stok_rusak" name="stok_rusak" x-model="form.stok_rusak"
-                                   min="0" step="1"
-                                   class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.stok_rusak" x-text="errors.stok_rusak"></p>
-                        </div>
-
-                        <div class="md:col-span-2">
-                            <label for="deskripsi" class="block text-xs font-semibold text-[#1A2024] mb-1">Deskripsi <span class="text-gray-400 font-normal">(opsional)</span></label>
-                            <textarea id="deskripsi" name="deskripsi" x-model="form.deskripsi" rows="3"
-                                      class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]"></textarea>
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.deskripsi" x-text="errors.deskripsi"></p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3 pt-4 border-t border-gray-100">
-                        <p class="text-[10px] text-gray-400" x-show="mode === 'edit'">
-                            Stok tersedia saat ini:
-                            <span class="font-semibold text-[#1A2024]" x-text="(form.stok_tersedia ?? 0) + ' unit'"></span>
-                        </p>
-                        <div class="flex items-center gap-2 ml-auto">
-                            <button type="button" @click="tutupModal()"
-                                    class="px-4 py-2.5 bg-gray-100 text-[#1A2024] text-xs font-semibold rounded-xl hover:bg-gray-200 transition">
-                                Batal
-                            </button>
-                            <button type="submit" :disabled="menyimpan"
-                                    class="px-4 py-2.5 bg-[#D86B43] text-white text-xs font-semibold rounded-xl hover:bg-[#D86B43]/90 transition shadow-sm disabled:opacity-60">
-                                <span x-text="menyimpan ? 'Menyimpan…' : (mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Alat')"></span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
     </div>
-@endsection
+
+    <!-- Navigasi Menu (Sesuai Use Case Petugas Gudang) -->
+    <nav class="flex-grow px-4 py-4 space-y-1.5 overflow-y-auto text-sm">
+        <!-- Dashboard -->
+        <a href="{{ route('petugas.dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('petugas.dashboard') ? 'font-semibold bg-portal-orange text-white shadow-md shadow-orange-900/20' : 'font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            Dashboard
+        </a>
+
+        <!-- 1. Persiapan & Serah Terima Barang -->
+        <a href="{{ route('petugas.persiapan') }}" 
+   class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('petugas.persiapan') ? 'font-semibold bg-portal-orange text-white shadow-md shadow-orange-900/20' : 'font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition' }}">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7v10l8 4"></path></svg>
+    Persiapan & Serah Terima
+</a>
+
+        <!-- 2. Checklist Kondisi Awal -->
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            Checklist Kondisi Awal
+        </a>
+
+        <!-- 3. Ubah Status Barang -->
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Ubah Status Barang
+        </a>
+
+        <!-- 4. Pengembalian Barang -->
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+            Pengembalian Barang
+        </a>
+
+        <!-- 5. Kerusakan & Kehilangan -->
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            Kerusakan & Kehilangan
+        </a>
+    </nav>
+
+    <!-- Profil User & Logout (Konsisten dengan Sidebar Admin) -->
+    <div class="p-3 mx-3 mb-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-between shadow-inner">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-portal-orange font-bold text-xs flex items-center justify-center text-white shrink-0">
+                {{ $penggunaPanel?->inisial() ?? 'PG' }}
+            </div>
+            <div class="leading-tight min-w-0">
+                <div class="font-semibold text-xs text-white truncate max-w-[120px]">{{ $penggunaPanel?->name ?? 'Petugas Gudang' }}</div>
+                <div class="text-[10px] text-zinc-400">Staff Gudang</div>
+            </div>
+        </div>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" title="Keluar" class="text-zinc-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </form>
+    </div>
+</aside>
