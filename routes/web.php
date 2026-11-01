@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\PemesananController as AdminPemesananController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\BookingSayaController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\OutGearBotController;
@@ -32,6 +33,7 @@ Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 Route::get('/katalog', KatalogController::class)->name('katalog');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
 Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
 
