@@ -13,6 +13,24 @@
 
     // Warna titik di rincian kategori.
     $warnaKategori = ['bg-portal-orange', 'bg-zinc-900', 'bg-amber-500', 'bg-blue-600', 'bg-emerald-600', 'bg-zinc-400'];
+
+    // Label status untuk dropdown filter (kuncinya sama dengan $kelasBadge).
+    $labelStatus = [
+        'menunggu_pembayaran' => 'Menunggu Bayar',
+        'dikonfirmasi' => 'Dikonfirmasi',
+        'berlangsung' => 'Berlangsung',
+        'selesai' => 'Selesai',
+        'dibatalkan' => 'Dibatalkan',
+    ];
+
+    // Warna teks tiap opsi status di dropdown filter.
+    $warnaLabelStatus = [
+        'menunggu_pembayaran' => 'text-amber-700',
+        'dikonfirmasi' => 'text-indigo-700',
+        'berlangsung' => 'text-blue-700',
+        'selesai' => 'text-emerald-700',
+        'dibatalkan' => 'text-red-700',
+    ];
 @endphp
 
 <!DOCTYPE html>
@@ -151,28 +169,59 @@
                                 search: '',
                                 showSearchInput: false,
                                 showFilterDropdown: false,
-                                selectedFilter: 'Semua',
-                                rows: [
-                                    { nama: 'Rian Pratama', initial: 'RP', bg: 'bg-amber-100 text-amber-800', tanggal: '25 - 28 Okt 2024', status: 'Menunggu Bayar', statusBadge: 'bg-amber-50 text-amber-700', total: 'Rp 385.000', link: '/admin/pemesanan' },
-                                    { nama: 'Nadia Safitri', initial: 'NS', bg: 'bg-blue-100 text-blue-800', tanggal: '24 - 27 Okt 2024', status: 'DP 50% Masuk', statusBadge: 'bg-blue-50 text-blue-700', total: 'Rp 520.000', link: '/admin/pemesanan' },
-                                    { nama: 'Dimas Anggoro', initial: 'DA', bg: 'bg-emerald-100 text-emerald-800', tanggal: '23 - 26 Okt 2024', status: 'Sedang Disewa', statusBadge: 'bg-emerald-50 text-emerald-700', total: 'Rp 240.000', link: '/admin/pemesanan' },
-                                    { nama: 'Maya Sinta', initial: 'MS', bg: 'bg-zinc-200 text-zinc-700', tanggal: '21 - 24 Okt 2024', status: 'Selesai', statusBadge: 'bg-zinc-100 text-zinc-600', total: 'Rp 460.000', link: '/admin/pemesanan' }
-                                ],
+                                selectedFilter: 'semua',
+                                // Data booking terbaru dari database (bukan data statis).
+                                bookings: {{ Js::from($bookingTerbaru) }},
+                                labelStatus: {{ Js::from($labelStatus) }},
+                                kelasBadge: {{ Js::from($kelasBadge) }},
+                                warnaAvatar: {{ Js::from($warnaAvatar) }},
+                                // Label filter yang sedang aktif (ditampilkan di samping judul).
+                                get labelFilter() {
+                                    return this.selectedFilter === 'semua'
+                                        ? 'Semua'
+                                        : (this.labelStatus[this.selectedFilter] ?? this.selectedFilter);
+                                },
+
+                                // Baris tabel setelah pencarian & filter status diterapkan.
                                 get filteredRows() {
-                                    return this.rows.filter(r => {
-                                        const q = this.search.toLowerCase().trim();
-                                        const matchSearch = !q || r.nama.toLowerCase().includes(q) || r.status.toLowerCase().includes(q);
-                                        const matchStatus = this.selectedFilter === 'Semua' || r.status === this.selectedFilter;
-                                        return matchSearch && matchStatus;
+                                    const q = this.search.toLowerCase().trim();
+
+                                    return this.bookings.filter(item => {
+                                        const matchStatus = this.selectedFilter === 'semua' || item.status === this.selectedFilter;
+                                        const matchSearch = q === ''
+                                            || item.pelanggan.toLowerCase().includes(q)
+                                            || item.kode.toLowerCase().includes(q)
+                                            || item.label_status.toLowerCase().includes(q);
+
+                                        return matchStatus && matchSearch;
                                     });
+                                },
+
+                                formatRupiah(nilai) {
+                                    return 'Rp ' + Number(nilai).toLocaleString('id-ID');
+                                },
+
+                                avatarUntuk(item) {
+                                    return this.warnaAvatar[item.user_id % this.warnaAvatar.length];
+                                },
+
+                                badgeUntuk(item) {
+                                    return this.kelasBadge[item.status] ?? 'bg-zinc-100 text-zinc-600';
                                 }
                              }">
                             <div class="p-5 border-b border-zinc-100 flex items-center justify-between gap-4">
                                 <div class="flex items-center gap-3">
                                     <h3 class="font-bold text-zinc-900 text-base">Aktivitas Booking Terbaru</h3>
                                     <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg">
-                                        Filter: <span class="font-bold text-zinc-800" x-text="selectedFilter"></span>
+                                        Filter: <span class="font-bold text-zinc-800" x-text="labelFilter"></span>
                                     </span>
+                                    <template x-if="search !== '' || selectedFilter !== 'semua'">
+                                        <button @click="search = ''; selectedFilter = 'semua'"
+                                                class="text-[11px] font-semibold text-portal-orange hover:underline"
+                                                title="Reset pencarian & filter">
+                                            Reset
+                                        </button>
+                                    </template>
                                 </div>
 
                                 <div class="flex items-center gap-2 relative">
@@ -207,26 +256,16 @@
                                              x-transition 
                                              class="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
                                             <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Status Booking</div>
-                                            <button @click="selectedFilter = 'Semua'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                                            <button @click="selectedFilter = 'semua'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
                                                 <span>Semua Status</span>
-                                                <span x-show="selectedFilter === 'Semua'" class="text-portal-orange font-bold">✓</span>
+                                                <span x-show="selectedFilter === 'semua'" class="text-portal-orange font-bold">✓</span>
                                             </button>
-                                            <button @click="selectedFilter = 'Menunggu Bayar'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-amber-700 flex items-center justify-between">
-                                                <span>Menunggu Bayar</span>
-                                                <span x-show="selectedFilter === 'Menunggu Bayar'" class="text-portal-orange font-bold">✓</span>
-                                            </button>
-                                            <button @click="selectedFilter = 'DP 50% Masuk'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-blue-700 flex items-center justify-between">
-                                                <span>DP 50% Masuk</span>
-                                                <span x-show="selectedFilter === 'DP 50% Masuk'" class="text-portal-orange font-bold">✓</span>
-                                            </button>
-                                            <button @click="selectedFilter = 'Sedang Disewa'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-emerald-700 flex items-center justify-between">
-                                                <span>Sedang Disewa</span>
-                                                <span x-show="selectedFilter === 'Sedang Disewa'" class="text-portal-orange font-bold">✓</span>
-                                            </button>
-                                            <button @click="selectedFilter = 'Selesai'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
-                                                <span>Selesai</span>
-                                                <span x-show="selectedFilter === 'Selesai'" class="text-portal-orange font-bold">✓</span>
-                                            </button>
+                                            @foreach ($labelStatus as $nilaiStatus => $namaStatus)
+                                                <button @click="selectedFilter = '{{ $nilaiStatus }}'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 {{ $warnaLabelStatus[$nilaiStatus] ?? 'text-zinc-700' }} flex items-center justify-between">
+                                                    <span>{{ $namaStatus }}</span>
+                                                    <span x-show="selectedFilter === '{{ $nilaiStatus }}'" class="text-portal-orange font-bold">✓</span>
+                                                </button>
+                                            @endforeach
                                         </div>
                                     </div>
 
@@ -248,39 +287,40 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-zinc-100">
-                                        @forelse ($bookingTerbaru as $item)
+                                        <template x-for="item in filteredRows" :key="item.kode">
                                             <tr class="hover:bg-zinc-50/50 transition">
                                                 <td class="py-3.5 px-5">
                                                     <div class="flex items-center gap-3">
-                                                        <div class="w-8 h-8 rounded-full {{ $warnaAvatar[$item['user_id'] % count($warnaAvatar)] }} font-bold flex items-center justify-center text-[11px] flex-shrink-0">{{ $item['inisial'] }}</div>
+                                                        <div class="w-8 h-8 rounded-full font-bold flex items-center justify-center text-[11px] flex-shrink-0"
+                                                             :class="avatarUntuk(item)"
+                                                             x-text="item.inisial"></div>
                                                         <div>
-                                                            <div class="font-semibold text-zinc-900">{{ $item['pelanggan'] }}</div>
-                                                            <div class="text-[11px] text-zinc-400 font-mono">#{{ $item['kode'] }}</div>
+                                                            <div class="font-semibold text-zinc-900" x-text="item.pelanggan"></div>
+                                                            <div class="text-[11px] text-zinc-400 font-mono" x-text="'#' + item.kode"></div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="py-3.5 px-4 font-medium text-zinc-800">
-                                                    {{ $item['jadwal'] }}
-                                                </td>
+                                                <td class="py-3.5 px-4 font-medium text-zinc-800" x-text="item.jadwal"></td>
                                                 <td class="py-3.5 px-4">
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium {{ $kelasBadge[$item['status']] ?? 'bg-zinc-100 text-zinc-600' }}">
-                                                        {{ $item['label_status'] }}
-                                                    </span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+                                                          :class="badgeUntuk(item)"
+                                                          x-text="item.label_status"></span>
                                                 </td>
-                                                <td class="py-3.5 px-4 font-semibold text-zinc-900">
-                                                    Rp {{ number_format($item['total'], 0, ',', '.') }}
-                                                </td>
+                                                <td class="py-3.5 px-4 font-semibold text-zinc-900" x-text="formatRupiah(item.total)"></td>
                                                 <td class="py-3.5 px-5 text-right">
                                                     <a href="/admin/pemesanan" class="text-xs font-semibold text-zinc-500 hover:text-portal-orange transition">
                                                         Detail
                                                     </a>
                                                 </td>
                                             </tr>
-                                        @empty
+                                        </template>
+
+                                        <template x-if="filteredRows.length === 0">
                                             <tr>
-                                                <td colspan="5" class="py-10 px-5 text-center text-zinc-400">Belum ada pemesanan.</td>
+                                                <td colspan="5" class="py-10 px-5 text-center text-zinc-400"
+                                                    x-text="bookings.length === 0 ? 'Belum ada pemesanan.' : 'Tidak ada pemesanan yang cocok dengan filter.'"></td>
                                             </tr>
-                                        @endforelse
+                                        </template>
                                     </tbody>
                                 </table>
                             </div>
