@@ -25,6 +25,8 @@ use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
 
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\PersiapanController;
+use App\Http\Controllers\Petugas\PengembalianController;
+use App\Http\Controllers\Petugas\KerusakanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -154,6 +156,11 @@ Route::middleware('role:petugas')
         Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
         Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
         Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+        Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian');
+        Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
+        Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
+        Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
+        Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
     });
 
     
