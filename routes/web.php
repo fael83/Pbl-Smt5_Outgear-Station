@@ -70,8 +70,12 @@ Route::middleware(['role:admin,owner,petugas'])
     ->name('admin.')
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
-        Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
-        Route::view('/profile', 'admin.profile')->name('profile');
+        Route::get('/profile', function () {
+            if ((auth()->user()?->role?->value ?? auth()->user()?->role) === 'petugas') {
+                return redirect()->route('petugas.profile');
+            }
+            return view('admin.profile');
+        })->name('profile');
 
         // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
         Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
@@ -159,6 +163,8 @@ Route::middleware('role:petugas')
         Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
         Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
         Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
+        Route::get('/profile', [PetugasDashboardController::class, 'profile'])->name('profile');
+        Route::put('/profile', [PetugasDashboardController::class, 'updateProfile'])->name('profile.update');
     });
 
 require __DIR__.'/auth.php';
