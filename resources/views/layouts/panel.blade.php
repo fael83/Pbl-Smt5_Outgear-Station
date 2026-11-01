@@ -28,20 +28,8 @@
                     <button class="relative p-2 text-gray-600 hover:text-[#1A2024]">
                         <!-- Notifikasi opsional -->
                     </button>
-                @php
-                    $peranPanel = auth()->user()?->role?->value ?? auth()->user()?->role;
-                    $urlProfilTop = ($peranPanel === 'petugas') ? route('petugas.profile') : route('admin.profile');
-                @endphp
-                <a href="{{ $urlProfilTop }}"
-                    class="flex items-center gap-3 pl-4 border-l border-gray-200 hover:opacity-80 transition cursor-pointer group">
-                        <div class="w-9 h-9 rounded-full bg-[#1A2024] text-white flex items-center justify-center font-bold text-xs group-hover:bg-[#D86B43] transition shrink-0">
-                            {{ auth()->user()?->inisial() ?? strtoupper(substr(auth()->user()?->name ?? 'P', 0, 2)) }}
-                        </div>
-                        <div class="text-xs text-left">
-                            <p class="font-semibold text-[#1A2024] group-hover:text-[#D86B43] transition leading-tight">{{ auth()->user()?->name ?? 'Petugas Gudang' }}</p>
-                            <p class="text-zinc-400 text-[11px] leading-tight mt-0.5">{{ auth()->user()?->email ?? '-' }}</p>
-                        </div>
-                    </a>
+                <!-- Profil pengguna: foto profil, nama, dan email (partial bersama) -->
+                @include('partials.profil-topbar')
                 </div>
             </header>
 
