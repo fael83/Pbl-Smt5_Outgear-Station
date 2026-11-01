@@ -57,15 +57,15 @@
 
     <!-- Profil User & Logout (Konsisten dengan Sidebar Admin) -->
     <div class="p-3 mx-3 mb-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-between shadow-inner">
-        <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-full bg-portal-orange font-bold text-xs flex items-center justify-center text-white shrink-0">
+        <a href="{{ route('petugas.profile') }}" class="flex items-center gap-2.5 min-w-0 hover:opacity-80 transition group" title="Buka Profil Petugas">
+            <div class="w-8 h-8 rounded-full bg-portal-orange font-bold text-xs flex items-center justify-center text-white shrink-0 group-hover:bg-[#c25a35] transition">
                 {{ $penggunaPanel?->inisial() ?? 'PG' }}
             </div>
             <div class="leading-tight min-w-0">
-                <div class="font-semibold text-xs text-white truncate max-w-[120px]">{{ $penggunaPanel?->name ?? 'Petugas Gudang' }}</div>
+                <div class="font-semibold text-xs text-white truncate max-w-[120px] group-hover:text-portal-orange transition">{{ $penggunaPanel?->name ?? 'Petugas Gudang' }}</div>
                 <div class="text-[10px] text-zinc-400">Staff Gudang</div>
             </div>
-        </div>
+        </a>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit" title="Keluar" class="text-zinc-400 hover:text-white">
