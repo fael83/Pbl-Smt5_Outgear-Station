@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Table('detail_pengembalian')]
-#[Fillable(['pengembalian_id', 'detail_pemesanan_id', 'jumlah_baik', 'jumlah_rusak', 'jumlah_hilang'])]
+#[Fillable(['pengembalian_id', 'detail_pemesanan_id', 'jumlah_baik', 'jumlah_rusak', 'jumlah_hilang', 'alasan_hilang'])]
 class DetailPengembalian extends Model
 {
     /** @use HasFactory<DetailPengembalianFactory> */
