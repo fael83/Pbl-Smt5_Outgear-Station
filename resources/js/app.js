@@ -671,4 +671,70 @@ Alpine.data('halamanPelanggan', (config = {}) => {
     };
 });
 
+/**
+ * Komponen halaman admin "Dashboard Operasional" (/admin).
+ *
+ * Tombol "Muat ulang data" mengambil ulang isi dashboard lewat GET /admin/data
+ * (JSON berisi HTML yang sudah dirender server) lalu mengganti isi wadah
+ * `x-ref="isi"` tanpa memuat ulang halaman — sama seperti pencarian dan filter
+ * pada halaman data peralatan.
+ *
+ * Tanpa JavaScript, tombolnya tetap berupa tautan `?segarkan=1` sehingga cache
+ * dibuang dan halaman dimuat ulang seperti biasa.
+ */
+Alpine.data('halamanDashboard', (config = {}) => ({
+    memuat: false,
+    jumlahVerifikasi: Number(config.jumlahVerifikasi ?? 0),
+    pesan: '',
+    pesanGagal: false,
+    timerPesan: null,
+
+    /**
+     * Keterangan tombol lonceng verifikasi mengikuti jumlah terbaru.
+     */
+    get judulVerifikasi() {
+        return this.jumlahVerifikasi > 0
+            ? `${this.jumlahVerifikasi} pembayaran menunggu verifikasi`
+            : 'Tidak ada pembayaran yang menunggu';
+    },
+
+    /**
+     * Ambil ulang isi dashboard (kartu statistik, booking, dan inventaris).
+     */
+    async muatUlang() {
+        if (this.memuat) {
+            return;
+        }
+
+        this.memuat = true;
+
+        try {
+            const { ok, data } = await kirim(config.dataUrl);
+
+            if (!ok || typeof data.html !== 'string') {
+                this.notifikasi(data.message ?? 'Gagal memuat ulang data dashboard.', true);
+
+                return;
+            }
+
+            this.$refs.isi.innerHTML = data.html;
+            this.jumlahVerifikasi = Number(data.perlu_verifikasi ?? 0);
+        } catch {
+            this.notifikasi('Tidak dapat terhubung ke server.', true);
+        } finally {
+            this.memuat = false;
+        }
+    },
+
+    notifikasi(pesan, gagal = false) {
+        this.pesan = pesan;
+        this.pesanGagal = gagal;
+
+        window.clearTimeout(this.timerPesan);
+        this.timerPesan = window.setTimeout(() => {
+            this.pesan = '';
+        }, 4000);
+    },
+}));
+
 Alpine.start();
