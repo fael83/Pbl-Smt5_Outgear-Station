@@ -12,19 +12,16 @@ use App\Http\Controllers\BookingSayaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\OutGearBotController;
-use App\Http\Controllers\PanduanController;
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\LaporanController;
-
-use App\Http\Controllers\Owner\HargaController;
-use App\Http\Controllers\Owner\StaffController;
-use App\Http\Controllers\Owner\DendaController;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\DendaController;
+use App\Http\Controllers\Owner\HargaController;
 use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
-
+use App\Http\Controllers\Owner\StaffController;
+use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\PersiapanController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +66,7 @@ Route::middleware(['role:admin,owner,petugas'])
     ->name('admin.')
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
+        Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
         Route::view('/profile', 'admin.profile')->name('profile');
 
         // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
@@ -104,8 +102,7 @@ Route::middleware(['role:admin,owner,petugas'])
         });
     });
 
-
-///OWNERRR
+// /OWNERRR
 
 Route::middleware('role:owner')
     ->prefix('owner')
@@ -137,7 +134,6 @@ Route::middleware('role:owner')
         Route::delete('/kelola-staff/{id}', [StaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
     });
 
-
 /*
 |--------------------------------------------------------------------------
 | Panel Petugas Gudang
@@ -148,14 +144,12 @@ Route::middleware('role:petugas')
     ->prefix('petugas')
     ->name('petugas.')
     ->group(function () {
-        Route::get('/dashboard', [PetugasDashboardController::class,'index',])->name('dashboard');
+        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
         Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
         Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
         Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
         Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
         Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
     });
-
-    
 
 require __DIR__.'/auth.php';
