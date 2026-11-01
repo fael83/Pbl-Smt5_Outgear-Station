@@ -12,10 +12,6 @@
             </p>
         </div>
         <div class="flex items-center gap-3">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200/60 shadow-xs">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Basecamp Malang · Online
-            </span>
         </div>
     </div>
 
@@ -57,7 +53,7 @@
 
     </div>
 
-    <!-- Grid Utama: Data Dipisah di Kiri, Lingkaran Status Sewa di Kanan -->
+    <!-- Grid Utama: Data Dipisah di Kiri, Panel Aktivitas di Kanan -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- Kiri (2 Kolom): Tabel Terpisah (Jadwal Ambil & Jadwal Kembali) -->
@@ -67,7 +63,7 @@
             <div class="bg-white rounded-2xl border border-zinc-200/70 shadow-sm overflow-hidden">
                 <div class="p-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
                     <div>
-                        <h2 class="text-xs font-black text-zinc-900 uppercase tracking-wider">📦 Jadwal Pengambilan Alat Hari Ini</h2>
+                        <h2 class="text-xs font-black text-zinc-900 uppercase tracking-wider">Jadwal Pengambilan Alat Hari Ini</h2>
                         <p class="text-[11px] text-zinc-500 mt-0.5">Daftar pelanggan yang dijadwalkan mengambil alat dari gudang.</p>
                     </div>
                     <a href="{{ route('petugas.persiapan') }}" class="text-xs font-bold text-[#15AEEA] hover:underline">Kelola Persiapan →</a>
@@ -86,7 +82,7 @@
                             </div>
                             <div>
                                 <a href="{{ route('petugas.persiapan') }}" class="px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-700 hover:bg-zinc-200 text-xs font-bold transition shadow-2xs">
-                                    Proses →
+                                    Detail →
                                 </a>
                             </div>
                         </div>
@@ -102,7 +98,7 @@
             <div class="bg-white rounded-2xl border border-zinc-200/70 shadow-sm overflow-hidden">
                 <div class="p-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
                     <div>
-                        <h2 class="text-xs font-black text-zinc-900 uppercase tracking-wider">🔄 Jadwal Pengembalian Alat Hari Ini</h2>
+                        <h2 class="text-xs font-black text-zinc-900 uppercase tracking-wider">Jadwal Pengembalian Alat Hari Ini</h2>
                         <p class="text-[11px] text-zinc-500 mt-0.5">Daftar pelanggan yang harus mengembalikan alat ke gudang hari ini.</p>
                     </div>
                     <a href="{{ route('petugas.pengembalian') }}" class="text-xs font-bold text-[#15AEEA] hover:underline">Kelola Pengembalian →</a>
@@ -135,39 +131,60 @@
 
         </div>
 
-        <!-- Kanan (1 Kolom): Lingkaran Monitoring Alat Aktif Disewa -->
-        <div class="bg-white rounded-2xl border border-zinc-200/70 shadow-sm p-5 space-y-5 flex flex-col justify-between">
+        <!-- Kanan (1 Kolom): Panel Aktivitas Lapangan -->
+        <div class="bg-white rounded-2xl border border-zinc-200/70 shadow-sm p-5 space-y-4 flex flex-col justify-between">
             <div>
                 <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
                     <div>
                         <h3 class="text-xs font-black text-zinc-900 uppercase tracking-wider">Status Aktivitas Lapangan</h3>
-                        <p class="text-[11px] text-zinc-400 mt-0.5">Monitoring peminjaman aktif saat ini</p>
+                        <p class="text-[11px] text-zinc-400 mt-0.5">Monitoring peminjaman aktif hari ini</p>
                     </div>
                     <a href="{{ route('petugas.pengembalian') }}" class="text-[11px] font-bold text-[#15AEEA] hover:underline">Kelola →</a>
                 </div>
 
-                <!-- Lingkaran Berisi Jumlah Unit/Pemesanan yang Sedang Disewa -->
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="w-36 h-36 rounded-full border-8 border-blue-50 flex flex-col items-center justify-center text-center shadow-inner relative bg-white">
-                        <span class="text-3xl font-black text-blue-600 font-heading">{{ $ambilHariIni->count() + $kembaliHariIni->count() }}</span>
-                        <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5">Agenda Aktif</span>
-                        <span class="text-[9px] text-zinc-400 mt-0.5">Hari Ini</span>
+                <!-- Ringkasan Mini Angka -->
+                <div class="grid grid-cols-2 gap-3 my-4">
+                    <div class="bg-orange-50/60 p-3 rounded-xl border border-orange-100 text-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-orange-600 block">Total Ambil</span>
+                        <span class="text-xl font-black text-orange-700 font-heading">{{ $ringkasan['total_ambil'] }}</span>
+                    </div>
+                    <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 text-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">Total Kembali</span>
+                        <span class="text-xl font-black text-blue-700 font-heading">{{ $ringkasan['total_kembali'] }}</span>
                     </div>
                 </div>
 
-                <!-- Keterangan Tambahan -->
-                <div class="space-y-2 pt-2 text-xs text-zinc-600 bg-zinc-50 p-3.5 rounded-xl border border-zinc-200/60">
-                    <div class="flex justify-between font-medium">
-                        <span>Total Ambil:</span>
-                        <span class="font-bold text-[#D86B43]">{{ $ringkasan['total_ambil'] }} Agenda</span>
-                    </div>
-                    <div class="flex justify-between font-medium border-t border-zinc-200/60 pt-1.5">
-                        <span>Total Kembali:</span>
-                        <span class="font-bold text-blue-600">{{ $ringkasan['total_kembali'] }} Agenda</span>
-                    </div>
+                <!-- Daftar Ringkas Agenda Hari Ini -->
+                <div class="space-y-2 pt-1">
+                    <p class="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Daftar Agenda Terdekat:</p>
+                    
+                    @if($ambilHariIni->count() > 0)
+                        @foreach($ambilHariIni->take(3) as $agenda)
+                            <div class="flex items-center justify-between text-xs p-2.5 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div>
+                                    <span class="font-bold text-zinc-800 block truncate max-w-[130px]">{{ $agenda->pelanggan->name ?? 'Pelanggan' }}</span>
+                                    <span class="text-[10px] font-mono text-[#D86B43]">{{ $agenda->kode_pemesanan }}</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-md bg-orange-100 text-orange-800 text-[10px] font-bold">Ambil</span>
+                            </div>
+                        @endforeach
+                    @elseif($kembaliHariIni->count() > 0)
+                        @foreach($kembaliHariIni->take(3) as $agenda)
+                            <div class="flex items-center justify-between text-xs p-2.5 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div>
+                                    <span class="font-bold text-zinc-800 block truncate max-w-[130px]">{{ $agenda->pelanggan->name ?? 'Pelanggan' }}</span>
+                                    <span class="text-[10px] font-mono text-blue-600">{{ $agenda->kode_pemesanan }}</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">Kembali</span>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="text-center py-6 text-zinc-400 text-xs italic bg-zinc-50/50 rounded-xl border border-dashed border-zinc-200">
+                            Tidak ada agenda aktif saat ini.
+                        </div>
+                    @endif
                 </div>
             </div>
-        </div>
 
     </div>
 </div>

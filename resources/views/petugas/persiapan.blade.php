@@ -44,10 +44,6 @@
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                <button type="button" @click="bukaTambah()"
-                        class="px-4 py-2.5 bg-[#D86B43] text-white text-xs font-bold rounded-xl hover:bg-[#D86B43]/90 transition shadow-md">
-                    + Catat Serah Terima
-                </button>
             </div>
         </div>
 
