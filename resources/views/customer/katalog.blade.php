@@ -11,6 +11,13 @@
       x-data="{ 
           cart: [], 
           isCartOpen: false,
+          tanggalMulai: new Date().toISOString().split('T')[0],
+          tanggalSelesai: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          namaPenyewa: '{{ auth()->user()?->name ?? 'Budi Pelanggan' }}',
+          noTelepon: '{{ auth()->user()?->no_telepon ?? '081100000004' }}',
+          isCheckingOut: false,
+          showSuccessModal: false,
+          successOrder: null,
           
           addToCart(item) {
               let existing = this.cart.find(i => i.id === item.id);
@@ -40,8 +47,67 @@
               return this.cart.reduce((sum, item) => sum + item.qty, 0);
           },
 
-          get totalPrice() {
+          get selectedItems() {
+              return this.cart.filter(i => i.selected);
+          },
+
+          get lamaSewa() {
+              if (!this.tanggalMulai || !this.tanggalSelesai) return 1;
+              let d1 = new Date(this.tanggalMulai);
+              let d2 = new Date(this.tanggalSelesai);
+              let diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+              return Math.max(1, diff + 1);
+          },
+
+          get tarifPerHari() {
               return this.cart.filter(i => i.selected).reduce((sum, item) => sum + (item.tarif * item.qty), 0);
+          },
+
+          get totalPrice() {
+              return this.tarifPerHari * this.lamaSewa;
+          },
+
+          async submitCheckout() {
+              let selected = this.selectedItems;
+              if (selected.length === 0) {
+                  alert('Pilih minimal 1 peralatan yang dicentang di keranjang untuk checkout.');
+                  return;
+              }
+
+              this.isCheckingOut = true;
+              try {
+                  let res = await fetch('{{ route('checkout.store') }}', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                          'Accept': 'application/json'
+                      },
+                      body: JSON.stringify({
+                          items: selected.map(i => ({ id: i.id, qty: i.qty })),
+                          tanggal_mulai: this.tanggalMulai,
+                          tanggal_selesai: this.tanggalSelesai,
+                          nama_penyewa: this.namaPenyewa,
+                          no_telepon: this.noTelepon
+                      })
+                  });
+
+                  let data = await res.json();
+                  if (res.ok && data.success) {
+                      let checkedIds = selected.map(i => i.id);
+                      this.cart = this.cart.filter(i => !checkedIds.includes(i.id));
+                      this.isCartOpen = false;
+                      this.successOrder = data;
+                      this.showSuccessModal = true;
+                  } else {
+                      alert(data.message || 'Gagal memproses checkout. Silakan periksa kembali data Anda.');
+                  }
+              } catch (err) {
+                  console.error(err);
+                  alert('Terjadi kesalahan saat memproses booking ke database.');
+              } finally {
+                  this.isCheckingOut = false;
+              }
           }
       }">
 
@@ -92,82 +158,164 @@
         </div>
     </nav>
 
-    <!-- Header & Hero Section (Sudah Dirapikan Tanpa Duplikasi) -->
-    <header class="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-4 w-full space-y-6">
-        <!-- 1. FULL IMAGE HERO SLIDER (Alpine.js) -->
+    <!-- Header & Hero Section -->
+    <header class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-2 w-full">
+        <!-- 1. HERO SLIDER PROMO (Alpine.js) -->
         <div x-data="{
-            activeSlide: 1,
+            activeSlide: 0,
+            autoplayTimer: null,
             slides: [
-                { 
-                    id: 1, 
-                    image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&auto=format&fit=crop&q=80', 
-                    title: 'RENTAL OUTGEAR STATION' 
+                {
+                    id: 1,
+                    badge: '🔥 PROMO SPESIAL AKHIR PEKAN',
+                    title: 'PAKET CAMPING HEMAT 3H 2M',
+                    subtitle: 'Sewa Tenda Dome + Sleeping Bag + Matras diskon hingga 25%! Dijamin bersih, wangi, & siap muncak tanpa ribet.',
+                    highlight: 'Hemat s/d Rp 45.000',
+                    features: ['Tenda Double Layer Waterproof', 'Garansi Bersih & Wangi', 'Bebas Antre Booking'],
+                    image: '{{ asset('images/alat/tenda-camp-6.jpg') }}',
+                    cta: 'Sewa Paket Tenda',
+                    accentColor: 'from-amber-500/20 to-orange-500/10'
                 },
-                { 
-                    id: 2, 
-                    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80', 
-                    title: 'DAPATKAN BARANG DENGAN KUALITAS TERBAIK' 
+                {
+                    id: 2,
+                    badge: '🎒 PILIHAN FAVORIT PENDAKI',
+                    title: 'CARRIER 60L ERGONOMIC SERIES',
+                    subtitle: 'Backsystem empuk dengan sirkulasi udara optimal. Nyaman, kuat, dan bebas pegal saat summit ke puncak gunung impian.',
+                    highlight: 'Free Rain Cover',
+                    features: ['Kapasitas Luas 60 Liter', 'Bahan Cordura Tahan Sobek', 'Include Waterproof Raincover'],
+                    image: '{{ asset('images/alat/carrier-60l.jpeg') }}',
+                    cta: 'Lihat Koleksi Carrier',
+                    accentColor: 'from-orange-500/20 to-red-500/10'
                 },
-                { 
-                    id: 3, 
-                    image: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=1200&auto=format&fit=crop&q=80', 
-                    title: 'PENYEWAAN ALAT OUTDOOR' 
+                {
+                    id: 3,
+                    badge: '🍳 PAKET MASAK PUNCAK',
+                    title: 'SEWA 3 HARI, GRATIS 1 HARI!',
+                    subtitle: 'Masak hangat di puncak makin asyik dengan Kompor Windproof & Nesting Cook Set anti-lengket. Booking sekarang!',
+                    highlight: 'Sewa 3 Hari = Bayar 2 Hari',
+                    features: ['Kompor Anti-Angin Suhu Dingin', 'Panci & Wajan Komplit', 'Ringan & Praktis'],
+                    image: '{{ asset('images/alat/nesting-cook-set.jpeg') }}',
+                    cta: 'Klaim Promo Masak',
+                    accentColor: 'from-emerald-500/20 to-teal-500/10'
+                },
+                {
+                    id: 4,
+                    badge: '🥾 KEAMANAN & KENYAMANAN',
+                    title: 'SEPATU HIKING ALL-TERRAIN',
+                    subtitle: 'Grip karet anti-selip di medan becek dan bebatuan tajam. Melangkah mantap, aman, dan percaya diri ke puncak.',
+                    highlight: 'Sol Anti-Slip Ekstra Mantap',
+                    features: ['Grip Sol Kuat & Fleksibel', 'Water-Resistant Upper', 'Higienis & Siap Pakai'],
+                    image: '{{ asset('images/alat/sepatu-hiking-42.avif') }}',
+                    cta: 'Pilih Ukuran Sepatu',
+                    accentColor: 'from-sky-500/20 to-indigo-500/10'
                 }
             ],
-            next() { this.activeSlide = this.activeSlide === this.slides.length ? 1 : this.activeSlide + 1; },
-            prev() { this.activeSlide = this.activeSlide === 1 ? this.slides.length : this.activeSlide - 1; }
+            next() {
+                this.activeSlide = (this.activeSlide + 1) % this.slides.length;
+            },
+            prev() {
+                this.activeSlide = (this.activeSlide - 1 + this.slides.length) % this.slides.length;
+            },
+            goTo(index) {
+                this.activeSlide = index;
+                this.resetAutoplay();
+            },
+            startAutoplay() {
+                this.autoplayTimer = setInterval(() => { this.next(); }, 5000);
+            },
+            resetAutoplay() {
+                clearInterval(this.autoplayTimer);
+                this.startAutoplay();
+            }
         }"
-        x-init="setInterval(() => { next() }, 5000)"
-        class="relative bg-gray-900 rounded-3xl overflow-hidden shadow-md border border-gray-200 h-[320px] sm:h-[400px] md:h-[450px]">
+        x-init="startAutoplay()"
+        @mouseenter="clearInterval(autoplayTimer)"
+        @mouseleave="startAutoplay()"
+        class="relative bg-gradient-to-br from-[#1C2227] via-[#171B1F] to-[#0F1316] rounded-3xl overflow-hidden shadow-2xl border border-white/10 text-white p-6 sm:p-8 md:p-10 select-none">
 
-            <template x-for="slide in slides" :key="slide.id">
-                <div x-show="activeSlide === slide.id" class="absolute inset-0 transition-opacity duration-700">
-                    <img :src="slide.image" class="w-full h-full object-cover brightness-[0.75]">
-                    <!-- Text Overlay -->
-                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-gradient-to-t from-black/60 via-transparent to-transparent">
-                        <h2 class="text-white text-xl sm:text-3xl md:text-4xl font-black tracking-wider uppercase drop-shadow-md" x-text="slide.title"></h2>
-                        <p class="text-gray-200 text-xs sm:text-sm font-medium mt-2">Dapatkan perlengkapan terbaik dengan harga terjangkau di Basecamp Malang.</p>
-                        <a href="#product-grid" class="mt-4 bg-brand hover:bg-brand-hover text-white text-xs font-bold px-6 py-2.5 rounded-xl transition shadow-lg">
-                            Mulai Sewa Sekarang
-                        </a>
+            <!-- Ambient Glow Effect -->
+            <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Slide Content Container -->
+            <div class="relative min-h-[360px] md:min-h-[320px] flex items-center">
+                <template x-for="(slide, index) in slides" :key="slide.id">
+                    <div x-show="activeSlide === index"
+                         x-transition:enter="transition-all ease-out duration-300"
+                         x-transition:enter-start="opacity-0 scale-[0.98]"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition-all ease-in duration-300 absolute inset-0 pointer-events-none"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-[0.98]"
+                         class="w-full flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10">
+
+                        <!-- Gambar Promo (Kiri) -->
+                        <div class="w-full md:w-5/12 h-60 sm:h-72 md:h-80 rounded-2xl overflow-hidden relative shadow-2xl bg-black/40 border border-white/10 group">
+                            <img :src="slide.image" :alt="slide.title"
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+
+                            <!-- Tag Badge di atas gambar -->
+                            <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Unit Siap Sewa</span>
+                            </div>
+
+                            <!-- Tag Highlight di bawah gambar -->
+                            <div class="absolute bottom-3 right-3 bg-brand/90 backdrop-blur-md text-white text-[11px] font-black px-3 py-1 rounded-xl shadow-lg border border-white/20">
+                                <span x-text="slide.highlight"></span>
+                            </div>
+                        </div>
+
+                        <!-- Teks & Penawaran Promosi (Kanan) -->
+                        <div class="w-full md:w-7/12 text-center md:text-left space-y-4">
+                            <!-- Badge Penawaran -->
+                            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-black tracking-wide uppercase bg-brand/20 text-brand border border-brand/30 shadow-sm"
+                                 x-text="slide.badge">
+                            </div>
+
+                            <!-- Judul Besar Promo -->
+                            <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black font-heading text-white tracking-tight uppercase leading-tight"
+                                x-text="slide.title"></h2>
+
+                            <!-- Deskripsi & Benefit -->
+                            <p class="text-xs sm:text-sm font-medium text-gray-300 leading-relaxed max-w-xl"
+                               x-text="slide.subtitle"></p>
+
+                            <!-- Keunggulan / Bullet Points -->
+                            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+                                <template x-for="(feature, idx) in slide.features" :key="idx">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-[11px] font-semibold text-gray-200">
+                                        <span class="text-emerald-400 font-bold">✔</span>
+                                        <span x-text="feature"></span>
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </template>
+                </template>
+            </div>
 
-            <!-- TOMBOL PANAH DI DALAM SLIDER -->
-            <button @click="prev()" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/70 hover:bg-white shadow flex items-center justify-center text-gray-900 transition z-10 font-bold">❮</button>
-            <button @click="next()" class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/70 hover:bg-white shadow flex items-center justify-center text-gray-900 transition z-10 font-bold">❯</button>
-        </div>
+            <!-- Tombol Navigasi Panah Kiri / Kanan -->
+            <button @click="prev(); resetAutoplay();"
+                    aria-label="Previous Slide"
+                    class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-brand text-white border border-white/15 backdrop-blur-md shadow-lg flex items-center justify-center transition hover:scale-105 active:scale-95 z-20 text-sm">
+                ❮
+            </button>
+            <button @click="next(); resetAutoplay();"
+                    aria-label="Next Slide"
+                    class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-brand text-white border border-white/15 backdrop-blur-md shadow-lg flex items-center justify-center transition hover:scale-105 active:scale-95 z-20 text-sm">
+                ❯
+            </button>
 
-        <!-- 2. QUICK CATEGORIES -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-2">
-            <div class="bg-white rounded-2xl p-3 border border-gray-200 text-center shadow-sm hover:border-brand transition cursor-pointer group">
-                <div class="w-16 h-16 mx-auto bg-gray-50 rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition">⛺</div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-gray-800">Tenda & Flysheet</span>
-            </div>
-            <div class="bg-white rounded-2xl p-3 border border-gray-200 text-center shadow-sm hover:border-brand transition cursor-pointer group">
-                <div class="w-16 h-16 mx-auto bg-gray-50 rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition">🎒</div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-gray-800">Carrier / Tas</span>
-            </div>
-            <div class="bg-white rounded-2xl p-3 border border-gray-200 text-center shadow-sm hover:border-brand transition cursor-pointer group">
-                <div class="w-16 h-16 mx-auto bg-gray-50 rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition">🥾</div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-gray-800">Sepatu Hiking</span>
-            </div>
-            <div class="bg-white rounded-2xl p-3 border border-gray-200 text-center shadow-sm hover:border-brand transition cursor-pointer group">
-                <div class="w-16 h-16 mx-auto bg-gray-50 rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition">🍳</div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-gray-800">Cooking Set</span>
-            </div>
-            <div class="bg-white rounded-2xl p-3 border border-gray-200 text-center shadow-sm hover:border-brand transition cursor-pointer group">
-                <div class="w-16 h-16 mx-auto bg-gray-50 rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition">🔦</div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-gray-800">Penerangan</span>
-            </div>
-            <div class="bg-white rounded-2xl p-3 border border-gray-200 text-center shadow-sm hover:border-brand transition cursor-pointer group">
-                <div class="w-16 h-16 mx-auto bg-gray-50 rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition">🧥</div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-gray-800">Jaket & Apparel</span>
-            </div>
-            <div class="bg-white rounded-2xl p-3 border border-gray-200 text-center shadow-sm hover:border-brand transition cursor-pointer group">
-                <div class="w-16 h-16 mx-auto bg-gray-50 rounded-xl flex items-center justify-center text-2xl mb-2 group-hover:scale-105 transition">🧭</div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-gray-800">Aksesoris</span>
+            <!-- Indikator Slide Bulat / Batang di Bawah -->
+            <div class="flex items-center justify-center gap-2 mt-6 pt-2">
+                <template x-for="(s, i) in slides" :key="s.id">
+                    <button @click="goTo(i)"
+                            class="h-2 rounded-full transition-all duration-300 cursor-pointer"
+                            :class="activeSlide === i ? 'w-8 bg-brand shadow-sm shadow-brand/50' : 'w-2 bg-white/30 hover:bg-white/60'"
+                            :aria-label="'Slide ' + (i + 1)">
+                    </button>
+                </template>
             </div>
         </div>
     </header>
@@ -181,11 +329,23 @@
         <!-- Product Cards Grid -->
         <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             @forelse ($peralatan as $alat)
+                @php
+                    $fotoUrl = null;
+                    if (filled($alat->foto)) {
+                        if (filter_var($alat->foto, FILTER_VALIDATE_URL)) {
+                            $fotoUrl = $alat->foto;
+                        } elseif (file_exists(public_path('images/alat/' . $alat->foto))) {
+                            $fotoUrl = asset('images/alat/' . $alat->foto);
+                        } else {
+                            $fotoUrl = asset('storage/' . $alat->foto);
+                        }
+                    }
+                @endphp
                 <article class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                     <div>
                         <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3 flex items-center justify-center">
-                            @if (filled($alat->foto))
-                                <img src="{{ filter_var($alat->foto, FILTER_VALIDATE_URL) ? $alat->foto : asset('storage/'.$alat->foto) }}"
+                            @if ($fotoUrl)
+                                <img src="{{ $fotoUrl }}"
                                      alt="{{ $alat->nama }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                             @else
                                 <span class="text-5xl">{{ \App\Support\IkonKategori::untuk($alat->kategori?->nama) }}</span>
@@ -209,7 +369,7 @@
 
                         <!-- Tombol Sewa -->
                         <button @disabled($alat->stok_tersedia <= 0)
-                                @click="addToCart({ id: {{ $alat->id }}, nama: '{{ addslashes($alat->nama) }}', tarif: {{ $alat->tarif_per_hari }}, foto: '{{ $alat->foto ? (filter_var($alat->foto, FILTER_VALIDATE_URL) ? $alat->foto : asset('storage/'.$alat->foto)) : '' }}' })"
+                                @click="addToCart({ id: {{ $alat->id }}, nama: '{{ addslashes($alat->nama) }}', tarif: {{ $alat->tarif_per_hari }}, foto: '{{ $fotoUrl ?? '' }}' })"
                                 class="{{ $alat->stok_tersedia > 0 ? 'bg-brand hover:bg-brand-hover text-white shadow-sm' : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' }} text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1">
                             <span>Sewa</span>
                         </button>
@@ -293,17 +453,123 @@
 
                 <!-- Footer Checkout Keranjang -->
                 <div class="p-4 border-t border-gray-200 bg-white space-y-3">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="text-gray-500 font-medium">Total Harga</span>
-                        <span class="font-black text-base text-gray-900" x-text="'Rp ' + Number(totalPrice).toLocaleString('id-ID')"></span>
+                    <!-- Input Jadwal Sewa -->
+                    <div class="bg-gray-50 rounded-2xl p-3 border border-gray-200 space-y-2">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700">
+                            <span>📅 Jadwal Sewa</span>
+                            <span class="text-brand bg-brand/10 px-2 py-0.5 rounded-full text-[10px]" x-text="'Durasi: ' + lamaSewa + ' Hari'"></span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 font-semibold mb-1">Mulai</label>
+                                <input type="date" x-model="tanggalMulai" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 font-semibold mb-1">Selesai</label>
+                                <input type="date" x-model="tanggalSelesai" :min="tanggalMulai" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
+                            </div>
+                        </div>
                     </div>
-                    <button class="w-full bg-gray-900 hover:bg-brand text-white text-xs font-bold py-3 rounded-2xl transition shadow-lg tracking-wide uppercase">
-                        Checkout (<span x-text="totalItems"></span>)
+
+                    @guest
+                    <!-- Input Nama & No Telp untuk Tamu/Demo -->
+                    <div class="bg-gray-50 rounded-2xl p-3 border border-gray-200 space-y-2">
+                        <span class="text-[11px] font-bold text-gray-700 block">👤 Data Penyewa</span>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <input type="text" x-model="namaPenyewa" placeholder="Nama Lengkap" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
+                            </div>
+                            <div>
+                                <input type="text" x-model="noTelepon" placeholder="No. WhatsApp" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
+                            </div>
+                        </div>
+                    </div>
+                    @endguest
+
+                    <!-- Rincian Total Harga -->
+                    <div class="space-y-1 pt-1 text-xs">
+                        <div class="flex justify-between items-center text-gray-500 text-[11px]">
+                            <span>Tarif / Hari (<span x-text="selectedItems.length"></span> item)</span>
+                            <span x-text="'Rp ' + Number(tarifPerHari).toLocaleString('id-ID')"></span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-500 text-[11px]">
+                            <span>Durasi Sewa</span>
+                            <span x-text="lamaSewa + ' Hari'"></span>
+                        </div>
+                        <div class="flex justify-between items-center font-bold pt-1 border-t border-gray-100">
+                            <span class="text-gray-900 font-black">Total Pembayaran</span>
+                            <span class="font-black text-base text-brand" x-text="'Rp ' + Number(totalPrice).toLocaleString('id-ID')"></span>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Checkout -->
+                    <button @click="submitCheckout()"
+                            :disabled="isCheckingOut || selectedItems.length === 0"
+                            class="w-full bg-gray-900 hover:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3.5 rounded-2xl transition shadow-lg tracking-wide uppercase flex items-center justify-center gap-2">
+                        <span x-show="!isCheckingOut">Checkout (<span x-text="selectedItems.length"></span> Item)</span>
+                        <span x-show="isCheckingOut" class="flex items-center gap-2">
+                            <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            <span>Memproses Booking...</span>
+                        </span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
+    
+<!-- Modal Popup Konfirmasi Sukses Booking (Notifikasi Biasa) -->
+<div x-show="showSuccessModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+    <div class="min-h-screen px-4 text-center flex items-center justify-center">
+        <!-- Backdrop Gelap -->
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="showSuccessModal = false"></div>
+
+        <!-- Card Popup -->
+        <div class="inline-block w-full max-w-md p-6 my-8 text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl relative z-10 border border-gray-100">
+            
+            <!-- Tombol Silang (Close) di Pojok Kanan Atas -->
+            <button @click="showSuccessModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-lg p-1 transition">
+                ✕
+            </button>
+
+            <!-- Header Notifikasi -->
+            <div class="text-center space-y-3 pt-2">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl font-black shadow-inner">
+                    ✓
+                </div>
+                <h3 class="text-xl font-black text-gray-900">Booking Berhasil Dibuat!</h3>
+                <p class="text-xs text-gray-500">
+                    Pesanan sewa Anda telah berhasil disimpan dan langsung masuk ke daftar pemesanan di panel admin.
+                </p>
+            </div>
+
+            <!-- Detail Keterangan Booking -->
+            <div class="my-5 p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2.5 text-xs">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500">Kode Booking</span>
+                    <span class="font-extrabold text-brand text-sm" x-text="'#' + (successOrder?.kode_pemesanan ?? '')"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500">Status</span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold border border-amber-200 text-[10px]">Menunggu Pembayaran</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500">Durasi Sewa</span>
+                    <span class="font-bold text-gray-800" x-text="(successOrder?.lama_sewa ?? 1) + ' Hari'"></span>
+                </div>
+                <div class="flex justify-between items-center border-t border-gray-200 pt-2">
+                    <span class="text-gray-900 font-bold">Total Biaya</span>
+                    <span class="font-black text-base text-gray-900" x-text="'Rp ' + Number(successOrder?.total_biaya ?? 0).toLocaleString('id-ID')"></span>
+                </div>
+            </div>
+
+            <!-- Tombol Tutup Sederhana -->
+            <button @click="showSuccessModal = false"
+                    class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-3 rounded-2xl transition">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
 
     <!-- Dark Footer Full Width (Menempel Penuh ke Bawah & Full Selebar Layar) -->
     <footer class="bg-dark text-gray-400 text-xs pt-12 pb-6 border-t border-gray-800 w-full mt-auto">

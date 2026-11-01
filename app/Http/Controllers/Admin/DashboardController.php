@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Alat;
 use App\Models\Pembayaran;
 use App\Models\Pemesanan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -52,6 +53,27 @@ class DashboardController extends Controller
         );
 
         return view('admin.dashboard', $data);
+    }
+
+    /**
+     * Kirim ulang isi dashboard (HTML) untuk tombol "Muat ulang data".
+     *
+     * Polanya sama dengan InventarisController::tabel() pada halaman data
+     * peralatan: hanya bagian isi yang diperbarui lewat AJAX sehingga halaman
+     * tidak perlu dimuat ulang seluruhnya.
+     */
+    public function data(): JsonResponse
+    {
+        // Tombol muat ulang berarti pengguna meminta angka terbaru, jadi cache
+        // dibuang lebih dulu — sama seperti permintaan ?segarkan=1.
+        Cache::forget(self::KUNCI_CACHE);
+
+        $data = $this->kumpulkanData();
+
+        return response()->json([
+            'html' => view('admin.dashboard._isi', $data)->render(),
+            'perlu_verifikasi' => $data['statistik']['perlu_verifikasi'],
+        ]);
     }
 
     /**
@@ -166,12 +188,12 @@ class DashboardController extends Controller
             'bookingTerbaru' => $bookingTerbaru,
             'antreanPembayaran' => $antreanPembayaran,
             'inventaris' => $this->susunInventaris($perKategori),
-            'diperbaruiPada' => Carbon::now()->format('H:i'),
         ];
     }
 
     /**
      * Menyusun data donut (segmen) dan rincian per kategori.
+     *
      * @param  Collection<int, Alat>  $perKategori
      * @return array<string, mixed>
      */

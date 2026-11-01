@@ -9,22 +9,20 @@ use App\Http\Controllers\Admin\PemesananController as AdminPemesananController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\BookingSayaController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\OutGearBotController;
-use App\Http\Controllers\PanduanController;
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\LaporanController;
-
-use App\Http\Controllers\Owner\HargaController;
-use App\Http\Controllers\Owner\StaffController;
-use App\Http\Controllers\Owner\DendaController;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\DendaController;
+use App\Http\Controllers\Owner\HargaController;
 use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
-
+use App\Http\Controllers\Owner\StaffController;
+use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\PersiapanController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Petugas\PengembalianController;
 use App\Http\Controllers\Petugas\KerusakanController;
 
@@ -43,6 +41,7 @@ Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 Route::get('/katalog', KatalogController::class)->name('katalog');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
 Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
 
@@ -111,8 +110,7 @@ Route::middleware(['role:admin,owner,petugas'])
         });
     });
 
-
-///OWNERRR
+// /OWNERRR
 
 Route::middleware('role:owner')
     ->prefix('owner')
@@ -144,7 +142,6 @@ Route::middleware('role:owner')
         Route::delete('/kelola-staff/{id}', [StaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
     });
 
-
 /*
 |--------------------------------------------------------------------------
 | Panel Petugas Gudang
@@ -155,7 +152,7 @@ Route::middleware('role:petugas')
     ->prefix('petugas')
     ->name('petugas.')
     ->group(function () {
-        Route::get('/dashboard', [PetugasDashboardController::class,'index',])->name('dashboard');
+        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
         Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
         Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
         Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
@@ -169,7 +166,5 @@ Route::middleware('role:petugas')
         Route::get('/profile', [PetugasDashboardController::class, 'profile'])->name('profile');
         Route::put('/profile', [PetugasDashboardController::class, 'updateProfile'])->name('profile.update');
     });
-
-    
 
 require __DIR__.'/auth.php';
