@@ -1,11 +1,5 @@
 @use('Illuminate\Support\Str')
 @php
-    // Inisial pengguna yang sedang login untuk avatar di header.
-    $penggunaLogin = auth()->user();
-    $inisialLogin = $penggunaLogin
-        ? Str::upper(Str::of($penggunaLogin->name)->explode(' ')->filter()->take(2)->map(fn ($kata) => Str::substr($kata, 0, 1))->implode(''))
-        : '?';
-
     // Kelas badge per status (ditulis lengkap supaya terbaca oleh Tailwind).
     $kelasBadge = [
         'menunggu_pembayaran' => 'bg-amber-50 text-amber-700 border-amber-200',
@@ -17,9 +11,6 @@
 
     // Warna avatar pelanggan (dipilih berdasarkan id supaya konsisten).
     $warnaAvatar = ['bg-orange-100 text-orange-700', 'bg-teal-100 text-teal-700', 'bg-slate-200 text-slate-700', 'bg-amber-100 text-amber-700', 'bg-indigo-100 text-indigo-700'];
-
-    // Parameter query yang dipertahankan saat pindah filter / halaman.
-    $parameterCari = $kataKunci !== '' ? ['q' => $kataKunci] : [];
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -44,14 +35,8 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 bg-white border border-zinc-200/80 px-3.5 py-1.5 rounded-full shadow-sm text-xs font-semibold text-emerald-700">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Basecamp Sleman • Online
-                    </div>
-                    <a href="{{ route('admin.pemesanan', array_filter(['status' => $statusAktif]) + $parameterCari) }}" class="p-2 bg-white border border-zinc-200/80 rounded-full text-zinc-600 hover:bg-zinc-50 shadow-sm" title="Muat ulang data">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    </a>
-                    <div class="w-8 h-8 rounded-full bg-zinc-900 text-white font-bold text-xs flex items-center justify-center border border-zinc-300 shadow-sm" title="{{ $penggunaLogin?->name }}">{{ $inisialLogin }}</div>
+                    <!-- Profil pengguna: foto profil, nama, dan email (sama seperti halaman data peralatan) -->
+                    @include('partials.profil-topbar')
                 </div>
             </header>
 
