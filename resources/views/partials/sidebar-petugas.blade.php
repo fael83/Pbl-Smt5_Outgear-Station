@@ -40,12 +40,6 @@
             Persiapan & Serah Terima
         </a>
 
-        <!-- 3. Ubah Status Barang -->
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            Ubah Status Barang
-        </a>
-
         <!-- 4. Pengembalian Barang -->
         <a href="{{ route('petugas.pengembalian') }}" 
            class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('petugas.pengembalian*') ? 'font-semibold bg-portal-orange text-white shadow-md shadow-orange-900/20' : 'font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition' }}">
