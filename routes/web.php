@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DendaController as AdminDendaController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\InventarisController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\PelangganController as AdminPelangganController;
@@ -23,6 +23,7 @@ use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardControll
 use App\Http\Controllers\Petugas\PersiapanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+<<<<<<< HEAD
 use App\Http\Controllers\Petugas\PengembalianController;
 use App\Http\Controllers\Petugas\KerusakanController;
 
@@ -33,24 +34,20 @@ use App\Http\Controllers\Petugas\KerusakanController;
 */
 
 Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook'])->name('wa.webhook');
+=======
+>>>>>>> 83ee9f1 (feat: perbarui checkout flow, routes web, dan booking saya)
 
+// Rute Publik (Bisa diakses tanpa login)
 Route::get('/', BerandaController::class)->name('beranda');
-
-// Seluruh halaman publik di bawah ini dapat dibuka tanpa login. Setelah login,
-// pengguna tetap diarahkan sesuai perannya (lihat DashboardController).
-Route::get('/dashboard', DashboardController::class)->name('dashboard');
-
 Route::get('/katalog', KatalogController::class)->name('katalog');
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
-Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store'); // <-- Pindahkan ke sini
 
-/*
-|--------------------------------------------------------------------------
-| Profil pengguna (wajib login)
-|--------------------------------------------------------------------------
-*/
-Route::middleware('auth')->group(function () {
+// Rute Pengguna Terautentikasi (Auth)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -58,39 +55,41 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Panel admin
+| Panel Admin (Role: Admin, Owner, Petugas)
 |--------------------------------------------------------------------------
-|
-| Middleware role membatasi akses: owner dan petugas hanya boleh melihat
-| data, sedangkan aksi tulis (simpan/ubah/hapus) khusus admin.
-|
+| Membatasi akses khusus staf/pengelola. Tanpa fitur denda.
 */
-Route::middleware(['role:admin,owner,petugas'])
+
+Route::middleware(['auth', 'role:admin,owner,petugas'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+<<<<<<< HEAD
         Route::get('/', AdminDashboardController::class)->name('dashboard');
         Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
+=======
+        Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+>>>>>>> 83ee9f1 (feat: perbarui checkout flow, routes web, dan booking saya)
         Route::view('/profile', 'admin.profile')->name('profile');
 
-        // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
+        // Data Pelanggan
         Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
         Route::get('/pelanggan/tabel', [AdminPelangganController::class, 'tabel'])->name('pelanggan.tabel');
         Route::get('/pelanggan/ekspor', [AdminPelangganController::class, 'ekspor'])->name('pelanggan.ekspor');
 
-        // Pemesanan, verifikasi, denda, laporan — read-only untuk owner/petugas.
+        // Transaksi, Verifikasi & Laporan (Read-Only untuk Petugas & Owner)
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
-        Route::get('/denda', AdminDendaController::class)->name('denda.index');
-        Route::get('/laporan', AdminLaporanController::class)->name('laporan.index');
+        Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');
 
-        // Data Alat & Stok. Dipakai oleh menu "Data Peralatan" di sidebar admin.
+        // Data Peralatan & Inventaris
         Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
         Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
 
-        // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
+        // Aksi Tulis / Perubahan Data (Khusus Admin)
         Route::middleware('role:admin')->group(function () {
             Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
             Route::post('/pelanggan', [AdminPelangganController::class, 'store'])->name('pelanggan.store');
@@ -106,9 +105,19 @@ Route::middleware(['role:admin,owner,petugas'])
         });
     });
 
+<<<<<<< HEAD
 // /OWNERRR
 
 Route::middleware('role:owner')
+=======
+/*
+|--------------------------------------------------------------------------
+| Panel Khusus Owner
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:owner'])
+>>>>>>> 83ee9f1 (feat: perbarui checkout flow, routes web, dan booking saya)
     ->prefix('owner')
     ->name('owner.')
     ->group(function () {
@@ -125,6 +134,7 @@ Route::middleware('role:owner')
         Route::get('/harga-sewa', [HargaController::class, 'hargaSewa'])->name('harga-sewa.index');
         Route::put('/harga-sewa/{id}', [HargaController::class, 'updateHargaSewa'])->name('harga-sewa.update');
 
+<<<<<<< HEAD
         // Kelola Aturan Denda
         Route::get('/aturan-denda', [DendaController::class, 'aturanDenda'])->name('aturan-denda.index');
         Route::put('/aturan-denda/{id}', [DendaController::class, 'updateAturanDenda'])->name('aturan-denda.update');
@@ -159,6 +169,15 @@ Route::middleware('role:petugas')
         Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
         Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
         Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
+=======
+        // Kelola Staff / Petugas
+        Route::get('/kelola-staff', [OwnerController::class, 'kelolaStaff'])->name('kelola-staff.index');
+        Route::get('/kelola-staff/tambah', [OwnerController::class, 'createStaff'])->name('kelola-staff.create');
+        Route::post('/kelola-staff', [OwnerController::class, 'storeStaff'])->name('kelola-staff.store');
+        Route::get('/kelola-staff/{id}/edit', [OwnerController::class, 'editStaff'])->name('kelola-staff.edit');
+        Route::put('/kelola-staff/{id}', [OwnerController::class, 'updateStaff'])->name('kelola-staff.update');
+        Route::delete('/kelola-staff/{id}', [OwnerController::class, 'destroyStaff'])->name('kelola-staff.destroy');
+>>>>>>> 83ee9f1 (feat: perbarui checkout flow, routes web, dan booking saya)
     });
 
 require __DIR__.'/auth.php';

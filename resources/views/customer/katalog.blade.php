@@ -68,47 +68,54 @@
           },
 
           async submitCheckout() {
-              let selected = this.selectedItems;
-              if (selected.length === 0) {
-                  alert('Pilih minimal 1 peralatan yang dicentang di keranjang untuk checkout.');
-                  return;
-              }
+    let selected = this.selectedItems;
+    if (selected.length === 0) {
+        alert('Pilih minimal 1 peralatan yang dicentang di keranjang untuk checkout.');
+        return;
+    }
 
-              this.isCheckingOut = true;
-              try {
-                  let res = await fetch('{{ route('checkout.store') }}', {
-                      method: 'POST',
-                      headers: {
-                          'Content-Type': 'application/json',
-                          'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                          'Accept': 'application/json'
-                      },
-                      body: JSON.stringify({
-                          items: selected.map(i => ({ id: i.id, qty: i.qty })),
-                          tanggal_mulai: this.tanggalMulai,
-                          tanggal_selesai: this.tanggalSelesai,
-                          nama_penyewa: this.namaPenyewa,
-                          no_telepon: this.noTelepon
-                      })
-                  });
+    this.isCheckingOut = true;
+    try {
+        let res = await fetch('{{ route('checkout.store') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                items: selected.map(i => ({ id: i.id, qty: i.qty })),
+                tanggal_mulai: this.tanggalMulai,
+                tanggal_selesai: this.tanggalSelesai,
+                nama_penyewa: this.namaPenyewa,
+                no_telepon: this.noTelepon
+            })
+        });
 
-                  let data = await res.json();
-                  if (res.ok && data.success) {
-                      let checkedIds = selected.map(i => i.id);
-                      this.cart = this.cart.filter(i => !checkedIds.includes(i.id));
-                      this.isCartOpen = false;
-                      this.successOrder = data;
-                      this.showSuccessModal = true;
-                  } else {
-                      alert(data.message || 'Gagal memproses checkout. Silakan periksa kembali data Anda.');
-                  }
-              } catch (err) {
-                  console.error(err);
-                  alert('Terjadi kesalahan saat memproses booking ke database.');
-              } finally {
-                  this.isCheckingOut = false;
-              }
-          }
+        // 1. Jika sesi habis atau belum login (HTTP status 401)
+        if (res.status === 401) {
+            alert('Silakan login terlebih dahulu untuk melakukan booking persewaan.');
+            window.location.href = '{{ route('login') }}';
+            return;
+        }
+
+        let data = await res.json();
+        if (res.ok && data.success) {
+            let checkedIds = selected.map(i => i.id);
+            this.cart = this.cart.filter(i => !checkedIds.includes(i.id));
+            this.isCartOpen = false;
+            this.successOrder = data;
+            this.showSuccessModal = true;
+        } else {
+            alert(data.message || 'Gagal memproses checkout. Silakan periksa kembali data Anda.');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan saat memproses booking ke database.');
+    } finally {
+        this.isCheckingOut = false;
+    }
+}
       }">
 
     <!-- Main Navigation Bar -->

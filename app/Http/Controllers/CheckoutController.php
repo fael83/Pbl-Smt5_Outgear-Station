@@ -2,161 +2,118 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Role;
 use App\Models\Alat;
-use App\Models\DetailPemesanan;
-use App\Models\Pembayaran;
 use App\Models\Pemesanan;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
-    /**
-     * Memproses checkout pemesanan sewa peralatan dari keranjang belanja katalog.
-     *
-     * Data yang dibuat:
-     * - Pemesanan (status: menunggu_pembayaran)
-     * - DetailPemesanan (item-item alat yang disewa)
-     * - Pembayaran (status_transaksi: pending)
-     *
-     * @param  Request  $request
-     * @return JsonResponse
-     */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
-        $validated = $request->validate([
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required', 'integer', 'exists:alat,id'],
-            'items.*.qty' => ['required', 'integer', 'min:1'],
-            'tanggal_mulai' => ['nullable', 'date'],
-            'tanggal_selesai' => ['nullable', 'date'],
-            'nama_penyewa' => ['nullable', 'string', 'max:255'],
-            'no_telepon' => ['nullable', 'string', 'max:30'],
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|exists:alat,id', // <-- Sesuaikan ke tabel 'alat'
+            'items.*.qty' => 'required|integer|min:1',
+            'tanggal_mulai' => 'required|date|after_or_equal:today',
+            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+            'nama_penyewa' => 'required|string|max:255',
+            'no_telepon' => 'required|string|max:20',
         ]);
 
-        $tanggalMulai = ! empty($validated['tanggal_mulai'])
-            ? Carbon::parse($validated['tanggal_mulai'])->startOfDay()
-            : now()->startOfDay();
-
-        $tanggalSelesai = ! empty($validated['tanggal_selesai'])
-            ? Carbon::parse($validated['tanggal_selesai'])->startOfDay()
-            : $tanggalMulai->copy()->addDays(2)->startOfDay();
-
-        // Pastikan tanggal selesai tidak lebih awal dari tanggal mulai
-        if ($tanggalSelesai->lt($tanggalMulai)) {
-            $tanggalSelesai = $tanggalMulai->copy()->addDays(2)->startOfDay();
-        }
-
-        $lamaSewa = max(1, (int) $tanggalMulai->diffInDays($tanggalSelesai) + 1);
-
-        // Cari atau tentukan user pelanggan
-        $user = auth()->user();
-        if ($user === null) {
-            if (! empty($validated['nama_penyewa'])) {
+        DB::beginTransaction();
+        try {
+            // 1. Hubungkan / Login-kan User
+            if (Auth::check()) {
+                $user = Auth::user();
+            } else {
+                // Pengunjung tanpa login (Guest Checkout) -> Buat/Cari akun berdasarkan No. Telp
                 $user = User::firstOrCreate(
-                    ['no_telepon' => $validated['no_telepon'] ?: '081' . rand(10000000, 99999999)],
+                    ['no_telepon' => $request->no_telepon],
                     [
-                        'name' => $validated['nama_penyewa'],
-                        'email' => 'customer_' . Str::random(6) . '@outgear.test',
-                        'password' => bcrypt('password123'),
-                        'role' => Role::Customer,
-                        'status_akun' => 'aktif',
+                        'name' => $request->nama_penyewa,
+                        'email' => 'guest_' . time() . '_' . Str::random(5) . '@outgear.station',
+                        'password' => Hash::make('password123'),
+                        'role' => 'customer',
                     ]
                 );
-            } else {
-                $user = User::where('role', Role::Customer)->first() ?? User::first();
-            }
-        }
 
-        $userId = $user?->id ?? 1;
-
-        $pemesanan = DB::transaction(function () use ($validated, $userId, $tanggalMulai, $tanggalSelesai, $lamaSewa): Pemesanan {
-            // Hitung nomor urut untuk format kode pemesanan
-            $urutan = Pemesanan::query()->count() + 1;
-            $kodePemesanan = 'ORD-' . date('Ymd') . '-' . str_pad((string) $urutan, 4, '0', STR_PAD_LEFT);
-
-            while (Pemesanan::query()->where('kode_pemesanan', $kodePemesanan)->exists()) {
-                $urutan++;
-                $kodePemesanan = 'ORD-' . date('Ymd') . '-' . str_pad((string) $urutan, 4, '0', STR_PAD_LEFT);
+                // Auto-login agar halaman 'Booking Saya' langsung membaca sesi user ini
+                Auth::login($user);
             }
 
+            // 2. Hitung Durasi & Total Biaya
+            $d1 = new \DateTime($request->tanggal_mulai);
+            $d2 = new \DateTime($request->tanggal_selesai);
+            $diff = $d1->diff($d2)->days;
+            $lamaSewa = max(1, $diff + 1);
+
+            $totalBiaya = 0;
+            $itemsToSave = [];
+
+            foreach ($request->items as $itemData) {
+                // Menggunakan Model Alat (Tabel: alat)
+                $alat = Alat::where('id', $itemData['id'])->lockForUpdate()->first();
+
+                if (!$alat || $alat->stok_tersedia < $itemData['qty']) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Stok ' . ($alat ? $alat->nama : 'peralatan') . ' tidak mencukupi!'
+                    ], 422);
+                }
+
+                $subtotalPerHari = $alat->tarif_per_hari * $itemData['qty'];
+                $totalBiaya += ($subtotalPerHari * $lamaSewa);
+
+                $itemsToSave[] = [
+                    'alat_id' => $alat->id, // Sesuaikan foreign key relasi detail pemesanan ke alat
+                    'jumlah' => $itemData['qty'],
+                    'tarif_per_hari' => $alat->tarif_per_hari,
+                    'subtotal' => $subtotalPerHari * $lamaSewa,
+                ];
+            }
+
+            // 3. Simpan Header Pemesanan
             $pemesanan = Pemesanan::create([
-                'kode_pemesanan' => $kodePemesanan,
-                'user_id' => $userId,
-                'tanggal_mulai' => $tanggalMulai->toDateString(),
-                'tanggal_selesai' => $tanggalSelesai->toDateString(),
-                'total_biaya' => 0,
-                'jumlah_dp' => 0,
+                'user_id' => $user->id,
+                'kode_pemesanan' => 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(4)),
+                'tanggal_mulai' => $request->tanggal_mulai,
+                'tanggal_selesai' => $request->tanggal_selesai,
+                'nama_penyewa' => $request->nama_penyewa,
+                'no_telepon' => $request->no_telepon,
+                'lama_sewa' => $lamaSewa,
+                'total_biaya' => $totalBiaya,
                 'status' => 'menunggu_pembayaran',
             ]);
 
-            $totalBiaya = 0;
-
-            foreach ($validated['items'] as $item) {
-                $alat = Alat::find($item['id']);
-                if ($alat === null) {
-                    continue;
-                }
-
-                $qty = (int) $item['qty'];
-                $subtotal = $qty * (float) $alat->tarif_per_hari * $lamaSewa;
-                $totalBiaya += $subtotal;
-
-                DetailPemesanan::create([
-                    'pemesanan_id' => $pemesanan->id,
-                    'alat_id' => $alat->id,
-                    'jumlah' => $qty,
-                    'tarif_per_hari' => $alat->tarif_per_hari,
-                    'subtotal' => $subtotal,
-                ]);
-
-                // Kurangi stok tersedia dan tambahkan stok disewa jika cukup
-                if ($alat->stok_tersedia >= $qty) {
-                    $alat->decrement('stok_tersedia', $qty);
-                    $alat->increment('stok_disewa', $qty);
-                }
+            // 4. Simpan Detail Pemesanan & Potong Stok Alat
+            foreach ($itemsToSave as $detail) {
+                $pemesanan->detailPemesanan()->create($detail);
+                Alat::where('id', $detail['alat_id'])->decrement('stok_tersedia', $detail['jumlah']);
             }
 
-            $jumlahDp = round($totalBiaya * 0.5);
+            DB::commit();
 
-            $pemesanan->update([
-                'total_biaya' => $totalBiaya,
-                'jumlah_dp' => $jumlahDp,
+            return response()->json([
+                'success' => true,
+                'kode_pemesanan' => $pemesanan->kode_pemesanan,
+                'lama_sewa' => $pemesanan->lama_sewa,
+                'total_biaya' => $pemesanan->total_biaya,
+                'redirect_url' => route('booking.saya'),
+                'message' => 'Pemesanan berhasil dibuat!'
             ]);
 
-            // Buat record pembayaran DP awal dengan status pending
-            Pembayaran::create([
-                'pemesanan_id' => $pemesanan->id,
-                'transaction_id' => 'MID-' . strtoupper(Str::random(10)),
-                'jenis_pembayaran' => 'dp',
-                'metode_pembayaran' => 'qris',
-                'jumlah' => $jumlahDp,
-                'status_transaksi' => 'pending',
-                'waktu_bayar' => null,
-            ]);
-
-            // Hapus cache statistik & badge admin supaya data di /admin/pemesanan langsung update
-            Cache::forget('pemesanan.statistik');
-            Cache::forget('sidebar:badge');
-
-            return $pemesanan;
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Pemesanan berhasil dibuat!',
-            'kode_pemesanan' => $pemesanan->kode_pemesanan,
-            'total_biaya' => $pemesanan->total_biaya,
-            'lama_sewa' => $lamaSewa,
-            'redirect_admin' => route('admin.pemesanan'),
-            'redirect_booking' => route('booking.saya'),
-        ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
-
