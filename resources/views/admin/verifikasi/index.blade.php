@@ -8,6 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="admin-theme antialiased min-h-screen"
+      x-effect="window.dispatchEvent(new CustomEvent('badge-verifikasi', { detail: countPending }))"
       x-data="halamanVerifikasi({
           items: {{ Js::from($pembayaranList) }},
           dataUrl: {{ Js::from(route('admin.verifikasi.data')) }}

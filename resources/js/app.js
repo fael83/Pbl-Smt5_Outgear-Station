@@ -937,6 +937,7 @@ Alpine.data('halamanDashboard', (config = {}) => ({
 
             this.$refs.isi.innerHTML = data.html;
             this.jumlahVerifikasi = Number(data.perlu_verifikasi ?? 0);
+            window.dispatchEvent(new CustomEvent('badge-verifikasi', { detail: this.jumlahVerifikasi }));
             this.notifikasi('Data diperbarui.');
         } catch {
             this.notifikasi('Tidak dapat terhubung ke server.', true);
@@ -1034,6 +1035,21 @@ Alpine.data('halamanLaporan', (config = {}) => {
                 this.filter.dari !== periodeBawaan.dari ||
                 this.filter.sampai !== periodeBawaan.sampai
             );
+        },
+
+        /** URL ekspor (Excel/PDF) mengikuti tab, periode, dan kata kunci yang aktif. */
+        urlEkspor(dasar) {
+            const parameter = new URLSearchParams({
+                tipe: this.filter.tipe,
+                dari: this.filter.dari,
+                sampai: this.filter.sampai,
+            });
+
+            if (this.cari !== '') {
+                parameter.set('search', this.cari);
+            }
+
+            return `${dasar}?${parameter.toString()}`;
         },
 
         /** Teks pada chip jenis laporan yang aktif. */

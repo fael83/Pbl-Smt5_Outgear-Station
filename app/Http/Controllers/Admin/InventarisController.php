@@ -55,7 +55,7 @@ class InventarisController extends Controller
         $filters = $this->filter($request);
         $daftarAlat = $this->daftarAlat($filters);
 
-        return view('admin.peralatan', [
+        return view('admin.peralatan.index', [
             'daftarAlat' => $daftarAlat,
             'dataAlat' => $this->dataAlat($daftarAlat),
             'ringkasan' => $this->ringkasan(),

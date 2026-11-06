@@ -52,7 +52,7 @@ class DashboardController extends Controller
             fn (): array => $this->kumpulkanData(),
         );
 
-        return view('admin.dashboard', $data);
+        return view('admin.dashboard.index', $data);
     }
 
     /**
