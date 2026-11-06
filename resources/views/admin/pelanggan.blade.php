@@ -141,11 +141,6 @@
             <div x-ref="tabel" @click="tangkapKlik($event)" :class="memuat ? 'opacity-60' : ''" class="transition-opacity">
                 @include('admin.pelanggan._tabel')
             </div>
-        <!-- Notifikasi ringan setelah status akun diubah -->
-        <div x-cloak x-show="pesan" x-transition.opacity
-             class="fixed bottom-6 right-6 z-[60] max-w-sm px-4 py-3 rounded-xl shadow-lg text-xs font-semibold"
-             :class="pesanGagal ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'">
-            <span x-text="pesan"></span>
         </div>
 
         <!-- Form pelanggan baru -->
@@ -236,5 +231,7 @@
                 </form>
             </div>
         </div>
+
+        @include('partials.status-muat')
     </div>
 @endsection

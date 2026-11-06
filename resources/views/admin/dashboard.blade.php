@@ -8,7 +8,7 @@
 </head>
 <body class="admin-theme antialiased font-sans"
       x-data="halamanDashboard({
-        dataUrl: {{ Js::from(route('dashboard')) }},
+        dataUrl: {{ Js::from(route('admin.dashboard.data')) }},
         jumlahVerifikasi: {{ (int) $statistik['perlu_verifikasi'] }}
       })">
 
@@ -37,15 +37,7 @@
                     </div>
 
                     <!-- Muat ulang data: isi dashboard diambil ulang lewat AJAX, tanpa reload -->
-                    <a href="{{ route('admin.dashboard', ['segarkan' => 1]) }}"
-                       @click.prevent="muatUlang()"
-                       :class="memuat ? 'pointer-events-none opacity-60' : ''"
-                       class="p-2 bg-white border border-zinc-200/80 rounded-full text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 shadow-sm transition flex items-center justify-center"
-                       :title="memuat ? 'Memuat data…' : 'Muat ulang data'">
-                        <svg class="w-4 h-4" :class="memuat ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                    </a>
+                    @include('partials.tombol-muat-ulang', ['fallback' => route('admin.dashboard', ['segarkan' => 1])])
                     <a href="/admin/verifikasi"
                        class="p-2 bg-white border border-zinc-200/80 rounded-full text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 shadow-sm relative transition"
                        :title="judulVerifikasi">
@@ -72,24 +64,11 @@
                 <div x-ref="isi" :class="memuat ? 'opacity-60' : ''" class="p-8 space-y-6 transition-opacity">
                     @include('admin.dashboard._isi')
                 </div>
-
-                <!-- Penanda proses saat data diambil ulang -->
-                <div x-cloak x-show="memuat" class="absolute inset-x-0 top-0 flex justify-center pt-10 pointer-events-none">
-                    <div class="flex items-center gap-2 bg-[#1A2024] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg">
-                        <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        Memuat data…
-                    </div>
-                </div>
             </div>
         </main>
     </div>
 
-    <!-- Notifikasi ringan (mis. gagal memuat ulang data) -->
-    <div x-cloak x-show="pesan" x-transition.opacity
-         class="fixed bottom-6 right-6 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-xs font-semibold border"
-         :class="pesanGagal ? 'bg-red-50 text-red-700 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'">
-        <span x-text="pesan"></span>
-    </div>
+    @include('partials.status-muat')
 
 </body>
 </html>

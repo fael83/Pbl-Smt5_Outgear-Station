@@ -22,7 +22,7 @@
             <!-- Input Search Interaktif -->
             <div x-show="showSearchInput" x-transition class="relative">
                 <input x-ref="peralatanSearchInput" 
-                       type="text" 
+                       type="text" data-cari
                        x-model="cari"
                        @input.debounce.350ms="muatTabel()"
                        @keydown.enter.prevent="muatTabel()"

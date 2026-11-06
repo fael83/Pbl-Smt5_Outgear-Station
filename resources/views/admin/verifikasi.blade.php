@@ -8,129 +8,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="admin-theme antialiased min-h-screen"
-      x-data="{
-          search: '',
-          showSearchInput: false,
-          showFilterDropdown: false,
-          selectedFilter: 'Semua',
-          selectedJenis: 'Semua',
-          modalDetail: false,
-          selectedItem: null,
-          pembayaranList: {{ Js::from($pembayaranList) }},
-          
-          formatRupiah(val) {
-              return 'Rp ' + Number(val).toLocaleString('id-ID');
-          },
-
-          /**
-           * Kirim aksi verifikasi/tolak ke server dan baca balasan JSON-nya.
-           */
-          async kirimAksi(url) {
-              try {
-                  const respons = await fetch(url, {
-                      method: 'PATCH',
-                      credentials: 'same-origin',
-                      headers: {
-                          Accept: 'application/json',
-                          'X-Requested-With': 'XMLHttpRequest',
-                          'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
-                      },
-                  });
-
-                  return { ok: respons.ok, data: await respons.json() };
-              } catch {
-                  return { ok: false, data: { message: 'Tidak dapat terhubung ke server.' } };
-              }
-          },
-
-          async verifikasi(id) {
-              const item = this.pembayaranList.find(p => p.id === id);
-
-              if (!item) {
-                  return;
-              }
-
-              const { ok, data } = await this.kirimAksi(item.url_verifikasi);
-
-              if (!ok) {
-                  window.alert(data.message ?? 'Gagal memverifikasi pembayaran.');
-
-                  return;
-              }
-
-              item.status_transaksi = data.status_transaksi;
-              item.waktu_bayar = data.waktu_bayar ?? item.waktu_bayar;
-
-              if (this.selectedItem && this.selectedItem.id === id) {
-                  this.selectedItem.status_transaksi = item.status_transaksi;
-                  this.selectedItem.waktu_bayar = item.waktu_bayar;
-              }
-          },
-
-          async tolak(id) {
-              const item = this.pembayaranList.find(p => p.id === id);
-
-              if (!item) {
-                  return;
-              }
-
-              const { ok, data } = await this.kirimAksi(item.url_tolak);
-
-              if (!ok) {
-                  window.alert(data.message ?? 'Gagal menolak pembayaran.');
-
-                  return;
-              }
-
-              item.status_transaksi = data.status_transaksi;
-
-              if (this.selectedItem && this.selectedItem.id === id) {
-                  this.selectedItem.status_transaksi = item.status_transaksi;
-              }
-          },
-
-          openDetail(item) {
-              this.selectedItem = item;
-              this.modalDetail = true;
-          },
-
-          get filteredList() {
-              return this.pembayaranList.filter(item => {
-                  // Yang berhasil tidak ditampilkan di tabel verifikasi
-                  if (item.status_transaksi === 'berhasil') {
-                      return false;
-                  }
-
-                  const matchStatus = this.selectedFilter === 'Semua' || 
-                      (this.selectedFilter === 'Pending' && item.status_transaksi === 'pending') ||
-                      (this.selectedFilter === 'Gagal' && item.status_transaksi === 'gagal');
-                      
-                  const matchJenis = this.selectedJenis === 'Semua' || item.jenis_pembayaran === this.selectedJenis;
-                  
-                  const query = this.search.toLowerCase().trim();
-                  const matchSearch = query === '' || 
-                      item.id.toString().includes(query) ||
-                      item.pemesanan_id.toString().includes(query) ||
-                      item.kode_pemesanan.toLowerCase().includes(query) ||
-                      item.pelanggan_nama.toLowerCase().includes(query) ||
-                      item.transaction_id_midtrans.toLowerCase().includes(query);
-
-                  return matchStatus && matchJenis && matchSearch;
-              });
-          },
-
-          get countPending() {
-              return this.pembayaranList.filter(p => p.status_transaksi === 'pending').length;
-          },
-
-          get countBerhasil() {
-              return this.pembayaranList.filter(p => p.status_transaksi === 'berhasil').length;
-          },
-
-          get countGagal() {
-              return this.pembayaranList.filter(p => p.status_transaksi === 'gagal').length;
-          }
-      }">
+      x-data="halamanVerifikasi({
+          items: {{ Js::from($pembayaranList) }},
+          dataUrl: {{ Js::from(route('admin.verifikasi.data')) }}
+      })">
 
     <div class="flex min-h-screen relative">
 
@@ -145,6 +26,8 @@
                 </div>
 
                 <div class="flex items-center gap-3">
+                    @include('partials.tombol-muat-ulang')
+
                     <!-- Profil pengguna: foto profil, nama, dan email (sama seperti halaman data peralatan) -->
                     @include('partials.profil-topbar')
                 </div>
@@ -278,8 +161,8 @@
                                 </div>
                             </div>
 
-                            <template x-if="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua'">
-                                <button @click="search = ''; selectedFilter = 'Semua'; selectedJenis = 'Semua'" 
+                            <template x-if="adaFilter">
+                                <button @click="resetFilter()" 
                                         class="text-xs font-semibold text-portal-orange hover:underline px-1" title="Reset filter">
                                     Reset
                                 </button>
@@ -572,5 +455,6 @@
         </div>
     </div>
 
+    @include('partials.status-muat')
 </body>
 </html>

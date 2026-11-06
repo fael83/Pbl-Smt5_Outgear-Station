@@ -62,6 +62,224 @@ const persentase = (bagian, total) => {
 };
 
 /**
+ * Ganti isi wadah dengan HTML baru dari server.
+ *
+ * Kotak pencarian ikut dirender ulang karena berada di dalam HTML tabel, jadi
+ * fokus dan posisi kursornya dipulihkan. Tanpa ini pengguna harus mengklik
+ * kotak cari lagi setiap kali hasil pencarian selesai dimuat.
+ * Kotak cari ditandai dengan atribut `data-cari`.
+ */
+const gantiIsi = (wadah, html) => {
+    const aktif = document.activeElement;
+    const sedangMengetik =
+        aktif instanceof HTMLInputElement && aktif.hasAttribute('data-cari') && wadah.contains(aktif);
+    const awal = sedangMengetik ? aktif.selectionStart : null;
+    const akhir = sedangMengetik ? aktif.selectionEnd : null;
+
+    wadah.innerHTML = html;
+
+    if (!sedangMengetik) {
+        return;
+    }
+
+    // Tunggu Alpine selesai menginisialisasi input baru (x-model mengisi nilainya).
+    window.setTimeout(() => {
+        const input = wadah.querySelector('input[data-cari]');
+
+        if (!input) {
+            return;
+        }
+
+        input.focus();
+
+        try {
+            input.setSelectionRange(awal, akhir);
+        } catch {
+            // Tipe input tertentu tidak mendukung seleksi; abaikan.
+        }
+    }, 0);
+};
+
+/**
+ * Dasar bersama halaman admin yang datanya dicari/difilter di server
+ * (pemesanan, denda, dan laporan). Cara kerjanya SAMA dengan halaman data
+ * peralatan dan data pelanggan:
+ *
+ * - mencari, memfilter, pindah halaman, dan tombol muat ulang mengambil data
+ *   dari database lewat satu request JSON ke `config.tabelUrl`, lalu hanya
+ *   mengganti isi `x-ref="tabel"` sehingga halaman tidak dimuat ulang;
+ * - selama menunggu server, pop-up "Memuat data…" tampil
+ *   (resources/views/partials/status-muat.blade.php);
+ * - angka ringkasan (kartu statistik) hanya diminta ulang saat muat ulang atau
+ *   saat filter yang memengaruhinya berubah, karena menghitungnya butuh
+ *   beberapa query tambahan;
+ * - aksi yang tidak butuh database (membuka kotak cari, dropdown filter)
+ *   berjalan instan di browser.
+ *
+ * Kontrak balasan JSON endpoint tabel: `{ html, url, ringkasan? }`.
+ *
+ * `tambahan` diterapkan lewat getOwnPropertyDescriptors supaya getter
+ * (mis. `get adaFilter()`) tetap menjadi getter, bukan nilai sekali hitung.
+ */
+const buatTabelServer = (config = {}, kunciFilter = [], tambahan = {}) => {
+    const awal = config.filters ?? {};
+
+    const dasar = {
+        // --- Filter & data tabel ---
+        cari: String(awal.search ?? ''),
+        filter: Object.fromEntries(kunciFilter.map((kunci) => [kunci, String(awal[kunci] ?? '')])),
+        perPage: Number(awal.per_page ?? 10),
+        halaman: 1,
+        showSearchInput: String(awal.search ?? '') !== '',
+        showFilterDropdown: false,
+        ringkasanData: { ...(config.ringkasan ?? {}) },
+
+        // --- Proses & notifikasi (ditampilkan oleh partials.status-muat) ---
+        memuat: false,
+        permintaanTerakhir: 0,
+        pesan: '',
+        pesanGagal: false,
+        timerPesan: null,
+
+        get adaFilter() {
+            return this.cari !== '' || Object.values(this.filter).some((nilai) => nilai !== '');
+        },
+
+        /**
+         * URL endpoint tabel sesuai filter yang sedang aktif. Nilai kosong
+         * tidak dikirim, jadi server memakai nilai bawaannya.
+         */
+        urlTabel(halaman = 1, { segarkan = false, ringkasan = false } = {}) {
+            const parameter = new URLSearchParams();
+
+            if (this.cari !== '') {
+                parameter.set('search', this.cari);
+            }
+
+            for (const [kunci, nilai] of Object.entries(this.filter)) {
+                if (nilai !== '') {
+                    parameter.set(kunci, nilai);
+                }
+            }
+
+            parameter.set('per_page', String(this.perPage));
+
+            if (halaman > 1) {
+                parameter.set('page', String(halaman));
+            }
+
+            if (segarkan) {
+                parameter.set('segarkan', '1');
+            }
+
+            if (ringkasan) {
+                parameter.set('ringkasan', '1');
+            }
+
+            return `${config.tabelUrl}?${parameter.toString()}`;
+        },
+
+        /**
+         * Ambil ulang kartu tabel dari database tanpa reload halaman.
+         *
+         * - `segarkan`  : buang cache di server dan minta angka ringkasan terbaru;
+         * - `ringkasan` : minta angka ringkasan saja (filter periode berubah).
+         */
+        async muatTabel(halaman = 1, { segarkan = false, ringkasan = false } = {}) {
+            const urutan = ++this.permintaanTerakhir;
+
+            this.memuat = true;
+
+            try {
+                const { ok, data } = await kirim(this.urlTabel(halaman, { segarkan, ringkasan }));
+
+                // Abaikan balasan lama kalau pengguna sudah mengetik lagi.
+                if (urutan !== this.permintaanTerakhir) {
+                    return;
+                }
+
+                if (!ok || typeof data.html !== 'string') {
+                    this.notifikasi(data.message ?? 'Gagal memuat data.', true);
+
+                    return;
+                }
+
+                gantiIsi(this.$refs.tabel, data.html);
+                this.ringkasanData = data.ringkasan ?? this.ringkasanData;
+                this.halaman = halaman;
+
+                if (data.url) {
+                    window.history.replaceState({}, '', data.url);
+                }
+
+                if (segarkan) {
+                    this.notifikasi('Data diperbarui.');
+                }
+            } catch {
+                if (urutan === this.permintaanTerakhir) {
+                    this.notifikasi('Tidak dapat terhubung ke server.', true);
+                }
+            } finally {
+                if (urutan === this.permintaanTerakhir) {
+                    this.memuat = false;
+                }
+            }
+        },
+
+        /**
+         * Tombol "Muat ulang data": halaman yang sedang dibuka diambil ulang
+         * dari database dengan cache dibuang.
+         */
+        muatUlang() {
+            return this.muatTabel(this.halaman, { segarkan: true });
+        },
+
+        /**
+         * Pagination dirender server sebagai <a href="...?page=2"> di dalam
+         * elemen `data-paginasi`; kliknya dicegat agar tetap lewat AJAX.
+         */
+        tangkapKlik(event) {
+            const tautan = event.target.closest('[data-paginasi] a[href]');
+
+            if (!tautan) {
+                return;
+            }
+
+            const url = new URL(tautan.href, window.location.origin);
+
+            if (url.origin !== window.location.origin) {
+                return;
+            }
+
+            event.preventDefault();
+            this.muatTabel(Number(url.searchParams.get('page') ?? 1) || 1);
+        },
+
+        resetFilter() {
+            this.cari = '';
+
+            for (const kunci of Object.keys(this.filter)) {
+                this.filter[kunci] = '';
+            }
+
+            this.muatTabel();
+        },
+
+        notifikasi(pesan, gagal = false) {
+            this.pesan = pesan;
+            this.pesanGagal = gagal;
+
+            window.clearTimeout(this.timerPesan);
+            this.timerPesan = window.setTimeout(() => {
+                this.pesan = '';
+            }, 4000);
+        },
+    };
+
+    return Object.defineProperties(dasar, Object.getOwnPropertyDescriptors(tambahan));
+};
+
+/**
  * Komponen halaman admin "Data Peralatan" (/admin/peralatan).
  *
  * Halaman ini membaca data dari Supabase yang jaraknya jauh (~1,3 detik per
@@ -229,7 +447,7 @@ Alpine.data('halamanPeralatan', (config = {}) => {
                     return;
                 }
 
-                this.$refs.tabel.innerHTML = data.html;
+                gantiIsi(this.$refs.tabel, data.html);
                 this.items = Array.isArray(data.items) ? data.items : [];
                 this.ringkasanData = data.ringkasan ?? this.ringkasanData;
                 this.halaman = halaman;
@@ -618,7 +836,7 @@ Alpine.data('halamanPelanggan', (config = {}) => {
                     return;
                 }
 
-                this.$refs.tabel.innerHTML = data.html;
+                gantiIsi(this.$refs.tabel, data.html);
                 this.items = Array.isArray(data.items) ? data.items : [];
                 this.ringkasanData = data.ringkasan ?? this.ringkasanData;
                 this.halaman = halaman;
@@ -719,11 +937,307 @@ Alpine.data('halamanDashboard', (config = {}) => ({
 
             this.$refs.isi.innerHTML = data.html;
             this.jumlahVerifikasi = Number(data.perlu_verifikasi ?? 0);
+            this.notifikasi('Data diperbarui.');
         } catch {
             this.notifikasi('Tidak dapat terhubung ke server.', true);
         } finally {
             this.memuat = false;
         }
+    },
+
+    notifikasi(pesan, gagal = false) {
+        this.pesan = pesan;
+        this.pesanGagal = gagal;
+
+        window.clearTimeout(this.timerPesan);
+        this.timerPesan = window.setTimeout(() => {
+            this.pesan = '';
+        }, 4000);
+    },
+}));
+
+/**
+ * Komponen halaman admin "Data Pemesanan" (/admin/pemesanan).
+ *
+ * Pencarian, filter status, dan pagination mengambil ulang kartu tabel lewat
+ * GET /admin/pemesanan/tabel (lihat buatTabelServer untuk aturan bersamanya).
+ * Nilai `filter.status` kosong berarti semua status.
+ */
+Alpine.data('halamanPemesanan', (config = {}) =>
+    buatTabelServer(config, ['status'], {
+        labelStatus: { ...(config.labelStatus ?? {}) },
+
+        /** Teks pada chip "Filter: …". */
+        get labelFilter() {
+            return this.labelStatus[this.filter.status] ?? 'Semua Status';
+        },
+
+        pilihStatus(nilai) {
+            const baru = String(nilai ?? '');
+
+            if (this.filter.status === baru) {
+                return;
+            }
+
+            this.filter.status = baru;
+            this.muatTabel();
+        },
+    }),
+);
+
+/**
+ * Komponen halaman admin "Kelola Denda" (/admin/denda).
+ *
+ * Tabel diambil lewat GET /admin/denda/tabel. Tombol muat ulang juga meminta
+ * ulang angka ringkasan (kartu statistik dan lencana tagihan belum lunas).
+ */
+Alpine.data('halamanDenda', (config = {}) =>
+    buatTabelServer(config, ['status'], {
+        /** Teks pada chip "Filter: …". */
+        get labelFilter() {
+            return { belum_dibayar: 'Belum Lunas', lunas: 'Lunas' }[this.filter.status] ?? 'Semua Status';
+        },
+
+        pilihStatus(nilai) {
+            const baru = String(nilai ?? '');
+
+            if (this.filter.status === baru) {
+                return;
+            }
+
+            this.filter.status = baru;
+            this.muatTabel();
+        },
+    }),
+);
+
+/**
+ * Komponen halaman admin "Laporan Operasional" (/admin/laporan).
+ *
+ * Satu tab laporan (pendapatan, penyewaan, atau denda) dimuat dari database
+ * sesuai rentang tanggal dan kata kunci lewat GET /admin/laporan/tabel.
+ * Mengganti tab atau mengetik pencarian hanya memuat tabelnya; mengubah
+ * rentang tanggal atau menekan muat ulang juga menghitung ulang kartu
+ * ringkasan karena angkanya bergantung pada periode.
+ */
+Alpine.data('halamanLaporan', (config = {}) => {
+    const periodeBawaan = {
+        dari: String(config.bawaan?.dari ?? ''),
+        sampai: String(config.bawaan?.sampai ?? ''),
+    };
+
+    return buatTabelServer(config, ['tipe', 'dari', 'sampai'], {
+        /** Tab bukan "filter" yang perlu di-reset; hanya kata kunci dan periode. */
+        get adaFilter() {
+            return (
+                this.cari !== '' ||
+                this.filter.dari !== periodeBawaan.dari ||
+                this.filter.sampai !== periodeBawaan.sampai
+            );
+        },
+
+        /** Teks pada chip jenis laporan yang aktif. */
+        get labelTipe() {
+            return (
+                {
+                    pendapatan: 'Ringkasan Pendapatan',
+                    penyewaan: 'Histori Penyewaan',
+                    denda: 'Laporan Denda',
+                }[this.filter.tipe] ?? 'Ringkasan Pendapatan'
+            );
+        },
+
+        pilihTipe(nilai) {
+            const baru = String(nilai ?? '');
+
+            if (this.filter.tipe === baru) {
+                return;
+            }
+
+            this.filter.tipe = baru;
+            this.muatTabel();
+        },
+
+        /** Rentang tanggal berubah: tabel dan kartu ringkasan dihitung ulang. */
+        ubahPeriode() {
+            if (this.filter.dari === '' || this.filter.sampai === '') {
+                return;
+            }
+
+            this.muatTabel(1, { ringkasan: true });
+        },
+
+        resetFilter() {
+            this.cari = '';
+            this.filter.dari = periodeBawaan.dari;
+            this.filter.sampai = periodeBawaan.sampai;
+            this.muatTabel(1, { ringkasan: true });
+        },
+    });
+});
+
+/**
+ * Komponen halaman admin "Verifikasi Pembayaran" (/admin/verifikasi).
+ *
+ * Seluruh antrean sudah ada di browser, jadi mencari dan memfilter berjalan
+ * INSTAN tanpa menghubungi server. Yang butuh database — tombol muat ulang,
+ * verifikasi, dan tolak — memakai pop-up "Memuat data…" dan notifikasi yang
+ * sama dengan halaman admin lainnya.
+ */
+Alpine.data('halamanVerifikasi', (config = {}) => ({
+    search: '',
+    showSearchInput: false,
+    showFilterDropdown: false,
+    selectedFilter: 'Semua',
+    selectedJenis: 'Semua',
+    modalDetail: false,
+    selectedItem: null,
+    pembayaranList: Array.isArray(config.items) ? config.items : [],
+
+    memuat: false,
+    pesan: '',
+    pesanGagal: false,
+    timerPesan: null,
+
+    formatRupiah(val) {
+        return 'Rp ' + Number(val).toLocaleString('id-ID');
+    },
+
+    /**
+     * Ambil ulang seluruh antrean dari database.
+     */
+    async muatUlang() {
+        if (this.memuat) {
+            return;
+        }
+
+        this.memuat = true;
+
+        try {
+            const { ok, data } = await kirim(config.dataUrl);
+
+            if (!ok || !Array.isArray(data.items)) {
+                this.notifikasi(data.message ?? 'Gagal memuat ulang data pembayaran.', true);
+
+                return;
+            }
+
+            this.pembayaranList = data.items;
+
+            // Jaga modal detail yang sedang terbuka tetap sinkron dengan data baru.
+            if (this.selectedItem) {
+                this.selectedItem = this.pembayaranList.find((p) => p.id === this.selectedItem.id) ?? null;
+
+                if (this.selectedItem === null) {
+                    this.modalDetail = false;
+                }
+            }
+
+            this.notifikasi('Data diperbarui.');
+        } catch {
+            this.notifikasi('Tidak dapat terhubung ke server.', true);
+        } finally {
+            this.memuat = false;
+        }
+    },
+
+    /**
+     * Kirim aksi verifikasi/tolak ke server, lalu terapkan balasannya ke baris.
+     */
+    async prosesAksi(id, kunciUrl, pesanGagalBawaan) {
+        const item = this.pembayaranList.find((p) => p.id === id);
+
+        if (!item || this.memuat) {
+            return;
+        }
+
+        this.memuat = true;
+
+        try {
+            const { ok, data } = await kirim(item[kunciUrl], { method: 'PATCH' });
+
+            if (!ok) {
+                this.notifikasi(data.message ?? pesanGagalBawaan, true);
+
+                return;
+            }
+
+            item.status_transaksi = data.status_transaksi;
+            item.waktu_bayar = data.waktu_bayar ?? item.waktu_bayar;
+
+            if (this.selectedItem && this.selectedItem.id === id) {
+                this.selectedItem.status_transaksi = item.status_transaksi;
+                this.selectedItem.waktu_bayar = item.waktu_bayar;
+            }
+
+            this.notifikasi(data.message ?? 'Pembayaran diperbarui.');
+        } catch {
+            this.notifikasi('Tidak dapat terhubung ke server.', true);
+        } finally {
+            this.memuat = false;
+        }
+    },
+
+    verifikasi(id) {
+        return this.prosesAksi(id, 'url_verifikasi', 'Gagal memverifikasi pembayaran.');
+    },
+
+    tolak(id) {
+        return this.prosesAksi(id, 'url_tolak', 'Gagal menolak pembayaran.');
+    },
+
+    openDetail(item) {
+        this.selectedItem = item;
+        this.modalDetail = true;
+    },
+
+    get adaFilter() {
+        return this.search !== '' || this.selectedFilter !== 'Semua' || this.selectedJenis !== 'Semua';
+    },
+
+    resetFilter() {
+        this.search = '';
+        this.selectedFilter = 'Semua';
+        this.selectedJenis = 'Semua';
+    },
+
+    get filteredList() {
+        return this.pembayaranList.filter((item) => {
+            // Yang berhasil tidak ditampilkan di tabel verifikasi
+            if (item.status_transaksi === 'berhasil') {
+                return false;
+            }
+
+            const matchStatus =
+                this.selectedFilter === 'Semua' ||
+                (this.selectedFilter === 'Pending' && item.status_transaksi === 'pending') ||
+                (this.selectedFilter === 'Gagal' && item.status_transaksi === 'gagal');
+
+            const matchJenis = this.selectedJenis === 'Semua' || item.jenis_pembayaran === this.selectedJenis;
+
+            const query = this.search.toLowerCase().trim();
+            const matchSearch =
+                query === '' ||
+                item.id.toString().includes(query) ||
+                item.pemesanan_id.toString().includes(query) ||
+                item.kode_pemesanan.toLowerCase().includes(query) ||
+                item.pelanggan_nama.toLowerCase().includes(query) ||
+                item.transaction_id_midtrans.toLowerCase().includes(query);
+
+            return matchStatus && matchJenis && matchSearch;
+        });
+    },
+
+    get countPending() {
+        return this.pembayaranList.filter((p) => p.status_transaksi === 'pending').length;
+    },
+
+    get countBerhasil() {
+        return this.pembayaranList.filter((p) => p.status_transaksi === 'berhasil').length;
+    },
+
+    get countGagal() {
+        return this.pembayaranList.filter((p) => p.status_transaksi === 'gagal').length;
     },
 
     notifikasi(pesan, gagal = false) {

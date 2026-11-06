@@ -70,6 +70,7 @@ Route::middleware(['role:admin,owner,petugas'])
     ->name('admin.')
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
+        Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
         Route::get('/profile', function () {
             if ((auth()->user()?->role?->value ?? auth()->user()?->role) === 'petugas') {
                 return redirect()->route('petugas.profile');
@@ -84,9 +85,13 @@ Route::middleware(['role:admin,owner,petugas'])
 
         // Pemesanan, verifikasi, denda, laporan — read-only untuk owner/petugas.
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
+        Route::get('/pemesanan/tabel', [AdminPemesananController::class, 'tabel'])->name('pemesanan.tabel');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
-        Route::get('/denda', AdminDendaController::class)->name('denda.index');
-        Route::get('/laporan', AdminLaporanController::class)->name('laporan.index');
+        Route::get('/verifikasi/data', [AdminVerifikasiController::class, 'data'])->name('verifikasi.data');
+        Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
+        Route::get('/denda/tabel', [AdminDendaController::class, 'tabel'])->name('denda.tabel');
+        Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/tabel', [AdminLaporanController::class, 'tabel'])->name('laporan.tabel');
         Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');
 
