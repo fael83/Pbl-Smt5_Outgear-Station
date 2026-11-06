@@ -18,7 +18,7 @@ class VerifikasiController extends Controller
 {
     public function index(): View
     {
-        return view('admin.verifikasi', [
+        return view('admin.verifikasi.index', [
             'pembayaranList' => $this->daftarPembayaran(),
         ]);
     }

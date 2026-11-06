@@ -44,7 +44,7 @@ class PemesananController extends Controller
     {
         $filters = $this->filter($request);
 
-        return view('admin.pemesanan', [
+        return view('admin.pemesanan.index', [
             'pemesanan' => $this->daftarPemesanan($filters),
             'statistik' => $this->statistik(),
             'labelStatus' => self::LABEL_STATUS,

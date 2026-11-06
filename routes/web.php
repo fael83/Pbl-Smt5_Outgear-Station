@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\InventarisController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\PelangganController as AdminPelangganController;
 use App\Http\Controllers\Admin\PemesananController as AdminPemesananController;
+use App\Http\Controllers\Admin\ProfilController as AdminProfilController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\BookingSayaController;
@@ -71,12 +72,9 @@ Route::middleware(['role:admin,owner,petugas'])
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
         Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
-        Route::get('/profile', function () {
-            if ((auth()->user()?->role?->value ?? auth()->user()?->role) === 'petugas') {
-                return redirect()->route('petugas.profile');
-            }
-            return view('admin.profile');
-        })->name('profile');
+        Route::get('/profile', [AdminProfilController::class, 'show'])->name('profile');
+        Route::put('/profile', [AdminProfilController::class, 'update'])->name('profile.update');
+        Route::put('/profile/sandi', [AdminProfilController::class, 'ubahSandi'])->name('profile.sandi');
 
         // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
         Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');

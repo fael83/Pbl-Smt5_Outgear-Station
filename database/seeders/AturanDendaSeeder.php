@@ -45,7 +45,7 @@ class AturanDendaSeeder extends Seeder
     {
         $pengubah = User::where('role', Role::Admin->value)->first()
             ?? User::where('role', Role::Owner->value)->first()
-            ?? User::factory()->admin()->create();
+            ?? throw new \RuntimeException('Belum ada user admin/owner. Jalankan seeder user terlebih dahulu.');
 
         foreach (self::ATURAN as $aturan) {
             AturanDenda::updateOrCreate(

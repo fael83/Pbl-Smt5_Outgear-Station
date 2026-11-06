@@ -34,7 +34,7 @@ class DendaController extends Controller
     {
         $filters = $this->filter($request);
 
-        return view('admin.denda', [
+        return view('admin.denda.index', [
             'denda' => $this->daftarDenda($filters),
             'filters' => $filters,
             'ringkasan' => $this->ringkasan(),

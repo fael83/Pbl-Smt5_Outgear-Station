@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Denda;
 use App\Models\Pemesanan;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -35,11 +37,14 @@ class LaporanController extends Controller
     /** Periode bawaan: 30 hari terakhir (termasuk hari ini). */
     private const HARI_BAWAAN = 30;
 
+    /** Batas baris pada ekspor Excel/PDF. */
+    private const BATAS_EKSPOR = 5000;
+
     public function index(Request $request): View
     {
         $filters = $this->filter($request);
 
-        return view('admin.laporan', [
+        return view('admin.laporan.index', [
             'data' => $this->dataTabel($filters),
             'filters' => $filters,
             'bawaan' => $this->periodeBawaan(),
@@ -70,14 +75,107 @@ class LaporanController extends Controller
         return response()->json($balasan);
     }
 
+    /**
+     * Unduh data tab aktif (sesuai periode dan kata kunci) sebagai CSV yang
+     * langsung terbuka di Excel.
+     */
     public function exportExcel(Request $request)
     {
-        // Logika export Excel...
+        $filters = $this->filter($request);
+        [$judul, $kolom, $baris] = $this->barisEkspor($filters);
+
+        $namaFile = 'laporan-'.$filters['tipe'].'-'.$filters['dari'].'_'.$filters['sampai'].'.csv';
+
+        return response()->streamDownload(function () use ($judul, $kolom, $baris, $filters): void {
+            $file = fopen('php://output', 'w');
+
+            // BOM agar karakter UTF-8 terbaca benar di Excel.
+            fwrite($file, "\xEF\xBB\xBF");
+            fputcsv($file, [$judul, self::labelPeriode($filters)]);
+            fputcsv($file, $kolom);
+
+            foreach ($baris as $isi) {
+                fputcsv($file, $isi);
+            }
+
+            fclose($file);
+        }, $namaFile, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    /**
+     * Cetak data tab aktif sebagai PDF (dompdf).
+     */
     public function cetakPdf(Request $request)
     {
-        // Logika cetak PDF...
+        $filters = $this->filter($request);
+        [$judul, $kolom, $baris] = $this->barisEkspor($filters);
+
+        $pdf = Pdf::loadView('admin.laporan.pdf', [
+            'judul' => $judul,
+            'periode' => self::labelPeriode($filters),
+            'kolom' => $kolom,
+            'baris' => $baris,
+            'dicetakPada' => now()->locale('id')->translatedFormat('d F Y H:i'),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('laporan-'.$filters['tipe'].'-'.$filters['dari'].'_'.$filters['sampai'].'.pdf');
+    }
+
+    /**
+     * Judul, nama kolom, dan baris (teks polos) untuk ekspor tab aktif.
+     * Dibatasi 5.000 baris supaya unduhan tetap ringan.
+     *
+     * @param  array{search: string, tipe: string, dari: string, sampai: string, per_page: int, page: int}  $filters
+     * @return array{0: string, 1: array<int, string>, 2: array<int, array<int, string|int|float>>}
+     */
+    private function barisEkspor(array $filters): array
+    {
+        $data = $this->queryTabel($filters)->limit(self::BATAS_EKSPOR)->get();
+
+        $rupiah = static fn (mixed $angka): string => 'Rp '.number_format((float) $angka, 0, ',', '.');
+
+        if ($filters['tipe'] === 'penyewaan') {
+            return [
+                'Histori Penyewaan',
+                ['Kode Sewa', 'Pelanggan', 'Tanggal Mulai', 'Tanggal Selesai', 'Durasi (hari)', 'Total Biaya', 'Status'],
+                $data->map(fn ($sewa): array => [
+                    $sewa->kode_pemesanan,
+                    $sewa->nama_pelanggan,
+                    $sewa->tanggal_mulai->toDateString(),
+                    $sewa->tanggal_selesai->toDateString(),
+                    $sewa->lamaSewa(),
+                    $rupiah($sewa->total_biaya),
+                    PemesananController::LABEL_STATUS[$sewa->status] ?? $sewa->status,
+                ])->all(),
+            ];
+        }
+
+        if ($filters['tipe'] === 'denda') {
+            return [
+                'Laporan Denda',
+                ['Ref Denda', 'Jenis Denda', 'Pemesanan', 'Pengembalian', 'Total Denda', 'Status'],
+                $data->map(fn ($denda): array => [
+                    '#DND-'.str_pad((string) $denda->id, 2, '0', STR_PAD_LEFT),
+                    str_replace('_', ' ', $denda->jenis_denda),
+                    '#'.$denda->pemesanan_id,
+                    '#'.$denda->pengembalian_id,
+                    $rupiah($denda->jumlah_denda),
+                    $denda->status === 'lunas' ? 'Lunas' : 'Belum Dibayar',
+                ])->all(),
+            ];
+        }
+
+        return [
+            'Ringkasan Pendapatan',
+            ['Tanggal', 'Jumlah Transaksi', 'Pendapatan Sewa', 'Pendapatan Denda', 'Total Pemasukan'],
+            $data->map(fn ($baris): array => [
+                (string) $baris->tanggal,
+                (int) $baris->jumlah_transaksi,
+                $rupiah($baris->pendapatan_sewa),
+                $rupiah($baris->pendapatan_denda),
+                $rupiah($baris->total),
+            ])->all(),
+        ];
     }
 
     /**
@@ -152,16 +250,27 @@ class LaporanController extends Controller
      */
     private function dataTabel(array $filters): LengthAwarePaginator
     {
-        $paginator = match ($filters['tipe']) {
-            'penyewaan' => $this->daftarPenyewaan($filters),
-            'denda' => $this->daftarDenda($filters),
-            default => $this->daftarPendapatan($filters),
-        };
+        $paginator = $this->queryTabel($filters)
+            ->paginate($filters['per_page'], ['*'], 'page', $filters['page']);
 
         // Tautan pagination mengarah ke halaman penuh (bukan endpoint JSON).
         return $paginator
             ->withPath(route('admin.laporan.index'))
             ->appends($this->parameterQuery($filters));
+    }
+
+    /**
+     * Query untuk tab yang sedang aktif (belum di-paginate).
+     *
+     * @param  array{search: string, tipe: string, dari: string, sampai: string, per_page: int, page: int}  $filters
+     */
+    private function queryTabel(array $filters): Builder|QueryBuilder
+    {
+        return match ($filters['tipe']) {
+            'penyewaan' => $this->queryPenyewaan($filters),
+            'denda' => $this->queryDenda($filters),
+            default => $this->queryPendapatan($filters),
+        };
     }
 
     /**
@@ -181,7 +290,7 @@ class LaporanController extends Controller
     /**
      * Pendapatan per hari: pembayaran berhasil dikelompokkan per tanggal bayar.
      */
-    private function daftarPendapatan(array $filters): LengthAwarePaginator
+    private function queryPendapatan(array $filters): QueryBuilder
     {
         [$awal, $akhir] = $this->rentang($filters);
         $kataKunci = $filters['search'];
@@ -204,14 +313,13 @@ class LaporanController extends Controller
                 });
             })
             ->groupByRaw('DATE(waktu_bayar)')
-            ->orderByDesc('tanggal')
-            ->paginate($filters['per_page'], ['*'], 'page', $filters['page']);
+            ->orderByDesc('tanggal');
     }
 
     /**
      * Histori penyewaan: pemesanan yang tanggal mulainya jatuh di periode.
      */
-    private function daftarPenyewaan(array $filters): LengthAwarePaginator
+    private function queryPenyewaan(array $filters): Builder
     {
         $kataKunci = $filters['search'];
 
@@ -227,14 +335,13 @@ class LaporanController extends Controller
                 });
             })
             ->orderByDesc('pemesanan.tanggal_mulai')
-            ->orderByDesc('pemesanan.id')
-            ->paginate($filters['per_page'], ['*'], 'page', $filters['page']);
+            ->orderByDesc('pemesanan.id');
     }
 
     /**
      * Laporan denda: denda yang tercatat pada periode.
      */
-    private function daftarDenda(array $filters): LengthAwarePaginator
+    private function queryDenda(array $filters): Builder
     {
         [$awal, $akhir] = $this->rentang($filters);
         $search = $filters['search'];
@@ -261,8 +368,7 @@ class LaporanController extends Controller
                 });
             })
             ->latest()
-            ->orderByDesc('id')
-            ->paginate($filters['per_page'], ['*'], 'page', $filters['page']);
+            ->orderByDesc('id');
     }
 
     /**
