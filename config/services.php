@@ -39,4 +39,15 @@ return [
         'token' => env('FONNTE_TOKEN'),
     ],
 
+    /*
+    | Supabase Storage: tempat menyimpan foto alat.
+    | Bucket harus bersifat Public supaya foto bisa tampil di katalog.
+    | SERVICE KEY hanya dipakai di server (jangan pernah dikirim ke browser).
+    */
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'service_key' => env('SUPABASE_SERVICE_KEY'),
+        'bucket' => env('SUPABASE_BUCKET', 'alat'),
+    ],
+
 ];

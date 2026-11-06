@@ -6,6 +6,7 @@ use Database\Factories\AlatFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,6 +44,17 @@ class Alat extends Model
             'stok_disewa' => 'integer',
             'stok_rusak' => 'integer',
         ];
+    }
+
+    /**
+     * URL foto siap pakai untuk <img> (Supabase, URL luar, atau berkas lama di
+     * public/images/alat). Null bila alat belum punya foto.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function fotoUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => \App\Support\FotoAlat::url($this->foto));
     }
 
     /**

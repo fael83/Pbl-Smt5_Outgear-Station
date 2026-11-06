@@ -149,7 +149,7 @@
                             class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">✕</button>
                 </div>
 
-                <form x-ref="formAlat" method="POST" :action="formUrl" @submit.prevent="simpan($el)" class="p-5 space-y-4">
+                <form x-ref="formAlat" method="POST" enctype="multipart/form-data" :action="formUrl" @submit.prevent="simpan($el)" class="p-5 space-y-4">
                     @csrf
                     <template x-if="mode === 'edit'">
                         <input type="hidden" name="_method" value="PUT">
@@ -220,6 +220,30 @@
                                    min="0" step="1"
                                    class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
                             <p class="mt-1 text-[10px] text-red-600" x-show="errors.stok_rusak" x-text="errors.stok_rusak"></p>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="foto" class="block text-xs font-semibold text-[#1A2024] mb-1">Foto Alat <span class="text-gray-400 font-normal">(JPG/PNG/WEBP, maks. 2 MB)</span></label>
+                            <div class="flex items-center gap-4">
+                                <div class="w-24 h-24 rounded-xl bg-[#F4EFEA] border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                                    <template x-if="previewFoto && !hapusFoto">
+                                        <img :src="previewFoto" alt="Pratinjau foto alat" class="w-full h-full object-cover">
+                                    </template>
+                                    <template x-if="!previewFoto || hapusFoto">
+                                        <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </template>
+                                </div>
+                                <div class="flex-1 space-y-2">
+                                    <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp"
+                                           @change="fotoDipilih($event)"
+                                           class="block w-full text-xs text-gray-500 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-[#F4EFEA] file:text-[#1A2024] file:font-semibold hover:file:bg-gray-200">
+                                    <label class="inline-flex items-center gap-2 text-[11px] text-gray-500" x-show="mode === 'edit' && previewFoto && !previewFoto.startsWith('blob:')">
+                                        <input type="checkbox" name="hapus_foto" value="1" x-model="hapusFoto" class="rounded border-gray-300">
+                                        Hapus foto saat ini
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.foto" x-text="errors.foto"></p>
                         </div>
 
                         <div class="md:col-span-2">
