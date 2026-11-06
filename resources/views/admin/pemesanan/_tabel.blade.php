@@ -1,0 +1,242 @@
+{{--
+    Kartu tabel data pemesanan (toolbar + tabel + pagination).
+
+    Dipakai saat halaman dirender penuh dan dikirim ulang lewat AJAX oleh
+    halamanPemesanan.muatTabel() (GET /admin/pemesanan/tabel), sehingga
+    pencarian, filter, dan pagination tidak memuat ulang seluruh halaman.
+
+    Variabel: $pemesanan (paginator), $labelStatus, $statusAktif, $kataKunci.
+--}}
+@use('Illuminate\Support\Str')
+@php
+    // Kelas badge per status (ditulis lengkap supaya terbaca oleh Tailwind).
+    $kelasBadge = [
+        'menunggu_pembayaran' => 'bg-amber-50 text-amber-700 border-amber-200',
+        'dikonfirmasi' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'berlangsung' => 'bg-blue-50 text-blue-700 border-blue-200',
+        'selesai' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'dibatalkan' => 'bg-red-50 text-red-700 border-red-200',
+    ];
+
+    // Warna avatar pelanggan (dipilih berdasarkan id supaya konsisten).
+    $warnaAvatar = ['bg-orange-100 text-orange-700', 'bg-teal-100 text-teal-700', 'bg-slate-200 text-slate-700', 'bg-amber-100 text-amber-700', 'bg-indigo-100 text-indigo-700'];
+@endphp
+<div class="bg-white rounded-2xl border border-zinc-200/80 shadow-sm overflow-hidden">
+
+    <!-- Header Action Board (Kaca Pembesar & Icon Filter) -->
+    <div class="p-5 border-b border-zinc-100 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <h3 class="font-bold text-zinc-900 text-base">Daftar Pemesanan</h3>
+            <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg">
+                Filter: <span class="font-bold text-zinc-800" x-text="labelFilter">{{ $statusAktif ? ($labelStatus[$statusAktif] ?? 'Semua Status') : 'Semua Status' }}</span>
+            </span>
+            <span class="text-xs font-medium text-zinc-400">
+                ({{ number_format($pemesanan->total(), 0, ',', '.') }} data)
+            </span>
+        </div>
+
+        <div class="flex items-center gap-2 relative">
+            <!-- Input Search Interaktif (tanpa JavaScript tetap terkirim sebagai form GET) -->
+            <form method="GET" action="{{ route('admin.pemesanan') }}" @submit.prevent="muatTabel()" class="flex items-center gap-2">
+                @if ($statusAktif)
+                    <input type="hidden" name="status" value="{{ $statusAktif }}">
+                @endif
+                <div x-show="showSearchInput" x-transition class="relative">
+                    <input x-ref="pemesananSearchInput"
+                           data-cari
+                           type="text"
+                           name="search"
+                           x-model="cari"
+                           @input.debounce.350ms="muatTabel()"
+                           @keydown.enter.prevent="muatTabel()"
+                           placeholder="Cari ID / pelanggan / alat..."
+                           class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-orange w-48 sm:w-64">
+                    <svg class="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+
+                <!-- Tombol Kaca Pembesar -->
+                <button type="button"
+                        @click="showSearchInput = !showSearchInput; if(showSearchInput) { $nextTick(() => $refs.pemesananSearchInput?.focus()) }"
+                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition"
+                        title="Cari pemesanan">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+            </form>
+
+            <!-- Tombol Filter Interaktif -->
+            <div class="relative">
+                <button type="button"
+                        @click="showFilterDropdown = !showFilterDropdown"
+                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition"
+                        title="Filter Status Pemesanan">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                </button>
+
+                <!-- Dropdown Menu Filter -->
+                <div x-show="showFilterDropdown"
+                     @click.away="showFilterDropdown = false"
+                     x-transition
+                     class="absolute right-0 mt-2 w-52 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
+                    <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Filter Status Pemesanan</div>
+                    <a href="{{ route('admin.pemesanan', array_filter(['search' => $kataKunci])) }}"
+                       @click.prevent="pilihStatus(''); showFilterDropdown = false"
+                       class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                        <span>Semua Status</span>
+                        <span x-show="filter.status === ''" class="text-portal-orange font-bold">✓</span>
+                    </a>
+                    @foreach ($labelStatus as $kunciStatus => $namaStatus)
+                        <a href="{{ route('admin.pemesanan', array_filter(['status' => $kunciStatus, 'search' => $kataKunci])) }}"
+                           @click.prevent="pilihStatus({{ Js::from($kunciStatus) }}); showFilterDropdown = false"
+                           class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
+                            <span>{{ $namaStatus }}</span>
+                            <span x-show="filter.status === {{ Js::from($kunciStatus) }}" class="text-portal-orange font-bold">✓</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
+            <template x-if="adaFilter">
+                <button type="button" @click="resetFilter()" class="text-xs font-semibold text-portal-orange hover:underline px-1" title="Reset filter">
+                    Reset
+                </button>
+            </template>
+        </div>
+    </div>
+
+                    <!-- TABEL PEMESANAN -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-center text-xs align-middle">
+                            <thead>
+                                <tr class="text-zinc-400 font-bold border-b border-zinc-100 bg-zinc-50/50">
+                                    <th class="p-4 uppercase align-middle text-center">ID BOOKING</th>
+                                    <th class="p-4 uppercase align-middle text-center">PELANGGAN</th>
+                                    <th class="p-4 uppercase align-middle text-center">ITEM SEWA</th>
+                                    <th class="p-4 uppercase align-middle text-center">JADWAL SEWA</th>
+                                    <th class="p-4 uppercase align-middle text-center">TOTAL</th>
+                                    <th class="p-4 uppercase align-middle text-center">STATUS</th>
+                                    <th class="p-4 uppercase align-middle text-center">AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-100 font-medium text-zinc-700">
+                                @forelse ($pemesanan as $item)
+                                    @php
+                                        $dibatalkan = $item->status === 'dibatalkan';
+                                        $namaPelanggan = $item->pelanggan?->name ?? 'Pelanggan dihapus';
+                                        $inisialPelanggan = Str::upper(Str::of($namaPelanggan)->explode(' ')->filter()->take(2)->map(fn ($kata) => Str::substr($kata, 0, 1))->implode(''));
+
+                                        // Item sewa: total unit, lalu 3 nama alat pertama.
+                                        $totalUnit = $item->detailPemesanan->sum('jumlah');
+                                        $daftarAlat = $item->detailPemesanan->map(fn ($detail) => ($detail->alat?->nama ?? 'Alat dihapus') . ($detail->jumlah > 1 ? ' ×' . $detail->jumlah : ''));
+                                        $ringkasAlat = $daftarAlat->take(3)->implode(', ') . ($daftarAlat->count() > 3 ? ' +' . ($daftarAlat->count() - 3) . ' lainnya' : '');
+
+                                        // Jadwal sewa; lama sewa dihitung inklusif (hari mulai dan hari selesai sama-sama dihitung).
+                                        $mulai = $item->tanggal_mulai->copy()->locale('id');
+                                        $selesai = $item->tanggal_selesai->copy()->locale('id');
+                                        $lamaSewa = max(1, (int) $mulai->diffInDays($selesai) + 1);
+                                        $teksJadwal = $mulai->translatedFormat('d M') . ' - ' . $selesai->translatedFormat('d M Y');
+                                    @endphp
+                                    <tr class="hover:bg-zinc-50/80 transition">
+                                        <td class="p-4 font-mono text-zinc-500 align-middle text-center">#{{ $item->kode_pemesanan }}</td>
+                                        <td class="p-4 align-middle">
+                                            <div class="inline-flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-full {{ $warnaAvatar[$item->user_id % count($warnaAvatar)] }} font-bold flex items-center justify-center text-[10px] overflow-hidden flex-shrink-0">{{ $inisialPelanggan }}</div>
+                                                <div class="text-left">
+                                                    <span class="font-bold text-zinc-900 block">{{ $namaPelanggan }}</span>
+                                                    <span class="text-[11px] text-zinc-400">{{ $item->pelanggan?->no_telepon ?: '-' }}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-4 text-zinc-600 align-middle text-center">
+                                            <div class="font-semibold text-zinc-900">{{ $totalUnit }} item gear</div>
+                                            <div class="text-[11px] text-zinc-400">{{ $ringkasAlat !== '' ? $ringkasAlat : '-' }}</div>
+                                        </td>
+                                        <td class="p-4 align-middle text-center">
+                                            <div class="font-semibold {{ $dibatalkan ? 'line-through text-zinc-400' : 'text-zinc-900' }}">{{ $teksJadwal }}</div>
+                                            @if ($item->status === 'menunggu_pembayaran')
+                                                <div class="text-[11px] text-amber-600">{{ $lamaSewa }} Hari Durasi</div>
+                                            @elseif ($item->status === 'dikonfirmasi')
+                                                <div class="text-[11px] text-indigo-600">{{ $lamaSewa }} Hari · Siap diambil</div>
+                                            @elseif ($item->status === 'berlangsung')
+                                                <div class="text-[11px] text-blue-600">Sedang Digunakan</div>
+                                            @elseif ($item->status === 'selesai')
+                                                <div class="text-[11px] text-zinc-400">{{ $lamaSewa }} Hari · Selesai</div>
+                                            @else
+                                                <div class="text-[11px] text-red-500">Dibatalkan{{ $item->waktu_pembatalan ? ' ' . $item->waktu_pembatalan->copy()->locale('id')->translatedFormat('d M Y') : '' }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="p-4 font-bold align-middle text-center {{ $dibatalkan ? 'text-zinc-400 line-through' : 'text-zinc-900' }}">Rp {{ number_format((float) $item->total_biaya, 0, ',', '.') }}</td>
+                                        <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold border inline-block {{ $kelasBadge[$item->status] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200' }}">{{ $labelStatus[$item->status] ?? $item->status }}</span></td>
+                                        <td class="p-4 align-middle text-center">
+                                            <div class="inline-flex items-center gap-1.5">
+                                                <button type="button" class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                </button>
+                                                @if (in_array($item->status, ['selesai', 'dibatalkan'], true))
+                                                    <button type="button" class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                    </button>
+                                                @else
+                                                    <button type="button" class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Batalkan">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="p-10 text-center text-zinc-400">
+                                            @if ($statusAktif || $kataKunci !== '')
+                                                Tidak ada pemesanan yang cocok dengan filter atau pencarian.
+                                                <button type="button" @click="resetFilter()" class="text-portal-orange font-semibold hover:underline">Reset</button>
+                                            @else
+                                                Belum ada data pemesanan.
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+    <!-- PAGINATION FOOTER (kliknya ditangkap halamanPemesanan.tangkapKlik) -->
+    <div class="p-4 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-medium">
+        <div>
+            Menampilkan data ke <span class="font-bold text-zinc-900">{{ $pemesanan->firstItem() ?? 0 }} - {{ $pemesanan->lastItem() ?? 0 }}</span> dari <span class="font-bold text-zinc-900">{{ number_format($pemesanan->total(), 0, ',', '.') }}</span> pemesanan
+        </div>
+        @if ($pemesanan->hasPages())
+            @php
+                $halamanSekarang = $pemesanan->currentPage();
+                $halamanTerakhir = $pemesanan->lastPage();
+                $daftarHalaman = collect(range(1, $halamanTerakhir))
+                    ->filter(fn ($h) => $h === 1 || $h === $halamanTerakhir || abs($h - $halamanSekarang) <= 1)
+                    ->values();
+            @endphp
+            <div data-paginasi class="flex items-center gap-1.5">
+                @if ($pemesanan->onFirstPage())
+                    <span class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-400 cursor-not-allowed">‹</span>
+                @else
+                    <a href="{{ $pemesanan->previousPageUrl() }}" class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">‹</a>
+                @endif
+
+                @foreach ($daftarHalaman as $indeks => $nomor)
+                    @if ($indeks > 0 && $nomor - $daftarHalaman[$indeks - 1] > 1)
+                        <span class="px-1 text-zinc-400">...</span>
+                    @endif
+                    @if ($nomor === $halamanSekarang)
+                        <span class="w-8 h-8 rounded-lg bg-zinc-900 text-white font-bold flex items-center justify-center">{{ $nomor }}</span>
+                    @else
+                        <a href="{{ $pemesanan->url($nomor) }}" class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">{{ $nomor }}</a>
+                    @endif
+                @endforeach
+
+                @if ($pemesanan->hasMorePages())
+                    <a href="{{ $pemesanan->nextPageUrl() }}" class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center hover:bg-zinc-100 text-zinc-700">›</a>
+                @else
+                    <span class="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-400 cursor-not-allowed">›</span>
+                @endif
+            </div>
+        @endif
+    </div>
+
+</div>

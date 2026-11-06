@@ -3,10 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>OutGear Station - Laporan</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="admin-theme antialiased font-sans" x-data="{ tipeLaporan: 'pendapatan', search: '', showSearchInput: false, showFilterDropdown: false }">
+<body class="admin-theme antialiased font-sans"
+      x-data="halamanLaporan({
+          tabelUrl: {{ Js::from(route('admin.laporan.tabel')) }},
+          filters: {{ Js::from(['search' => $filters['search'], 'tipe' => $filters['tipe'], 'dari' => $filters['dari'], 'sampai' => $filters['sampai'], 'per_page' => $filters['per_page']]) }},
+          bawaan: {{ Js::from($bawaan) }},
+          ringkasan: {{ Js::from($ringkasan) }}
+      })">
 
     <div class="flex min-h-screen relative">
 
@@ -24,9 +31,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         Basecamp Malang • Online
                     </div>
-                    <button class="p-2.5 bg-white border border-zinc-200/80 rounded-full text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 shadow-sm transition" title="Refresh">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    </button>
+                    @include('partials.tombol-muat-ulang')
                     <div class="w-9 h-9 rounded-full bg-zinc-900 text-white font-bold text-xs flex items-center justify-center border border-zinc-300 shadow-sm">DW</div>
                 </div>
             </header>
@@ -65,25 +70,27 @@
                     <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Pendapatan</span>
                         <div class="my-2">
-                            <div class="text-3xl font-black text-emerald-600">Rp <span class="font-heading">14.850.000</span></div>
+                            <div class="text-3xl font-black text-emerald-600">Rp <span class="font-heading" x-text="ringkasanData.pendapatan">{{ $ringkasan['pendapatan'] }}</span></div>
                         </div>
-                        <div class="text-[11px] text-emerald-600 font-bold pt-2 border-t border-zinc-100">↑ +12% dari bulan lalu</div>
+                        <div class="text-[11px] font-bold pt-2 border-t border-zinc-100"
+                             :class="ringkasanData.pendapatan_tren > 0 ? 'text-emerald-600' : (ringkasanData.pendapatan_tren < 0 ? 'text-rose-600' : 'text-zinc-400')"
+                             x-text="ringkasanData.pendapatan_catatan">{{ $ringkasan['pendapatan_catatan'] }}</div>
                     </div>
 
                     <!-- Kartu 2 -->
                     <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Transaksi</span>
                         <div class="my-2">
-                            <div class="text-3xl font-black text-blue-600"><span class="font-heading">124</span> <span class="text-xs font-medium font-sans text-zinc-400">sewa</span></div>
+                            <div class="text-3xl font-black text-blue-600"><span class="font-heading" x-text="ringkasanData.transaksi">{{ $ringkasan['transaksi'] }}</span> <span class="text-xs font-medium font-sans text-zinc-400">sewa</span></div>
                         </div>
-                        <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100">Bulan Oktober 2026</div>
+                        <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100" x-text="'Periode ' + ringkasanData.periode">Periode {{ $ringkasan['periode'] }}</div>
                     </div>
 
                     <!-- Kartu 3 -->
                     <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Denda Terekap</span>
                         <div class="my-2">
-                            <div class="text-3xl font-black text-amber-600">Rp <span class="font-heading">1.310.000</span></div>
+                            <div class="text-3xl font-black text-amber-600">Rp <span class="font-heading" x-text="ringkasanData.denda">{{ $ringkasan['denda'] }}</span></div>
                         </div>
                         <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100">Keterlambatan & Kerusakan</div>
                     </div>
@@ -92,225 +99,21 @@
                     <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Utilitas Alat</span>
                         <div class="my-2">
-                            <div class="text-3xl font-black text-teal-600"><span class="font-heading">82</span>%</div>
+                            <div class="text-3xl font-black text-teal-600"><span class="font-heading" x-text="ringkasanData.utilisasi">{{ $ringkasan['utilisasi'] }}</span>%</div>
                         </div>
-                        <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100">Tenda Camping Paling Sering Sewa</div>
+                        <div class="text-[11px] text-zinc-400 font-medium pt-2 border-t border-zinc-100" x-text="ringkasanData.alat_teratas">{{ $ringkasan['alat_teratas'] }}</div>
                     </div>
                 </div>
 
-                <!-- TABEL DATA LAPORAN -->
-                <div class="bg-white rounded-3xl border border-zinc-200/80 shadow-sm overflow-hidden">
-                    
-                    <!-- Filter Periode & Kategori Laporan -->
-                    <div class="p-6 border-b border-zinc-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div class="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0">
-                            <button @click="tipeLaporan = 'pendapatan'" :class="tipeLaporan === 'pendapatan' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                                Ringkasan Pendapatan
-                            </button>
-                            <button @click="tipeLaporan = 'penyewaan'" :class="tipeLaporan === 'penyewaan' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                                Histori Penyewaan
-                            </button>
-                            <button @click="tipeLaporan = 'denda'" :class="tipeLaporan === 'denda' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'" class="px-4 py-2 rounded-xl text-xs font-bold transition">
-                                Laporan Denda
-                            </button>
-                        </div>
-
-                        <!-- Filter Rentang Tanggal & Search Filter -->
-                        <div class="flex items-center gap-3">
-                            <div class="flex items-center gap-2">
-                                <input type="date" value="2026-10-01" class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-3.5 py-2 font-medium text-zinc-700">
-                                <span class="text-xs text-zinc-400 font-bold">s/d</span>
-                                <input type="date" value="2026-10-31" class="bg-zinc-50 border border-zinc-200 text-xs rounded-xl px-3.5 py-2 font-medium text-zinc-700">
-                            </div>
-
-                            <div class="flex items-center gap-2 relative">
-                                <!-- Input Search Interaktif -->
-                                <div x-show="showSearchInput" x-transition class="relative">
-                                    <input id="laporanSearchInput" 
-                                           type="text" 
-                                           x-model="search"
-                                           placeholder="Cari transaksi / denda..." 
-                                           class="bg-zinc-100 border border-zinc-300 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-orange w-40 sm:w-52">
-                                    <svg class="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                </div>
-
-                                <!-- Tombol Kaca Pembesar -->
-                                <button @click="showSearchInput = !showSearchInput; if(showSearchInput) { $nextTick(() => document.getElementById('laporanSearchInput')?.focus()) }" 
-                                        class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
-                                        title="Cari di laporan">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                </button>
-                                
-                                <!-- Tombol Filter Interaktif -->
-                                <div class="relative">
-                                    <button @click="showFilterDropdown = !showFilterDropdown" 
-                                            class="p-2 hover:bg-zinc-100 rounded-lg text-zinc-500 transition" 
-                                            title="Filter Jenis Laporan">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                                    </button>
-
-                                    <!-- Dropdown Menu Filter -->
-                                    <div x-show="showFilterDropdown" 
-                                         @click.away="showFilterDropdown = false" 
-                                         x-transition 
-                                         class="absolute right-0 mt-2 w-52 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
-                                        <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Pilih Jenis Laporan</div>
-                                        <button @click="tipeLaporan = 'pendapatan'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
-                                            <span>Ringkasan Pendapatan</span>
-                                            <span x-show="tipeLaporan === 'pendapatan'" class="text-portal-orange font-bold">✓</span>
-                                        </button>
-                                        <button @click="tipeLaporan = 'penyewaan'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
-                                            <span>Histori Penyewaan</span>
-                                            <span x-show="tipeLaporan === 'penyewaan'" class="text-portal-orange font-bold">✓</span>
-                                        </button>
-                                        <button @click="tipeLaporan = 'denda'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
-                                            <span>Laporan Denda</span>
-                                            <span x-show="tipeLaporan === 'denda'" class="text-portal-orange font-bold">✓</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 1. TABEL RINGKASAN PENDAPATAN -->
-                    <div x-show="tipeLaporan === 'pendapatan'" class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead>
-                                <tr class="bg-zinc-50/80 text-zinc-400 font-black uppercase text-[10px] tracking-wider border-b border-zinc-100">
-                                    <th class="py-5 px-6">Tanggal / Periode</th>
-                                    <th class="py-5 px-4">Jumlah Transaksi</th>
-                                    <th class="py-5 px-4">Pendapatan Sewa</th>
-                                    <th class="py-5 px-4">Pendapatan Denda</th>
-                                    <th class="py-5 px-6 text-right">Total Pemasukan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-100 font-medium text-zinc-700">
-                                <tr class="hover:bg-zinc-50/60 transition">
-                                    <td class="py-5 px-6 font-bold text-zinc-900">18 Oktober 2026</td>
-                                    <td class="py-5 px-4">8 Transaksi</td>
-                                    <td class="py-5 px-4 text-zinc-700">Rp 1.450.000</td>
-                                    <td class="py-5 px-4 text-amber-600 font-bold">Rp 50.000</td>
-                                    <td class="py-5 px-6 text-right font-black text-zinc-900 text-sm">Rp 1.500.000</td>
-                                </tr>
-                                <tr class="hover:bg-zinc-50/60 transition">
-                                    <td class="py-5 px-6 font-bold text-zinc-900">17 Oktober 2026</td>
-                                    <td class="py-5 px-4">12 Transaksi</td>
-                                    <td class="py-5 px-4 text-zinc-700">Rp 2.300.000</td>
-                                    <td class="py-5 px-4 text-amber-600 font-bold">Rp 120.000</td>
-                                    <td class="py-5 px-6 text-right font-black text-zinc-900 text-sm">Rp 2.420.000</td>
-                                </tr>
-                                <tr class="hover:bg-zinc-50/60 transition">
-                                    <td class="py-5 px-6 font-bold text-zinc-900">16 Oktober 2026</td>
-                                    <td class="py-5 px-4">5 Transaksi</td>
-                                    <td class="py-5 px-4 text-zinc-700">Rp 980.000</td>
-                                    <td class="py-5 px-4 text-zinc-400">Rp 0</td>
-                                    <td class="py-5 px-6 text-right font-black text-zinc-900 text-sm">Rp 980.000</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 2. TABEL HISTORI PENYEWAAN -->
-                    <div x-show="tipeLaporan === 'penyewaan'" class="overflow-x-auto" x-cloak>
-                        <table class="w-full text-left text-xs">
-                            <thead>
-                                <tr class="bg-zinc-50/80 text-zinc-400 font-black uppercase text-[10px] tracking-wider border-b border-zinc-100">
-                                    <th class="py-5 px-6">ID Kode Sewa</th>
-                                    <th class="py-5 px-4">Nama Pelanggan</th>
-                                    <th class="py-5 px-4">Durasi Sewa</th>
-                                    <th class="py-5 px-4">Total Biaya</th>
-                                    <th class="py-5 px-6 text-right">Status Sewa</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-100 font-medium text-zinc-700">
-                                <tr class="hover:bg-zinc-50/60 transition">
-                                    <td class="py-5 px-6 font-mono font-bold text-zinc-900">#ORD-0894</td>
-                                    <td class="py-5 px-4 font-bold text-zinc-800">Anisa Tri Utami</td>
-                                    <td class="py-5 px-4 text-zinc-600">18 - 20 Okt 2026 (2 Hari)</td>
-                                    <td class="py-5 px-4 font-bold text-zinc-900">Rp 420.000</td>
-                                    <td class="py-5 px-6 text-right">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                                            Selesai
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-zinc-50/60 transition">
-                                    <td class="py-5 px-6 font-mono font-bold text-zinc-900">#ORD-0892</td>
-                                    <td class="py-5 px-4 font-bold text-zinc-800">Fajar Hidayat</td>
-                                    <td class="py-5 px-4 text-zinc-600">17 - 19 Okt 2026 (2 Hari)</td>
-                                    <td class="py-5 px-4 font-bold text-zinc-900">Rp 250.000</td>
-                                    <td class="py-5 px-6 text-right">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200/60">
-                                            Sedang Disewa
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 3. TABEL LAPORAN DENDA -->
-                    <div x-show="tipeLaporan === 'denda'" class="overflow-x-auto" x-cloak>
-                        <table class="w-full text-left text-xs">
-                            <thead>
-                                <tr class="bg-zinc-50/80 text-zinc-400 font-black uppercase text-[10px] tracking-wider border-b border-zinc-100">
-                                    <th class="py-5 px-6">Ref Denda ID</th>
-                                    <th class="py-5 px-4">Jenis Denda</th>
-                                    <th class="py-5 px-4">Rincian Keterangan</th>
-                                    <th class="py-5 px-4">Total Denda</th>
-                                    <th class="py-5 px-6 text-right">Status Pelunasan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-100 font-medium text-zinc-700">
-                                <tr class="hover:bg-zinc-50/60 transition">
-                                    <td class="py-5 px-6 font-mono font-bold text-zinc-900">#DND-01</td>
-                                    <td class="py-5 px-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700">
-                                            Keterlambatan
-                                        </span>
-                                    </td>
-                                    <td class="py-5 px-4 text-zinc-600">Terlambat pengembalian 2 hari</td>
-                                    <td class="py-5 px-4 font-bold text-zinc-900">Rp 50.000</td>
-                                    <td class="py-5 px-6 text-right">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700">
-                                            Belum Dibayar
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-zinc-50/60 transition">
-                                    <td class="py-5 px-6 font-mono font-bold text-zinc-900">#DND-02</td>
-                                    <td class="py-5 px-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700">
-                                            Kerusakan Ringan
-                                        </span>
-                                    </td>
-                                    <td class="py-5 px-4 text-zinc-600">Ganti pasak tenda bengkok</td>
-                                    <td class="py-5 px-4 font-bold text-zinc-900">Rp 50.000</td>
-                                    <td class="py-5 px-6 text-right">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700">
-                                            Lunas
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Footer Tabel -->
-                    <div class="p-6 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500 font-medium">
-                        <span>Menampilkan rekapitulasi data periode <strong>Oktober 2026</strong></span>
-                        <div class="flex items-center gap-1.5">
-                            <button class="px-4 py-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition font-semibold disabled:opacity-50" disabled>Sebelumnya</button>
-                            <button class="px-4 py-2 rounded-xl bg-zinc-900 text-white font-bold">1</button>
-                            <button class="px-4 py-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition font-semibold">Berikutnya</button>
-                        </div>
-                    </div>
+                <!-- TABEL DATA LAPORAN (diperbarui lewat AJAX, tanpa reload halaman) -->
+                <div x-ref="tabel" @click="tangkapKlik($event)" :class="memuat ? 'opacity-60' : ''" class="transition-opacity">
+                    @include('admin.laporan._tabel')
                 </div>
 
             </div>
         </main>
     </div>
 
+    @include('partials.status-muat')
 </body>
 </html>

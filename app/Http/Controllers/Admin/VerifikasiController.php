@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -17,6 +18,26 @@ class VerifikasiController extends Controller
 {
     public function index(): View
     {
+        return view('admin.verifikasi', [
+            'pembayaranList' => $this->daftarPembayaran(),
+        ]);
+    }
+
+    /**
+     * Endpoint JSON untuk tombol "Muat ulang data": antrean terbaru dari database.
+     */
+    public function data(): JsonResponse
+    {
+        return response()->json(['items' => $this->daftarPembayaran()]);
+    }
+
+    /**
+     * Seluruh pembayaran (pending lebih dulu) dalam bentuk siap pakai di Alpine.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function daftarPembayaran(): Collection
+    {
         $pembayaran = Pembayaran::query()
             ->with([
                 'pemesanan:id,kode_pemesanan,user_id',
@@ -27,7 +48,7 @@ class VerifikasiController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        $pembayaranList = $pembayaran->map(function (Pembayaran $item): array {
+        return $pembayaran->map(function (Pembayaran $item): array {
             $pemesanan = $item->pemesanan;
             $pelanggan = $pemesanan?->pelanggan;
 
@@ -47,10 +68,6 @@ class VerifikasiController extends Controller
                 'url_tolak' => route('admin.verifikasi.tolak', $item),
             ];
         })->values();
-
-        return view('admin.verifikasi', [
-            'pembayaranList' => $pembayaranList,
-        ]);
     }
 
     /**
