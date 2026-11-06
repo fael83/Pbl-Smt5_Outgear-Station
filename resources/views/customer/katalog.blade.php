@@ -330,16 +330,7 @@
         <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             @forelse ($peralatan as $alat)
                 @php
-                    $fotoUrl = null;
-                    if (filled($alat->foto)) {
-                        if (filter_var($alat->foto, FILTER_VALIDATE_URL)) {
-                            $fotoUrl = $alat->foto;
-                        } elseif (file_exists(public_path('images/alat/' . $alat->foto))) {
-                            $fotoUrl = asset('images/alat/' . $alat->foto);
-                        } else {
-                            $fotoUrl = asset('storage/' . $alat->foto);
-                        }
-                    }
+                    $fotoUrl = $alat->foto_url;
                 @endphp
                 <article class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                     <div>
@@ -348,7 +339,7 @@
                                 <img src="{{ $fotoUrl }}"
                                      alt="{{ $alat->nama }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                             @else
-                                <span class="text-5xl">{{ \App\Support\IkonKategori::untuk($alat->kategori?->nama) }}</span>
+                                @include('partials.foto-kosong', ['kelas' => 'w-14 h-14'])
                             @endif
 
                             <span class="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full border backdrop-blur {{ $alat->stok_tersedia > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
@@ -416,7 +407,7 @@
                                         <img :src="item.foto" class="w-full h-full object-cover">
                                     </template>
                                     <template x-if="!item.foto">
-                                        <span class="text-xs text-gray-400">⛺</span>
+                                        @include('partials.foto-kosong', ['kelas' => 'w-6 h-6'])
                                     </template>
                                 </div>
 

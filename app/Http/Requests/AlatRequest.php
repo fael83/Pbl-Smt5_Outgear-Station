@@ -61,6 +61,8 @@ class AlatRequest extends FormRequest
             'nilai_pengganti' => ['required', 'numeric', 'min:0', 'max:999999999'],
             'stok_total' => ['required', 'integer', 'min:0', 'max:100000'],
             'stok_rusak' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'hapus_foto' => ['nullable', 'boolean'],
         ];
     }
 

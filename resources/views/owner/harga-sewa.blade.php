@@ -177,13 +177,13 @@
                         <!-- Nama dan Deskripsi Alat -->
                         <td class="p-4 align-middle">
                             <div class="flex items-center gap-3.5">
-                                <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 border border-zinc-200 flex items-center justify-center text-xs font-bold shadow-sm flex-shrink-0 overflow-hidden">
-                                    @if($item->foto)
-                                    <img src="{{ asset('storage/' . $item->foto) }}"
+                                <div class="w-10 h-10 rounded-xl bg-zinc-100 border border-zinc-200 flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+                                    @if($item->foto_url)
+                                    <img src="{{ $item->foto_url }}"
                                         alt="{{ $item->nama }}"
                                         class="w-full h-full object-cover">
                                     @else
-                                    ⛺
+                                    @include('partials.foto-kosong', ['kelas' => 'w-5 h-5'])
                                     @endif
                                 </div>
 

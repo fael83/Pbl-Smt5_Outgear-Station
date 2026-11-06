@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AlatRequest;
 use App\Models\Alat;
+use App\Support\FotoAlat;
+use RuntimeException;
 use App\Models\Kategori;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -309,8 +311,25 @@ class InventarisController extends Controller
             'stok_total' => (int) $alat->stok_total,
             'stok_disewa' => (int) $alat->stok_disewa,
             'stok_rusak' => (int) $alat->stok_rusak,
+            'foto_url' => $alat->foto_url,
             'update_url' => route('admin.peralatan.update', $alat),
         ];
+    }
+
+    /**
+     * Balasan bila unggah foto ke Supabase gagal (data alat tidak disimpan).
+     */
+    private function gagalFoto(Request $request, RuntimeException $e): RedirectResponse|JsonResponse
+    {
+        report($e);
+
+        $pesan = 'Foto gagal diunggah ke Supabase Storage. Periksa konfigurasi SUPABASE_* di .env dan pastikan bucket sudah dibuat.';
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $pesan, 'errors' => ['foto' => [$pesan]]], 422);
+        }
+
+        return back()->withInput()->withErrors(['foto' => $pesan]);
     }
 
     /**
@@ -361,7 +380,14 @@ class InventarisController extends Controller
         $stokTotal = (int) $data['stok_total'];
         $stokRusak = (int) ($data['stok_rusak'] ?? 0);
 
+        try {
+            $foto = $request->hasFile('foto') ? FotoAlat::simpan($request->file('foto')) : null;
+        } catch (RuntimeException $e) {
+            return $this->gagalFoto($request, $e);
+        }
+
         $alat = Alat::create([
+            'foto' => $foto,
             'kategori_id' => $data['kategori_id'],
             'nama' => $data['nama'],
             'deskripsi' => $data['deskripsi'] ?? null,
@@ -392,8 +418,21 @@ class InventarisController extends Controller
         $stokTotal = (int) $data['stok_total'];
         $stokRusak = (int) ($data['stok_rusak'] ?? 0);
         $stokDisewa = (int) $alat->stok_disewa;
+        $fotoLama = $alat->foto;
+        $fotoBaru = $fotoLama;
+
+        if ($request->hasFile('foto')) {
+            try {
+                $fotoBaru = FotoAlat::simpan($request->file('foto'));
+            } catch (RuntimeException $e) {
+                return $this->gagalFoto($request, $e);
+            }
+        } elseif ($request->boolean('hapus_foto')) {
+            $fotoBaru = null;
+        }
 
         $alat->update([
+            'foto' => $fotoBaru,
             'kategori_id' => $data['kategori_id'],
             'nama' => $data['nama'],
             'deskripsi' => $data['deskripsi'] ?? null,
@@ -403,6 +442,11 @@ class InventarisController extends Controller
             'stok_tersedia' => max(0, $stokTotal - $stokDisewa - $stokRusak),
             'stok_rusak' => $stokRusak,
         ]);
+
+        // Foto lama dibuang hanya setelah data baru tersimpan.
+        if ($fotoLama !== $fotoBaru) {
+            FotoAlat::hapus($fotoLama);
+        }
 
         $this->lupakanCache();
         $pesan = "Data alat \"{$alat->nama}\" berhasil diperbarui.";
@@ -434,7 +478,9 @@ class InventarisController extends Controller
 
         $id = $alat->id;
         $nama = $alat->nama;
+        $foto = $alat->foto;
         $alat->delete();
+        FotoAlat::hapus($foto);
 
         $this->lupakanCache();
         $pesan = "Alat \"{$nama}\" berhasil dihapus.";

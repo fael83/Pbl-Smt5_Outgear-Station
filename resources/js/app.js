@@ -335,6 +335,8 @@ Alpine.data('halamanPeralatan', (config = {}) => {
         mode: 'create',
         formUrl: config.createUrl ?? '',
         form: lengkapiForm(config.nilaiAwal ?? {}),
+        previewFoto: '',
+        hapusFoto: false,
         errors: {},
         menyimpan: false,
 
@@ -500,10 +502,39 @@ Alpine.data('halamanPeralatan', (config = {}) => {
 
         // --- Modal tambah / edit ---
 
+        /** Kosongkan pilihan berkas dan tampilkan foto yang sudah tersimpan (bila ada). */
+        aturFoto(url = '') {
+            this.previewFoto = url;
+            this.hapusFoto = false;
+
+            const input = this.$refs.formAlat?.querySelector('input[type="file"]');
+
+            if (input) {
+                input.value = '';
+            }
+        },
+
+        /** Pratinjau foto yang baru dipilih sebelum disimpan (tanpa ke server). */
+        fotoDipilih(event) {
+            const berkas = event.target.files?.[0];
+
+            if (!berkas) {
+                return;
+            }
+
+            if (this.previewFoto.startsWith('blob:')) {
+                URL.revokeObjectURL(this.previewFoto);
+            }
+
+            this.previewFoto = URL.createObjectURL(berkas);
+            this.hapusFoto = false;
+        },
+
         bukaTambah() {
             this.mode = 'create';
             this.formUrl = config.createUrl ?? '';
             this.form = lengkapiForm();
+            this.aturFoto();
             this.errors = {};
             this.modalTerbuka = true;
         },
@@ -527,6 +558,7 @@ Alpine.data('halamanPeralatan', (config = {}) => {
                     Number(alat.stok_total) - Number(alat.stok_disewa) - Number(alat.stok_rusak),
                 ),
             });
+            this.aturFoto(alat.foto_url ?? '');
             this.errors = {};
             this.modalTerbuka = true;
         },
