@@ -13,6 +13,8 @@ use App\Http\Controllers\BookingSayaController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
+use App\Http\Controllers\MidtransWebhookController;
+use App\Http\Controllers\PembayaranPelangganController;
 use App\Http\Controllers\OutGearBotController;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Owner\DendaController;
@@ -42,9 +44,19 @@ Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 Route::get('/katalog', KatalogController::class)->name('katalog');
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
-Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+
+// Notifikasi pembayaran dari server Midtrans (tanpa login & tanpa CSRF; dicek lewat signature).
+Route::post('/midtrans/notifikasi', MidtransWebhookController::class)->name('midtrans.notifikasi');
+
+// Booking & pembayaran: wajib login sebagai pelanggan.
+Route::middleware(['auth', 'role:customer'])->group(function () {
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+    Route::post('/pembayaran/{pembayaran}/bayar', [PembayaranPelangganController::class, 'bayar'])->name('pembayaran.bayar');
+    Route::post('/booking-saya/{pemesanan}/batalkan', [PembayaranPelangganController::class, 'batalkanPesanan'])->name('pemesanan.batalkan');
+    Route::post('/pembayaran/{pembayaran}/sinkron', [PembayaranPelangganController::class, 'sinkron'])->name('pembayaran.sinkron');
+});
 
 /*
 |--------------------------------------------------------------------------

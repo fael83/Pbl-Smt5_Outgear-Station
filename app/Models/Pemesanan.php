@@ -27,6 +27,15 @@ class Pemesanan extends Model
     use HasFactory;
 
     /**
+     * Angka lencana "Booking Saya" milik pelanggan bergantung pada tabel ini.
+     */
+    protected static function booted(): void
+    {
+        static::saved(static fn (Pemesanan $p) => \App\Support\BadgeBooking::lupakan((int) $p->user_id));
+        static::deleted(static fn (Pemesanan $p) => \App\Support\BadgeBooking::lupakan((int) $p->user_id));
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

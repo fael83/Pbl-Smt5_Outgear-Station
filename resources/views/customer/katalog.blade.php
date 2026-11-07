@@ -6,43 +6,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katalog Sewa Alat Outdoor & Pendakian - OutGear Station</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (filled($clientKey ?? null))
+        {{-- Pop-up pembayaran Midtrans Snap (Sandbox/Production mengikuti .env) --}}
+        <script src="{{ $snapJsUrl }}" data-client-key="{{ $clientKey }}"></script>
+    @endif
 </head>
 <body class="bg-[#F8F6F2] text-gray-800 font-sans min-h-screen flex flex-col justify-between"
-      x-data="{ 
-          cart: [], 
+      x-data="{
+          cart: [],
           isCartOpen: false,
-          tanggalMulai: new Date().toISOString().split('T')[0],
-          tanggalSelesai: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          namaPenyewa: '{{ auth()->user()?->name ?? 'Budi Pelanggan' }}',
-          noTelepon: '{{ auth()->user()?->no_telepon ?? '081100000004' }}',
+          hariIni: '{{ now()->toDateString() }}',
+          tanggalMulai: '{{ now()->toDateString() }}',
+          tanggalSelesai: '{{ now()->addDays(2)->toDateString() }}',
+          sudahLogin: {{ auth()->check() ? 'true' : 'false' }},
+          isCustomer: {{ auth()->user()?->isCustomer() ? 'true' : 'false' }},
           isCheckingOut: false,
-          showSuccessModal: false,
-          successOrder: null,
-          
-          addToCart(item) {
+          showHasilModal: false,
+          hasil: null,
+          pesanError: '',
+          showDetail: false,
+          detail: null,
+          detailQty: 1,
+          toast: '',
+          toastTimer: null,
+
+          init() {
+              // Dibuka dari ikon keranjang di halaman lain (Booking Saya / Panduan Sewa).
+              if (new URLSearchParams(window.location.search).get('keranjang') === '1') this.isCartOpen = true;
+
+              // Keranjang & jadwal disimpan di browser supaya tidak hilang saat pindah halaman / login.
+              try {
+                  const simpan = JSON.parse(localStorage.getItem('outgear.keranjang') || 'null');
+                  if (simpan && Array.isArray(simpan.cart)) {
+                      this.cart = simpan.cart;
+                      if (simpan.tanggalMulai && simpan.tanggalMulai >= this.hariIni) this.tanggalMulai = simpan.tanggalMulai;
+                      if (simpan.tanggalSelesai && simpan.tanggalSelesai >= this.tanggalMulai) this.tanggalSelesai = simpan.tanggalSelesai;
+                  }
+              } catch (e) {}
+              if (this.tanggalSelesai < this.tanggalMulai) this.tanggalSelesai = this.tanggalMulai;
+              this.$watch('cart', () => this.simpanKeranjang());
+              this.$watch('tanggalMulai', (v) => { if (this.tanggalSelesai < v) this.tanggalSelesai = v; this.simpanKeranjang(); });
+              this.$watch('tanggalSelesai', () => this.simpanKeranjang());
+          },
+
+          simpanKeranjang() {
+              try {
+                  localStorage.setItem('outgear.keranjang', JSON.stringify({
+                      cart: this.cart, tanggalMulai: this.tanggalMulai, tanggalSelesai: this.tanggalSelesai
+                  }));
+              } catch (e) {}
+          },
+
+          rp(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); },
+
+          bukaDetail(id) {
+              this.detail = (window.DATA_ALAT || {})[id] || null;
+              if (!this.detail) return;
+              this.detailQty = 1;
+              this.showDetail = true;
+          },
+
+          get qtyDiKeranjang() {
+              if (!this.detail) return 0;
+              const ada = this.cart.find(i => i.id === this.detail.id);
+              return ada ? ada.qty : 0;
+          },
+
+          get sisaBisaDitambah() {
+              return this.detail ? Math.max(0, this.detail.stok - this.qtyDiKeranjang) : 0;
+          },
+
+          masukkanDariDetail() {
+              if (!this.detail || this.sisaBisaDitambah < 1) return;
+              const jumlah = Math.min(Math.max(1, this.detailQty), this.sisaBisaDitambah);
+              this.addToCart({ id: this.detail.id, nama: this.detail.nama, tarif: this.detail.tarif, foto: this.detail.foto, stok: this.detail.stok }, jumlah);
+              this.showDetail = false;
+              this.tampilToast(jumlah + ' × ' + this.detail.nama + ' masuk keranjang');
+          },
+
+          tampilToast(teks) {
+              this.toast = teks;
+              clearTimeout(this.toastTimer);
+              this.toastTimer = setTimeout(() => this.toast = '', 3000);
+          },
+
+          addToCart(item, jumlah = 1) {
               let existing = this.cart.find(i => i.id === item.id);
               if (existing) {
-                  existing.qty += 1;
+                  existing.qty += jumlah;
+                  existing.stok = item.stok;
               } else {
-                  this.cart.push({ ...item, qty: 1, selected: true });
+                  this.cart.push({ ...item, qty: jumlah, selected: true });
               }
-              this.isCartOpen = true; 
           },
-          
+
           increaseQty(id) {
               let item = this.cart.find(i => i.id === id);
-              if (item) item.qty += 1;
+              if (item && (item.stok === undefined || item.qty < item.stok)) item.qty += 1;
           },
-          
+
           decreaseQty(id) {
               let item = this.cart.find(i => i.id === id);
               if (item && item.qty > 1) item.qty -= 1;
           },
-          
+
           removeFromCart(id) {
               this.cart = this.cart.filter(i => i.id !== id);
           },
-          
+
           get totalItems() {
               return this.cart.reduce((sum, item) => sum + item.qty, 0);
           },
@@ -67,13 +138,31 @@
               return this.tarifPerHari * this.lamaSewa;
           },
 
+          get jumlahDp() {
+              return Math.round(this.totalPrice * 0.5);
+          },
+
           async submitCheckout() {
               let selected = this.selectedItems;
               if (selected.length === 0) {
-                  alert('Pilih minimal 1 peralatan yang dicentang di keranjang untuk checkout.');
+                  this.pesanError = 'Pilih minimal 1 peralatan yang dicentang di keranjang.';
+                  return;
+              }
+              if (!this.tanggalMulai || !this.tanggalSelesai || this.tanggalMulai < this.hariIni || this.tanggalSelesai < this.tanggalMulai) {
+                  this.pesanError = 'Periksa kembali jadwal sewa: tanggal mulai tidak boleh sebelum hari ini dan tanggal selesai tidak boleh sebelum tanggal mulai.';
+                  return;
+              }
+              if (!this.sudahLogin) {
+                  this.simpanKeranjang();
+                  window.location.href = '{{ route('login') }}';
+                  return;
+              }
+              if (!this.isCustomer) {
+                  this.pesanError = 'Hanya akun pelanggan yang dapat menyewa alat.';
                   return;
               }
 
+              this.pesanError = '';
               this.isCheckingOut = true;
               try {
                   let res = await fetch('{{ route('checkout.store') }}', {
@@ -86,28 +175,60 @@
                       body: JSON.stringify({
                           items: selected.map(i => ({ id: i.id, qty: i.qty })),
                           tanggal_mulai: this.tanggalMulai,
-                          tanggal_selesai: this.tanggalSelesai,
-                          nama_penyewa: this.namaPenyewa,
-                          no_telepon: this.noTelepon
+                          tanggal_selesai: this.tanggalSelesai
                       })
                   });
 
-                  let data = await res.json();
-                  if (res.ok && data.success) {
-                      let checkedIds = selected.map(i => i.id);
-                      this.cart = this.cart.filter(i => !checkedIds.includes(i.id));
-                      this.isCartOpen = false;
-                      this.successOrder = data;
-                      this.showSuccessModal = true;
-                  } else {
-                      alert(data.message || 'Gagal memproses checkout. Silakan periksa kembali data Anda.');
+                  if (res.status === 401 || res.status === 419) {
+                      this.simpanKeranjang();
+                      window.location.href = '{{ route('login') }}';
+                      return;
                   }
+
+                  let data = await res.json().catch(() => ({}));
+                  if (!res.ok || !data.success) {
+                      this.pesanError = data.message || 'Gagal memproses checkout. Silakan coba lagi.';
+                      return;
+                  }
+
+                  // Booking sudah dibuat: item yang dibeli keluar dari keranjang.
+                  let ids = selected.map(i => i.id);
+                  this.cart = this.cart.filter(i => !ids.includes(i.id));
+                  this.isCartOpen = false;
+                  this.hasil = { ...data, status: 'menunggu' };
+
+                  if (typeof window.snap === 'undefined') {
+                      this.showHasilModal = true;
+                      return;
+                  }
+
+                  const selesai = () => this.sinkronkanHasil();
+                  window.snap.pay(data.snap_token, {
+                      onSuccess: selesai,
+                      onPending: selesai,
+                      onError: () => { this.hasil.status = 'error'; this.showHasilModal = true; },
+                      onClose: selesai
+                  });
               } catch (err) {
                   console.error(err);
-                  alert('Terjadi kesalahan saat memproses booking ke database.');
+                  this.pesanError = 'Terjadi kesalahan saat menghubungi server.';
               } finally {
                   this.isCheckingOut = false;
               }
+          },
+
+          async sinkronkanHasil() {
+              this.hasil.status = 'menunggu';
+              this.showHasilModal = true;
+              try {
+                  let res = await fetch(this.hasil.url_sinkron, {
+                      method: 'POST',
+                      headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                  });
+                  let d = await res.json();
+                  if (d.status_transaksi === 'berhasil') this.hasil.status = 'lunas';
+                  else if (d.status_transaksi === 'gagal') this.hasil.status = 'gagal';
+              } catch (e) {}
           }
       }">
 
@@ -129,7 +250,9 @@
             <a href="#" class="text-brand transition-colors duration-200">Katalog</a>
             <a href="{{ route('booking.saya') }}" class="text-gray-300 hover:text-brand transition-colors duration-200 flex items-center gap-2.5 group">
                 <span>Booking Saya</span>
-                <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">2</span>
+                @if (($badgeBooking ?? 0) > 0)
+                    <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">{{ $badgeBooking }}</span>
+                @endif
             </a>
             <a href="{{ route('panduan') }}" class="text-gray-300 hover:text-brand transition-colors duration-200">Panduan Sewa</a>
         </div>
@@ -326,6 +449,24 @@
             <h2 class="text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight">Daftar Peralatan</h2>
         </div>
 
+        @php
+            $dataAlat = [];
+            foreach ($peralatan as $item) {
+                $dataAlat[$item->id] = [
+                    'id' => $item->id,
+                    'nama' => $item->nama,
+                    'deskripsi' => $item->deskripsi,
+                    'kategori' => $item->kategori?->nama,
+                    'foto' => $item->foto_url,
+                    'tarif' => (float) $item->tarif_per_hari,
+                    'stok' => (int) $item->stok_tersedia,
+                ];
+            }
+        @endphp
+        <script>
+            window.DATA_ALAT = {!! json_encode($dataAlat, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!};
+        </script>
+
         <!-- Product Cards Grid -->
         <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             @forelse ($peralatan as $alat)
@@ -334,7 +475,7 @@
                 @endphp
                 <article class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                     <div>
-                        <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3 flex items-center justify-center">
+                        <div @click="bukaDetail({{ $alat->id }})" class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3 flex items-center justify-center cursor-pointer">
                             @if ($fotoUrl)
                                 <img src="{{ $fotoUrl }}"
                                      alt="{{ $alat->nama }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
@@ -347,7 +488,7 @@
                             </span>
                         </div>
 
-                        <h3 class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-2">
+                        <h3 @click="bukaDetail({{ $alat->id }})" class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-2 cursor-pointer">
                             {{ $alat->nama }}
                         </h3>
                     </div>
@@ -358,11 +499,10 @@
                             <p class="text-xs font-extrabold text-brand">Rp {{ number_format((float) $alat->tarif_per_hari, 0, ',', '.') }}</p>
                         </div>
 
-                        <!-- Tombol Sewa -->
-                        <button @disabled($alat->stok_tersedia <= 0)
-                                @click="addToCart({ id: {{ $alat->id }}, nama: '{{ addslashes($alat->nama) }}', tarif: {{ $alat->tarif_per_hari }}, foto: '{{ $fotoUrl ?? '' }}' })"
-                                class="{{ $alat->stok_tersedia > 0 ? 'bg-brand hover:bg-brand-hover text-white shadow-sm' : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' }} text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1">
-                            <span>Sewa</span>
+                        <!-- Tombol Detail: lihat dulu, baru masukkan ke keranjang -->
+                        <button type="button" @click="bukaDetail({{ $alat->id }})"
+                                class="bg-brand hover:bg-brand-hover text-white shadow-sm text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1">
+                            <span>Lihat Detail</span>
                         </button>
                     </div>
                 </article>
@@ -453,7 +593,7 @@
                         <div class="grid grid-cols-2 gap-2 text-xs">
                             <div>
                                 <label class="block text-[10px] text-gray-500 font-semibold mb-1">Mulai</label>
-                                <input type="date" x-model="tanggalMulai" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
+                                <input type="date" x-model="tanggalMulai" :min="hariIni" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
                             </div>
                             <div>
                                 <label class="block text-[10px] text-gray-500 font-semibold mb-1">Selesai</label>
@@ -463,18 +603,9 @@
                     </div>
 
                     @guest
-                    <!-- Input Nama & No Telp untuk Tamu/Demo -->
-                    <div class="bg-gray-50 rounded-2xl p-3 border border-gray-200 space-y-2">
-                        <span class="text-[11px] font-bold text-gray-700 block">👤 Data Penyewa</span>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                                <input type="text" x-model="namaPenyewa" placeholder="Nama Lengkap" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
-                            </div>
-                            <div>
-                                <input type="text" x-model="noTelepon" placeholder="No. WhatsApp" class="w-full text-xs rounded-xl border-gray-300 bg-white py-1.5 px-2.5 focus:ring-brand focus:border-brand">
-                            </div>
-                        </div>
-                    </div>
+                    <p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                        Keranjang boleh diisi tanpa login. Untuk checkout kamu akan diminta <a href="{{ route('login') }}" class="font-bold underline">masuk</a> atau <a href="{{ route('register') }}" class="font-bold underline">daftar</a> dulu; isi keranjang tetap tersimpan.
+                    </p>
                     @endguest
 
                     <!-- Rincian Total Harga -->
@@ -488,16 +619,22 @@
                             <span x-text="lamaSewa + ' Hari'"></span>
                         </div>
                         <div class="flex justify-between items-center font-bold pt-1 border-t border-gray-100">
-                            <span class="text-gray-900 font-black">Total Pembayaran</span>
-                            <span class="font-black text-base text-brand" x-text="'Rp ' + Number(totalPrice).toLocaleString('id-ID')"></span>
+                            <span class="text-gray-900 font-black">Total Sewa</span>
+                            <span class="font-black text-base text-gray-900" x-text="rp(totalPrice)"></span>
                         </div>
+                        <div class="flex justify-between items-center bg-brand/10 rounded-xl px-3 py-2 mt-1">
+                            <span class="text-brand font-black text-[11px]">Bayar sekarang (DP 50%)</span>
+                            <span class="font-black text-base text-brand" x-text="rp(jumlahDp)"></span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 leading-snug">Sisa pembayaran dilunasi saat pengambilan alat di basecamp. Metode bayar dipilih di langkah berikutnya (Midtrans).</p>
+                        <p x-show="pesanError" x-text="pesanError" class="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2" x-cloak></p>
                     </div>
 
                     <!-- Tombol Checkout -->
                     <button @click="submitCheckout()"
                             :disabled="isCheckingOut || selectedItems.length === 0"
                             class="w-full bg-gray-900 hover:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3.5 rounded-2xl transition shadow-lg tracking-wide uppercase flex items-center justify-center gap-2">
-                        <span x-show="!isCheckingOut">Checkout (<span x-text="selectedItems.length"></span> Item)</span>
+                        <span x-show="!isCheckingOut">Checkout &amp; Bayar DP (<span x-text="selectedItems.length"></span> Item)</span>
                         <span x-show="isCheckingOut" class="flex items-center gap-2">
                             <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                             <span>Memproses Booking...</span>
@@ -508,56 +645,115 @@
         </div>
     </div>
     
-<!-- Modal Popup Konfirmasi Sukses Booking (Notifikasi Biasa) -->
-<div x-show="showSuccessModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
-    <div class="min-h-screen px-4 text-center flex items-center justify-center">
-        <!-- Backdrop Gelap -->
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="showSuccessModal = false"></div>
+<!-- Modal detail alat -->
+<div x-show="showDetail" x-cloak style="display: none;" class="fixed inset-0 z-[55] overflow-y-auto" @keydown.escape.window="showDetail = false">
+    <div class="min-h-screen px-4 flex items-center justify-center">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showDetail = false"></div>
 
-        <!-- Card Popup -->
-        <div class="inline-block w-full max-w-md p-6 my-8 text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl relative z-10 border border-gray-100">
-            
-            <!-- Tombol Silang (Close) di Pojok Kanan Atas -->
-            <button @click="showSuccessModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-lg p-1 transition">
-                ✕
-            </button>
+        <div class="relative z-10 w-full max-w-3xl my-8 bg-white rounded-3xl shadow-2xl overflow-hidden grid md:grid-cols-2">
+            <button type="button" @click="showDetail = false" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 text-gray-500 hover:text-gray-800 font-bold shadow">✕</button>
 
-            <!-- Header Notifikasi -->
-            <div class="text-center space-y-3 pt-2">
-                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl font-black shadow-inner">
-                    ✓
-                </div>
-                <h3 class="text-xl font-black text-gray-900">Booking Berhasil Dibuat!</h3>
-                <p class="text-xs text-gray-500">
-                    Pesanan sewa Anda telah berhasil disimpan dan langsung masuk ke daftar pemesanan di panel admin.
-                </p>
+            <div class="bg-gray-100 min-h-[260px] md:min-h-[420px] flex items-center justify-center">
+                <template x-if="detail && detail.foto">
+                    <img :src="detail.foto" :alt="detail.nama" class="w-full h-full object-cover">
+                </template>
+                <template x-if="detail && !detail.foto">
+                    @include('partials.foto-kosong', ['kelas' => 'w-20 h-20'])
+                </template>
             </div>
 
-            <!-- Detail Keterangan Booking -->
+            <div class="p-6 flex flex-col gap-4" x-show="detail">
+                <div class="space-y-2">
+                    <span x-show="detail?.kategori" x-text="detail?.kategori" class="inline-block text-[10px] font-bold uppercase tracking-wide text-brand bg-brand/10 px-2.5 py-1 rounded-full"></span>
+                    <h3 class="text-xl font-black text-gray-900 leading-tight" x-text="detail?.nama"></h3>
+                    <p class="text-xs text-gray-500 leading-relaxed" x-text="detail?.deskripsi || 'Belum ada deskripsi untuk alat ini.'"></p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="rounded-2xl bg-gray-50 border border-gray-100 p-3">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Tarif / hari</p>
+                        <p class="font-black text-brand text-sm" x-text="rp(detail?.tarif)"></p>
+                    </div>
+                    <div class="rounded-2xl bg-gray-50 border border-gray-100 p-3">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Stok tersedia</p>
+                        <p class="font-black text-sm" :class="detail?.stok > 0 ? 'text-emerald-600' : 'text-red-500'" x-text="detail?.stok > 0 ? detail.stok + ' unit' : 'Habis'"></p>
+                    </div>
+                </div>
+
+                <div class="mt-auto space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-700">Jumlah</span>
+                        <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                            <button type="button" @click="detailQty = Math.max(1, detailQty - 1)" class="px-3 py-1.5 text-gray-600 hover:bg-gray-200 font-bold">-</button>
+                            <span class="px-4 text-sm font-bold text-gray-800" x-text="detailQty"></span>
+                            <button type="button" @click="detailQty = Math.min(Math.max(1, sisaBisaDitambah), detailQty + 1)" class="px-3 py-1.5 text-gray-600 hover:bg-gray-200 font-bold">+</button>
+                        </div>
+                    </div>
+                    <p x-show="qtyDiKeranjang > 0" class="text-[11px] text-gray-500" x-text="qtyDiKeranjang + ' unit alat ini sudah ada di keranjang'"></p>
+                    <button type="button" @click="masukkanDariDetail()" :disabled="sisaBisaDitambah < 1"
+                            class="w-full bg-brand hover:bg-brand-hover disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-bold py-3.5 rounded-2xl transition shadow-lg shadow-brand/20 uppercase tracking-wide"
+                            x-text="detail?.stok < 1 ? 'Stok Habis' : (sisaBisaDitambah < 1 ? 'Semua stok sudah di keranjang' : '🛒 Masukkan ke Keranjang')"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast singkat -->
+<div x-show="toast" x-transition x-cloak style="display: none;" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-gray-900 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3">
+    <span x-text="toast"></span>
+    <button type="button" @click="isCartOpen = true; toast = ''" class="text-brand underline">Lihat keranjang</button>
+</div>
+
+<!-- Modal hasil checkout: menunggu / lunas / gagal -->
+<div x-show="showHasilModal" style="display: none;" class="fixed inset-0 z-[60] overflow-y-auto" x-cloak>
+    <div class="min-h-screen px-4 text-center flex items-center justify-center">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showHasilModal = false"></div>
+
+        <div class="inline-block w-full max-w-md p-6 my-8 text-left align-middle bg-white shadow-2xl rounded-3xl relative z-10 border border-gray-100">
+            <button @click="showHasilModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-lg p-1 transition">✕</button>
+
+            <div class="text-center space-y-3 pt-2">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto text-3xl font-black shadow-inner"
+                     :class="{
+                         'bg-emerald-100 text-emerald-600': hasil?.status === 'lunas',
+                         'bg-amber-100 text-amber-600': hasil?.status === 'menunggu',
+                         'bg-red-100 text-red-600': hasil?.status === 'gagal' || hasil?.status === 'error'
+                     }"
+                     x-text="hasil?.status === 'lunas' ? '✓' : (hasil?.status === 'menunggu' ? '⏳' : '!')"></div>
+                <h3 class="text-xl font-black text-gray-900"
+                    x-text="hasil?.status === 'lunas' ? 'DP Berhasil Dibayar!' : (hasil?.status === 'menunggu' ? 'Menunggu Pembayaran DP' : 'Pembayaran Tidak Berhasil')"></h3>
+                <p class="text-xs text-gray-500"
+                   x-text="hasil?.status === 'lunas'
+                        ? 'Terima kasih! Booking kamu sudah masuk ke admin dan berstatus Dikonfirmasi. Sisa pembayaran dilunasi saat pengambilan alat.'
+                        : (hasil?.status === 'menunggu'
+                            ? 'Booking tersimpan. Selesaikan pembayaran DP dari halaman Booking Saya sebelum batas waktu, kalau tidak booking dibatalkan otomatis dan stok dikembalikan.'
+                            : 'Pembayaran gagal atau dibatalkan, booking dibatalkan dan stok dikembalikan. Silakan checkout ulang.')"></p>
+            </div>
+
             <div class="my-5 p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2.5 text-xs">
                 <div class="flex justify-between items-center">
                     <span class="text-gray-500">Kode Booking</span>
-                    <span class="font-extrabold text-brand text-sm" x-text="'#' + (successOrder?.kode_pemesanan ?? '')"></span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-500">Status</span>
-                    <span class="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold border border-amber-200 text-[10px]">Menunggu Pembayaran</span>
+                    <span class="font-extrabold text-brand text-sm" x-text="'#' + (hasil?.kode_pemesanan ?? '')"></span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-gray-500">Durasi Sewa</span>
-                    <span class="font-bold text-gray-800" x-text="(successOrder?.lama_sewa ?? 1) + ' Hari'"></span>
+                    <span class="font-bold text-gray-800" x-text="(hasil?.lama_sewa ?? 1) + ' Hari'"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500">Total Sewa</span>
+                    <span class="font-bold text-gray-800" x-text="rp(hasil?.total_biaya)"></span>
                 </div>
                 <div class="flex justify-between items-center border-t border-gray-200 pt-2">
-                    <span class="text-gray-900 font-bold">Total Biaya</span>
-                    <span class="font-black text-base text-gray-900" x-text="'Rp ' + Number(successOrder?.total_biaya ?? 0).toLocaleString('id-ID')"></span>
+                    <span class="text-gray-900 font-bold">DP 50%</span>
+                    <span class="font-black text-base text-gray-900" x-text="rp(hasil?.jumlah_dp)"></span>
                 </div>
             </div>
 
-            <!-- Tombol Tutup Sederhana -->
-            <button @click="showSuccessModal = false"
-                    class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-3 rounded-2xl transition">
-                Tutup
-            </button>
+            <div class="grid grid-cols-2 gap-2">
+                <button @click="showHasilModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-3 rounded-2xl transition">Tutup</button>
+                <a href="{{ route('booking.saya') }}" class="bg-gray-900 hover:bg-brand text-white text-xs font-bold py-3 rounded-2xl transition text-center">Lihat Booking Saya</a>
+            </div>
         </div>
     </div>
 </div>

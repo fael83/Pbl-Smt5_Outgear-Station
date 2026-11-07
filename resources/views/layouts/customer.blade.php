@@ -7,11 +7,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Outgear Station')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('head')
 </head>
 <body class="bg-[#F8F6F2] text-gray-900 antialiased flex flex-col min-h-screen"
-      x-data="{ 
-          cart: [], 
-          isCartOpen: false,
+      x-data="{
+          cart: [],
+          muatKeranjang() {
+              // Keranjang disimpan katalog di localStorage; di sini hanya dibaca untuk menampilkan jumlahnya.
+              try {
+                  const simpan = JSON.parse(localStorage.getItem('outgear.keranjang') || 'null');
+                  this.cart = simpan && Array.isArray(simpan.cart) ? simpan.cart : [];
+              } catch (e) {}
+          },
+          init() {
+              this.muatKeranjang();
+              window.addEventListener('storage', () => this.muatKeranjang());
+          },
           get totalItems() {
               return this.cart.reduce((sum, item) => sum + item.qty, 0);
           }
@@ -44,7 +55,12 @@
             <a href="{{ route('booking.saya') }}" 
                class="{{ request()->is('booking-saya*') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200 flex items-center gap-2.5 group">
                 <span>Booking Saya</span>
-                <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">2</span>
+                @php
+                    $badgeBooking = \App\Support\BadgeBooking::untuk(auth()->id());
+                @endphp
+                @if ($badgeBooking > 0)
+                    <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">{{ $badgeBooking }}</span>
+                @endif
             </a>
 
             <!-- Panduan Sewa -->
@@ -57,10 +73,10 @@
         <!-- Bagian Kanan (Tombol Keranjang & Cek Status Login) -->
         <div class="flex items-center gap-4">
             <!-- Tombol Keranjang -->
-            <button @click="isCartOpen = true" class="bg-brand hover:bg-brand-hover text-white text-xs font-black px-5 py-3 rounded-2xl flex items-center gap-3 transition shadow-lg shadow-brand/25 active:scale-95">
+            <a href="{{ route('katalog') }}?keranjang=1" class="bg-brand hover:bg-brand-hover text-white text-xs font-black px-5 py-3 rounded-2xl flex items-center gap-3 transition shadow-lg shadow-brand/25 active:scale-95">
                 <span class="text-sm">🛒 Keranjang</span>
-                <span class="bg-white/20 backdrop-blur text-white text-[11px] font-black px-2.5 py-0.5 rounded-full" x-text="typeof totalItems !== 'undefined' ? totalItems + ' Item' : '0 Item'">0 Item</span>
-            </button>
+                <span class="bg-white/20 backdrop-blur text-white text-[11px] font-black px-2.5 py-0.5 rounded-full" x-text="totalItems + ' Item'">0 Item</span>
+            </a>
 
             @auth
                 <!-- Jika Sudah Login: Tampilkan Nama User & Logout -->

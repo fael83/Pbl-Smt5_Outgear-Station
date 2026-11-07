@@ -1251,14 +1251,10 @@ Alpine.data('halamanVerifikasi', (config = {}) => ({
 
     get filteredList() {
         return this.pembayaranList.filter((item) => {
-            // Yang berhasil tidak ditampilkan di tabel verifikasi
-            if (item.status_transaksi === 'berhasil') {
-                return false;
-            }
-
             const matchStatus =
                 this.selectedFilter === 'Semua' ||
                 (this.selectedFilter === 'Pending' && item.status_transaksi === 'pending') ||
+                (this.selectedFilter === 'Berhasil' && item.status_transaksi === 'berhasil') ||
                 (this.selectedFilter === 'Gagal' && item.status_transaksi === 'gagal');
 
             const matchJenis = this.selectedJenis === 'Semua' || item.jenis_pembayaran === this.selectedJenis;
