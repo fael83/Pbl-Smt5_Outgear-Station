@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);
+
+        // Notifikasi dari server Midtrans tidak membawa token CSRF; keasliannya
+        // dijamin oleh pengecekan signature_key di MidtransWebhookController.
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/notifikasi',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

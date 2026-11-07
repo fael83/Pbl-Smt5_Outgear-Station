@@ -50,4 +50,16 @@ return [
         'bucket' => env('SUPABASE_BUCKET', 'alat'),
     ],
 
+    /*
+    | Midtrans Snap. Kunci diambil dari dashboard Midtrans (mode Sandbox) dan
+    | HANYA boleh ditulis di .env, jangan pernah di-commit ke Git.
+    */
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+        // Lama waktu pelanggan untuk membayar DP sebelum booking dibatalkan otomatis.
+        'batas_bayar_menit' => (int) env('MIDTRANS_BATAS_BAYAR_MENIT', 60),
+    ],
+
 ];

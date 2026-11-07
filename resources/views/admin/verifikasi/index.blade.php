@@ -128,14 +128,18 @@
                                      @click.away="showFilterDropdown = false" 
                                      x-transition 
                                      class="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium">
-                                    <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Filter Status Antrean</div>
+                                    <div class="px-3 py-1.5 font-bold text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-100">Filter Status Pembayaran</div>
                                     <button @click="selectedFilter = 'Semua'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-zinc-700 flex items-center justify-between">
-                                        <span>Semua Antrean</span>
+                                        <span>Semua Status</span>
                                         <span x-show="selectedFilter === 'Semua'" class="text-portal-orange font-bold">✓</span>
                                     </button>
                                     <button @click="selectedFilter = 'Pending'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-amber-700 flex items-center justify-between">
                                         <span>Menunggu (Pending)</span>
                                         <span x-show="selectedFilter === 'Pending'" class="text-portal-orange font-bold">✓</span>
+                                    </button>
+ <button @click="selectedFilter = 'Berhasil'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-emerald-700 flex items-center justify-between">
+                                        <span>Berhasil (Lunas)</span>
+                                        <span x-show="selectedFilter === 'Berhasil'" class="text-portal-orange font-bold">✓</span>
                                     </button>
                                     <button @click="selectedFilter = 'Gagal'; showFilterDropdown = false" class="w-full text-left px-4 py-2 hover:bg-zinc-50 text-rose-700 flex items-center justify-between">
                                         <span>Ditolak (Gagal)</span>
@@ -231,18 +235,10 @@
                                             </template>
                                         </td>
 
-                                        <!-- metode_pembayaran (enum: 'qris', 'cash') -->
+                                        <!-- metode_pembayaran: dipilih pelanggan di pop-up Midtrans (bisa kosong sebelum memilih) -->
                                         <td class="p-4">
-                                            <template x-if="item.metode_pembayaran === 'qris'">
-                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 font-bold text-[10px] uppercase border border-purple-200">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> QRIS
-                                                </span>
-                                            </template>
-                                            <template x-if="item.metode_pembayaran === 'cash'">
-                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 text-zinc-700 font-bold text-[10px] uppercase border border-zinc-300">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span> Cash
-                                                </span>
-                                            </template>
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 font-bold text-[10px] uppercase border border-purple-200"
+                                                  x-text="item.metode_label"></span>
                                         </td>
 
                                         <!-- jumlah (decimal) -->
@@ -255,6 +251,11 @@
                                             <template x-if="item.status_transaksi === 'pending'">
                                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending
+                                                </span>
+                                            </template>
+                                            <template x-if="item.status_transaksi === 'berhasil'">
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Berhasil
                                                 </span>
                                             </template>
                                             <template x-if="item.status_transaksi === 'gagal'">
@@ -304,7 +305,7 @@
                                         <td colspan="9" class="p-10 text-center">
                                             <p class="text-3xl">💳</p>
                                             <p class="mt-2 text-sm font-semibold text-[#1A2024]"
-                                               x-text="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua' ? 'Tidak ada pembayaran yang cocok dengan filter.' : 'Tidak ada antrean pembayaran untuk diverifikasi.'"></p>
+                                               x-text="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua' ? 'Tidak ada pembayaran yang cocok dengan filter.' : 'Belum ada data pembayaran.'"></p>
                                             <p class="mt-1 text-xs text-gray-500"
                                                x-text="search || selectedFilter !== 'Semua' || selectedJenis !== 'Semua' ? 'Coba ubah kata kunci pencarian, status, atau jenis pembayaran.' : 'Transaksi yang menunggu validasi akan muncul di sini.'"></p>
                                         </td>
@@ -401,11 +402,8 @@
                     <div class="flex justify-between items-center py-1.5 border-b border-zinc-100">
                         <span class="text-zinc-500 font-medium">Metode Pembayaran</span>
                         <span class="font-bold uppercase tracking-wider text-[11px] px-2.5 py-0.5 rounded"
-                              :class="{
-                                  'bg-purple-100 text-purple-800': selectedItem.metode_pembayaran === 'qris',
-                                  'bg-zinc-200 text-zinc-800': selectedItem.metode_pembayaran === 'cash'
-                              }"
-                              x-text="selectedItem.metode_pembayaran"></span>
+                              :class="selectedItem.metode_pembayaran ? 'bg-purple-100 text-purple-800' : 'bg-zinc-200 text-zinc-800'"
+                              x-text="selectedItem.metode_label"></span>
                     </div>
 
                     <div class="flex justify-between items-center py-1.5 border-b border-zinc-100">

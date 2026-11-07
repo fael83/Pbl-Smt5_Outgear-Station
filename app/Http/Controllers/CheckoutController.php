@@ -2,161 +2,179 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Role;
 use App\Models\Alat;
 use App\Models\DetailPemesanan;
 use App\Models\Pembayaran;
 use App\Models\Pemesanan;
-use App\Models\User;
+use App\Services\MidtransService;
+use App\Services\PembayaranService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
+/**
+ * Checkout keranjang -> booking + tagihan DP 50% -> token Midtrans Snap.
+ *
+ * Route dilindungi middleware `auth` + `role:customer`, jadi tidak ada lagi
+ * pembuatan akun tamu otomatis.
+ */
 class CheckoutController extends Controller
 {
-    /**
-     * Memproses checkout pemesanan sewa peralatan dari keranjang belanja katalog.
-     *
-     * Data yang dibuat:
-     * - Pemesanan (status: menunggu_pembayaran)
-     * - DetailPemesanan (item-item alat yang disewa)
-     * - Pembayaran (status_transaksi: pending)
-     *
-     * @param  Request  $request
-     * @return JsonResponse
-     */
-    public function store(Request $request): JsonResponse
+    public const PERSEN_DP = 0.5;
+
+    public function store(Request $request, MidtransService $midtrans, PembayaranService $layanan): JsonResponse
     {
-        $validated = $request->validate([
+        $data = $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required', 'integer', 'exists:alat,id'],
-            'items.*.qty' => ['required', 'integer', 'min:1'],
-            'tanggal_mulai' => ['nullable', 'date'],
-            'tanggal_selesai' => ['nullable', 'date'],
-            'nama_penyewa' => ['nullable', 'string', 'max:255'],
-            'no_telepon' => ['nullable', 'string', 'max:30'],
+            'items.*.id' => ['required', 'integer'],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:99'],
+            'tanggal_mulai' => ['required', 'date', 'after_or_equal:today'],
+            'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+        ], [
+            'tanggal_mulai.after_or_equal' => 'Tanggal mulai sewa tidak boleh sebelum hari ini.',
+            'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh sebelum tanggal mulai.',
         ]);
 
-        $tanggalMulai = ! empty($validated['tanggal_mulai'])
-            ? Carbon::parse($validated['tanggal_mulai'])->startOfDay()
-            : now()->startOfDay();
-
-        $tanggalSelesai = ! empty($validated['tanggal_selesai'])
-            ? Carbon::parse($validated['tanggal_selesai'])->startOfDay()
-            : $tanggalMulai->copy()->addDays(2)->startOfDay();
-
-        // Pastikan tanggal selesai tidak lebih awal dari tanggal mulai
-        if ($tanggalSelesai->lt($tanggalMulai)) {
-            $tanggalSelesai = $tanggalMulai->copy()->addDays(2)->startOfDay();
+        if (! $midtrans->terkonfigurasi()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pembayaran online belum dikonfigurasi. Hubungi admin.',
+            ], 503);
         }
 
-        $lamaSewa = max(1, (int) $tanggalMulai->diffInDays($tanggalSelesai) + 1);
+        $pelanggan = $request->user();
+        $mulai = Carbon::parse($data['tanggal_mulai'])->startOfDay();
+        $selesai = Carbon::parse($data['tanggal_selesai'])->startOfDay();
+        $lamaSewa = max(1, (int) $mulai->diffInDays($selesai) + 1);
 
-        // Cari atau tentukan user pelanggan
-        $user = auth()->user();
-        if ($user === null) {
-            if (! empty($validated['nama_penyewa'])) {
-                $user = User::firstOrCreate(
-                    ['no_telepon' => $validated['no_telepon'] ?: '081' . rand(10000000, 99999999)],
-                    [
-                        'name' => $validated['nama_penyewa'],
-                        'email' => 'customer_' . Str::random(6) . '@outgear.test',
-                        'password' => bcrypt('password123'),
-                        'role' => Role::Customer,
-                        'status_akun' => 'aktif',
-                    ]
-                );
-            } else {
-                $user = User::where('role', Role::Customer)->first() ?? User::first();
-            }
-        }
+        // Gabungkan baris duplikat (alat yang sama) menjadi satu.
+        $permintaan = collect($data['items'])
+            ->groupBy('id')
+            ->map(fn ($baris) => (int) $baris->sum('qty'));
 
-        $userId = $user?->id ?? 1;
+        try {
+            [$pemesanan, $pembayaran] = DB::transaction(function () use ($permintaan, $pelanggan, $mulai, $selesai, $lamaSewa) {
+                $alatList = Alat::query()
+                    ->whereIn('id', $permintaan->keys())
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
 
-        $pemesanan = DB::transaction(function () use ($validated, $userId, $tanggalMulai, $tanggalSelesai, $lamaSewa): Pemesanan {
-            // Hitung nomor urut untuk format kode pemesanan
-            $urutan = Pemesanan::query()->count() + 1;
-            $kodePemesanan = 'ORD-' . date('Ymd') . '-' . str_pad((string) $urutan, 4, '0', STR_PAD_LEFT);
+                // 1) Pastikan semua alat ada dan stok cukup sebelum mengubah apa pun.
+                foreach ($permintaan as $alatId => $qty) {
+                    $alat = $alatList[$alatId] ?? null;
 
-            while (Pemesanan::query()->where('kode_pemesanan', $kodePemesanan)->exists()) {
-                $urutan++;
-                $kodePemesanan = 'ORD-' . date('Ymd') . '-' . str_pad((string) $urutan, 4, '0', STR_PAD_LEFT);
-            }
+                    if ($alat === null) {
+                        throw ValidationException::withMessages(['items' => ['Ada alat di keranjang yang sudah tidak tersedia.']]);
+                    }
 
-            $pemesanan = Pemesanan::create([
-                'kode_pemesanan' => $kodePemesanan,
-                'user_id' => $userId,
-                'tanggal_mulai' => $tanggalMulai->toDateString(),
-                'tanggal_selesai' => $tanggalSelesai->toDateString(),
-                'total_biaya' => 0,
-                'jumlah_dp' => 0,
-                'status' => 'menunggu_pembayaran',
-            ]);
-
-            $totalBiaya = 0;
-
-            foreach ($validated['items'] as $item) {
-                $alat = Alat::find($item['id']);
-                if ($alat === null) {
-                    continue;
+                    if ($alat->stok_tersedia < $qty) {
+                        throw ValidationException::withMessages([
+                            'items' => ["Stok {$alat->nama} tinggal {$alat->stok_tersedia} unit."],
+                        ]);
+                    }
                 }
 
-                $qty = (int) $item['qty'];
-                $subtotal = $qty * (float) $alat->tarif_per_hari * $lamaSewa;
-                $totalBiaya += $subtotal;
+                // 2) Hitung total di memori, lalu simpan dengan sesedikit mungkin query
+                //    (koneksi ke Supabase ~1 detik per query).
+                $waktu = now();
+                $baris = [];
+                $total = 0;
 
-                DetailPemesanan::create([
-                    'pemesanan_id' => $pemesanan->id,
-                    'alat_id' => $alat->id,
-                    'jumlah' => $qty,
-                    'tarif_per_hari' => $alat->tarif_per_hari,
-                    'subtotal' => $subtotal,
+                foreach ($permintaan as $alatId => $qty) {
+                    $alat = $alatList[$alatId];
+                    $subtotal = $qty * (float) $alat->tarif_per_hari * $lamaSewa;
+                    $total += $subtotal;
+
+                    $baris[] = [
+                        'alat_id' => $alat->id,
+                        'jumlah' => $qty,
+                        'tarif_per_hari' => $alat->tarif_per_hari,
+                        'subtotal' => $subtotal,
+                        'created_at' => $waktu,
+                        'updated_at' => $waktu,
+                    ];
+                }
+
+                $dp = round($total * self::PERSEN_DP);
+
+                $pemesanan = Pemesanan::create([
+                    'kode_pemesanan' => $this->buatKode(),
+                    'user_id' => $pelanggan->id,
+                    'tanggal_mulai' => $mulai->toDateString(),
+                    'tanggal_selesai' => $selesai->toDateString(),
+                    'total_biaya' => $total,
+                    'jumlah_dp' => $dp,
+                    'status' => 'menunggu_pembayaran',
                 ]);
 
-                // Kurangi stok tersedia dan tambahkan stok disewa jika cukup
-                if ($alat->stok_tersedia >= $qty) {
-                    $alat->decrement('stok_tersedia', $qty);
-                    $alat->increment('stok_disewa', $qty);
-                }
-            }
+                DetailPemesanan::insert(array_map(fn (array $b) => $b + ['pemesanan_id' => $pemesanan->id], $baris));
 
-            $jumlahDp = round($totalBiaya * 0.5);
+                // Satu query untuk semua stok: tersedia dikurangi, disewa ditambah.
+                $kasus = collect($permintaan)->map(fn ($qty, $id) => 'WHEN '.(int) $id.' THEN '.(int) $qty)->implode(' ');
+                DB::update(
+                    "UPDATE alat SET stok_tersedia = stok_tersedia - CASE id {$kasus} ELSE 0 END, "
+                    ."stok_disewa = stok_disewa + CASE id {$kasus} ELSE 0 END, updated_at = ? "
+                    .'WHERE id IN ('.implode(',', array_map('intval', $permintaan->keys()->all())).')',
+                    [$waktu]
+                );
 
-            $pemesanan->update([
-                'total_biaya' => $totalBiaya,
-                'jumlah_dp' => $jumlahDp,
-            ]);
+                $pembayaran = Pembayaran::create([
+                    'pemesanan_id' => $pemesanan->id,
+                    'transaction_id' => $pemesanan->kode_pemesanan.'-DP',
+                    'jenis_pembayaran' => 'dp',
+                    'metode_pembayaran' => null,
+                    'jumlah' => $dp,
+                    'status_transaksi' => 'pending',
+                ]);
 
-            // Buat record pembayaran DP awal dengan status pending
-            Pembayaran::create([
-                'pemesanan_id' => $pemesanan->id,
-                'transaction_id' => 'MID-' . strtoupper(Str::random(10)),
-                'jenis_pembayaran' => 'dp',
-                'metode_pembayaran' => 'qris',
-                'jumlah' => $jumlahDp,
-                'status_transaksi' => 'pending',
-                'waktu_bayar' => null,
-            ]);
+                return [$pemesanan, $pembayaran];
+            });
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first(),
+            ], 422);
+        }
 
-            // Hapus cache statistik & badge admin supaya data di /admin/pemesanan langsung update
-            Cache::forget('pemesanan.statistik');
-            Cache::forget('sidebar:badge');
+        Cache::forget('pemesanan.statistik');
 
-            return $pemesanan;
-        });
+        // Token diminta setelah transaksi database selesai agar koneksi tidak tertahan.
+        try {
+            $token = $midtrans->buatSnapToken($pembayaran, $pelanggan, 'DP 50% sewa '.$pemesanan->kode_pemesanan);
+            $pembayaran->update(['midtrans' => $token]);
+        } catch (\Throwable $e) {
+            report($e);
+            $layanan->tandaiGagal($pembayaran);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghubungi Midtrans. Booking dibatalkan, silakan coba lagi.',
+            ], 502);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Pemesanan berhasil dibuat!',
+            'message' => 'Booking dibuat. Selesaikan pembayaran DP.',
             'kode_pemesanan' => $pemesanan->kode_pemesanan,
-            'total_biaya' => $pemesanan->total_biaya,
+            'total_biaya' => (float) $pemesanan->total_biaya,
+            'jumlah_dp' => (float) $pemesanan->jumlah_dp,
             'lama_sewa' => $lamaSewa,
-            'redirect_admin' => route('admin.pemesanan'),
+            'snap_token' => $token,
+            'url_sinkron' => route('pembayaran.sinkron', $pembayaran),
             'redirect_booking' => route('booking.saya'),
         ]);
     }
-}
 
+    /**
+     * Kode unik tanpa query ke database: ORD-20261107-K7P2Q.
+     */
+    private function buatKode(): string
+    {
+        return 'ORD-'.date('Ymd').'-'.strtoupper(Str::random(5));
+    }
+}
