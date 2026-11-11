@@ -8,7 +8,7 @@
 </head>
 <body class="admin-theme antialiased font-sans"
       x-data="halamanDashboard({
-        dataUrl: {{ Js::from(route('admin.dashboard.data')) }},
+        dataUrl: {{ Js::from(\Illuminate\Support\Facades\Route::has('admin.dashboard.data') ? route('admin.dashboard.data') : route('admin.dashboard')) }},
         jumlahVerifikasi: {{ (int) $statistik['perlu_verifikasi'] }}
       })">
 

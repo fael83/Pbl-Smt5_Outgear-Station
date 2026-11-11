@@ -38,6 +38,15 @@ class DashboardController extends Controller
     /** Kategori yang ditampilkan di rincian; sisanya digabung menjadi "Lainnya". */
     private const MAKS_KATEGORI = 5;
 
+    public function index(Request $request): View|RedirectResponse|JsonResponse
+    {
+        if ($request->wantsJson() || $request->ajax()) {
+            return $this->data();
+        }
+
+        return $this->__invoke($request);
+    }
+
     public function __invoke(Request $request): View|RedirectResponse
     {
         if ($request->boolean('segarkan')) {
