@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DendaController as AdminDendaController;
 use App\Http\Controllers\Admin\InventarisController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\PelangganController as AdminPelangganController;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/katalog', KatalogController::class)->name('katalog');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
+Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
 Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook'])->name('wa.webhook');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
@@ -39,7 +41,6 @@ Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.s
 */
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
 
     // Profil Pengguna
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -67,6 +68,7 @@ Route::middleware(['auth', 'role:admin,owner,petugas'])
         // Transaksi, Verifikasi & Laporan
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
+        Route::get('/denda', AdminDendaController::class)->name('denda.index');
         Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');

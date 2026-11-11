@@ -44,7 +44,16 @@
             <a href="{{ route('booking.saya') }}" 
                class="{{ request()->is('booking-saya*') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200 flex items-center gap-2.5 group">
                 <span>Booking Saya</span>
-                <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">2</span>
+                @auth
+                    @php
+                        $jumlahBookingAktif = \App\Models\Pemesanan::where('user_id', Auth::id())
+                            ->whereIn('status', ['menunggu_pembayaran', 'dikonfirmasi', 'berlangsung'])
+                            ->count();
+                    @endphp
+                    @if($jumlahBookingAktif > 0)
+                        <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">{{ $jumlahBookingAktif }}</span>
+                    @endif
+                @endauth
             </a>
 
             <!-- Panduan Sewa -->
