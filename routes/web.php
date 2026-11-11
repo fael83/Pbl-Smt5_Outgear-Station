@@ -6,12 +6,15 @@ use App\Http\Controllers\Admin\InventarisController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\PelangganController as AdminPelangganController;
 use App\Http\Controllers\Admin\PemesananController as AdminPemesananController;
+use App\Http\Controllers\Admin\ProfilController as AdminProfilController;
 use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\BookingSayaController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
+use App\Http\Controllers\MidtransWebhookController;
+use App\Http\Controllers\PembayaranPelangganController;
 use App\Http\Controllers\OutGearBotController;
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\PanduanController;
@@ -31,8 +34,6 @@ Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/katalog', KatalogController::class)->name('katalog');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
 Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
-Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook'])->name('wa.webhook');
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -57,7 +58,8 @@ Route::middleware(['auth', 'role:admin,owner,petugas'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/', AdminDashboardController::class)->name('dashboard');
+        Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
         Route::view('/profile', 'admin.profile')->name('profile');
 
         // Data Pelanggan
@@ -67,9 +69,10 @@ Route::middleware(['auth', 'role:admin,owner,petugas'])
 
         // Transaksi, Verifikasi & Laporan
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
+        Route::get('/pemesanan/tabel', [AdminPemesananController::class, 'tabel'])->name('pemesanan.tabel');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
         Route::get('/denda', AdminDendaController::class)->name('denda.index');
-        Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan', AdminLaporanController::class)->name('laporan.index');
         Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');
 
@@ -102,15 +105,17 @@ Route::middleware(['auth', 'role:owner'])
     ->prefix('owner')
     ->name('owner.')
     ->group(function () {
-        Route::get('/harga-sewa', [OwnerController::class, 'hargaSewa'])->name('harga-sewa.index');
-        Route::put('/harga-sewa/{id}', [OwnerController::class, 'updateHargaSewa'])->name('harga-sewa.update');
-
-        Route::get('/kelola-staff', [OwnerController::class, 'kelolaStaff'])->name('kelola-staff.index');
-        Route::get('/kelola-staff/tambah', [OwnerController::class, 'createStaff'])->name('kelola-staff.create');
-        Route::post('/kelola-staff', [OwnerController::class, 'storeStaff'])->name('kelola-staff.store');
-        Route::get('/kelola-staff/{id}/edit', [OwnerController::class, 'editStaff'])->name('kelola-staff.edit');
-        Route::put('/kelola-staff/{id}', [OwnerController::class, 'updateStaff'])->name('kelola-staff.update');
-        Route::delete('/kelola-staff/{id}', [OwnerController::class, 'destroyStaff'])->name('kelola-staff.destroy');
+        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
+        Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
+        Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
+        Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
+        Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+        Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian');
+        Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
+        Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
+        Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
+        Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
     });
 
 require __DIR__.'/auth.php';

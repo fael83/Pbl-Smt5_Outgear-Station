@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pemesanan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\View\View;
 
 /**
  * Halaman "Data Pemesanan" di panel admin.
@@ -17,8 +19,11 @@ use Illuminate\Support\Facades\Cache;
  */
 class PemesananController extends Controller
 {
-    /** Jumlah baris per halaman. */
+    /** Jumlah baris per halaman (bawaan). */
     private const PER_HALAMAN = 10;
+
+    /** Pilihan jumlah baris per halaman yang diterima dari query string. */
+    private const PILIHAN_PER_HALAMAN = [10, 25, 50];
 
     /**
      * Status di database => label yang ditampilkan di filter dan badge.
@@ -32,11 +37,57 @@ class PemesananController extends Controller
         'dibatalkan' => 'Dibatalkan',
     ];
 
+    /**
+     * Render penuh halaman: kartu statistik + kartu tabel.
+     */
     public function index(Request $request): View
+    {
+        $filters = $this->filter($request);
+
+        return view('admin.pemesanan.index', [
+            'pemesanan' => $this->daftarPemesanan($filters),
+            'statistik' => $this->statistik(),
+            'labelStatus' => self::LABEL_STATUS,
+            'statusAktif' => $filters['status'],
+            'kataKunci' => $filters['search'],
+            'perPage' => $filters['per_page'],
+        ]);
+    }
+
+    /**
+     * Endpoint JSON untuk pencarian, filter, dan pagination tanpa memuat ulang
+     * halaman. Hanya kartu tabel yang dikirim balik; kartu statistik tidak
+     * bergantung pada filter sehingga tidak dihitung ulang (hemat query).
+     */
+    public function tabel(Request $request): JsonResponse
+    {
+        $filters = $this->filter($request);
+
+        return response()->json([
+            'html' => view('admin.pemesanan._tabel', [
+                'pemesanan' => $this->daftarPemesanan($filters),
+                'labelStatus' => self::LABEL_STATUS,
+                'statusAktif' => $filters['status'],
+                'kataKunci' => $filters['search'],
+                'perPage' => $filters['per_page'],
+            ])->render(),
+            'url' => route('admin.pemesanan', $this->parameterQuery($filters, true)),
+        ]);
+    }
+
+    /**
+     * Baca dan bersihkan filter dari query string.
+     *
+     * @return array{status: ?string, search: string, per_page: int, page: int}
+     */
+    private function filter(Request $request): array
     {
         $request->validate([
             'status' => ['nullable', 'string'],
+            'search' => ['nullable', 'string', 'max:100'],
             'q' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
         // Filter status hanya diterima kalau cocok dengan status yang valid.
@@ -45,9 +96,32 @@ class PemesananController extends Controller
             $status = null;
         }
 
-        $kataKunci = trim((string) $request->query('q', ''));
+        $perPage = (int) $request->query('per_page', self::PER_HALAMAN);
+        if (! in_array($perPage, self::PILIHAN_PER_HALAMAN, true)) {
+            $perPage = self::PER_HALAMAN;
+        }
 
-        $pemesanan = Pemesanan::query()
+        return [
+            'status' => $status,
+            // `q` dipertahankan supaya tautan lama (?q=...) tetap berfungsi.
+            'search' => trim((string) ($request->query('search') ?? $request->query('q', ''))),
+            'per_page' => $perPage,
+            'page' => max(1, (int) $request->query('page', 1)),
+        ];
+    }
+
+    /**
+     * Satu halaman data pemesanan sesuai filter.
+     *
+     * @param  array{status: ?string, search: string, per_page: int, page: int}  $filters
+     * @return LengthAwarePaginator<int, Pemesanan>
+     */
+    private function daftarPemesanan(array $filters): LengthAwarePaginator
+    {
+        $status = $filters['status'];
+        $kataKunci = $filters['search'];
+
+        return Pemesanan::query()
             ->with([
                 'pelanggan:id,name,no_telepon',
                 'detailPemesanan:id,pemesanan_id,alat_id,jumlah',
@@ -69,16 +143,34 @@ class PemesananController extends Controller
             })
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->paginate(self::PER_HALAMAN)
-            ->withQueryString();
+            // Tautan pagination mengarah ke halaman penuh (bukan endpoint JSON).
+            ->paginate($filters['per_page'], ['*'], 'page', $filters['page'])
+            ->withPath(route('admin.pemesanan'))
+            ->appends($this->parameterQuery($filters));
+    }
 
-        return view('admin.pemesanan', [
-            'pemesanan' => $pemesanan,
-            'statistik' => $this->statistik(),
-            'labelStatus' => self::LABEL_STATUS,
-            'statusAktif' => $status,
-            'kataKunci' => $kataKunci,
-        ]);
+    /**
+     * Parameter query untuk URL halaman (hanya yang berbeda dari bawaan).
+     *
+     * @param  array{status: ?string, search: string, per_page: int, page: int}  $filters
+     * @return array<string, int|string>
+     */
+    private function parameterQuery(array $filters, bool $denganHalaman = false): array
+    {
+        $parameter = array_filter([
+            'status' => $filters['status'],
+            'search' => $filters['search'],
+        ], static fn ($nilai): bool => filled($nilai));
+
+        if ($filters['per_page'] !== self::PER_HALAMAN) {
+            $parameter['per_page'] = $filters['per_page'];
+        }
+
+        if ($denganHalaman && $filters['page'] > 1) {
+            $parameter['page'] = $filters['page'];
+        }
+
+        return $parameter;
     }
 
     /**

@@ -51,10 +51,10 @@ class DemoTransaksiSeeder extends Seeder
     private function buatDataDemo(Collection $alat): void
     {
         $pelanggan = User::where('email', 'pelanggan@outgear.test')->first()
-            ?? User::factory()->customer()->create();
+            ?? throw new \RuntimeException('User pelanggan@outgear.test belum ada. Jalankan seeder user terlebih dahulu.');
 
         $petugas = User::where('email', 'petugas@outgear.test')->first()
-            ?? User::factory()->petugas()->create();
+            ?? throw new \RuntimeException('User petugas@outgear.test belum ada. Jalankan seeder user terlebih dahulu.');
 
         $alatUtama = $alat[0];
         $alatKedua = $alat[1];

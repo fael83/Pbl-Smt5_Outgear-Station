@@ -61,7 +61,7 @@ class DashboardController extends Controller
             fn (): array => $this->kumpulkanData(),
         );
 
-        return view('admin.dashboard', $data);
+        return view('admin.dashboard.index', $data);
     }
 
     /**
@@ -164,7 +164,8 @@ class DashboardController extends Controller
             ->map(fn (Pembayaran $item): array => [
                 'pelanggan' => $item->nama_pelanggan,
                 'jenis' => ['dp' => 'DP', 'pelunasan' => 'Pelunasan', 'denda' => 'Denda'][$item->jenis_pembayaran] ?? $item->jenis_pembayaran,
-                'metode' => ['qris' => 'QRIS', 'card' => 'Kartu'][$item->metode_pembayaran] ?? strtoupper((string) $item->metode_pembayaran),
+                'metode' => ['qris' => 'QRIS', 'card' => 'Kartu'][$item->metode_pembayaran]
+                    ?? ($item->metode_pembayaran ? strtoupper(str_replace('_', ' ', $item->metode_pembayaran)) : 'Belum dipilih'),
                 'jumlah' => (float) $item->jumlah,
             ])
             ->all();

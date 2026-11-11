@@ -21,20 +21,15 @@
         <div class="flex-1 flex flex-col min-w-0">
             <!-- Topbar -->
             <header class="bg-transparent px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-                <div class="flex items-center gap-4 w-1/3">
+                <div class="flex items-center gap-4">
+                    <!-- Kosong atau bisa diisi breadcrumb -->
                 </div>
                 <div class="flex items-center gap-4">
                     <button class="relative p-2 text-gray-600 hover:text-[#1A2024]">
+                        <!-- Notifikasi opsional -->
                     </button>
-                    <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
-                        <div class="w-8 h-8 rounded-full bg-[#1A2024] text-white flex items-center justify-center font-bold text-xs">
-                            {{ auth()->user()?->inisial() ?? 'AD' }}
-                        </div>
-                        <div class="text-xs">
-                            <p class="font-semibold text-[#1A2024]">{{ auth()->user()?->name ?? 'Admin Toko' }}</p>
-                            <p class="text-gray-500">{{ auth()->user()?->email ?? '-' }}</p>
-                        </div>
-                    </div>
+                <!-- Profil pengguna: foto profil, nama, dan email (partial bersama) -->
+                @include('partials.profil-topbar')
                 </div>
             </header>
 

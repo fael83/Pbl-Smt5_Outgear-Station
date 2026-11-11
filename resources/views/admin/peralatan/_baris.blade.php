@@ -34,8 +34,12 @@
 <tr data-alat-id="{{ $alat->id }}" class="hover:bg-[#F4EFEA]/40 transition">
     <td class="p-3.5">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#F4EFEA] flex items-center justify-center text-lg border border-gray-200 shrink-0">
-                {{ \App\Support\IkonKategori::untuk($alat->kategori?->nama) }}
+            <div class="w-12 h-12 rounded-xl bg-[#F4EFEA] flex items-center justify-center border border-gray-200 shrink-0 overflow-hidden">
+                @if ($alat->foto_url)
+                    <img src="{{ $alat->foto_url }}" alt="{{ $alat->nama }}" loading="lazy" class="w-full h-full object-cover">
+                @else
+                    @include('partials.foto-kosong', ['kelas' => 'w-5 h-5'])
+                @endif
             </div>
             <div class="min-w-0">
                 <p class="font-semibold text-[#1A2024] truncate max-w-[220px]">{{ $alat->nama }}</p>

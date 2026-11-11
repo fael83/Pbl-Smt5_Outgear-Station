@@ -73,7 +73,7 @@ class PelangganController extends Controller
         $filters = $this->filter($request);
         $daftarPelanggan = $this->daftarPelanggan($filters);
 
-        return view('admin.pelanggan', [
+        return view('admin.pelanggan.index', [
             'daftarPelanggan' => $daftarPelanggan,
             'dataPelanggan' => $this->dataPelanggan($daftarPelanggan),
             'ringkasan' => $this->ringkasan(),

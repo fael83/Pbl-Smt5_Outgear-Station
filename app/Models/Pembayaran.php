@@ -26,6 +26,16 @@ class Pembayaran extends Model
     use HasFactory;
 
     /**
+     * Angka lencana sidebar/dashboard bergantung pada tabel ini, jadi cache-nya
+     * dibuang setiap kali ada data yang disimpan atau dihapus.
+     */
+    protected static function booted(): void
+    {
+        static::saved(static fn () => \App\Support\BadgeAdmin::lupakan());
+        static::deleted(static fn () => \App\Support\BadgeAdmin::lupakan());
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

@@ -1,16 +1,8 @@
 @php
     $penggunaPanel = auth()->user();
 
-    // Badge sidebar dihitung dari database (cache 1 menit) supaya tidak
-    // menambah query baru di setiap perpindahan halaman.
-    $badgeSidebar = \Illuminate\Support\Facades\Cache::remember(
-        'sidebar:badge',
-        now()->addMinutes(5),
-        static fn (): array => [
-            'pembayaran' => \App\Models\Pembayaran::query()->where('status_transaksi', 'pending')->count(),
-            'denda' => \App\Models\Denda::query()->where('status', 'belum_dibayar')->count(),
-        ],
-    );
+    // Badge sidebar: satu query, cache 1 menit, dibuang otomatis saat data berubah.
+    $badgeSidebar = \App\Support\BadgeAdmin::hitung();
     $jumlahPembayaranMenunggu = $badgeSidebar['pembayaran'];
     $jumlahDendaBelumLunas = $badgeSidebar['denda'];
 @endphp
@@ -59,7 +51,10 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Verifikasi Pembayaran
             </div>
-            <span class="bg-amber-500 text-zinc-950 font-bold text-xs px-2 py-0.5 rounded-full">{{ $jumlahPembayaranMenunggu }}</span>
+            <span x-data="{ n: {{ (int) $jumlahPembayaranMenunggu }} }"
+                  @badge-verifikasi.window="n = $event.detail"
+                  x-text="n"
+                  class="bg-amber-500 text-zinc-950 font-bold text-xs px-2 py-0.5 rounded-full">{{ $jumlahPembayaranMenunggu }}</span>
         </a>
 
         <!-- Kelola Denda -->
