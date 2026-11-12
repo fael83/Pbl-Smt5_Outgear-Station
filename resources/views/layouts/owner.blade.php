@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
@@ -11,6 +12,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -57,7 +59,7 @@
 
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2-2v-2z">
                                 </path>
                             </svg>
 
@@ -116,19 +118,28 @@
 
                         <!-- Laporan Penyewaan -->
                         <a href="{{ route('owner.laporan.index') }}"
-                            class="flex items-center justify-between px-3 py-2.5 rounded-xl font-medium transition-all {{ request()->routeIs('owner.laporan*') ? 'bg-white shadow-sm border border-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50' }}">
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all {{ request()->routeIs('owner.laporan.index') ? 'bg-white shadow-sm border border-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50' }}">
 
-                            <div class="flex items-center gap-3">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
 
-                                Laporan Penyewaan
-                            </div>
+                            Laporan Penyewaan
+                        </a>
 
-                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
+                        <!-- Rekap Denda -->
+                        <a href="{{ route('owner.laporan.denda') }}"
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all {{ request()->routeIs('owner.laporan.denda') ? 'bg-white shadow-sm border border-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50' }}">
+
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                </path>
+                            </svg>
+
+                            Rekap Denda
                         </a>
 
                     </div>
@@ -137,20 +148,18 @@
 
             <!-- Tombol Keluar -->
             <div class="p-4 border-t border-gray-200">
-                <form method="POST" action="{{ url('/logout') }}">
-                    @csrf
-                    <button type="submit"
-                        class="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">
+                <button type="button"
+                    onclick="openLogoutModal()"
+                    class="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">
 
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
-                            </path>
-                        </svg>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                        </path>
+                    </svg>
 
-                        Keluar Sistem
-                    </button>
-                </form>
+                    Keluar Sistem
+                </button>
             </div>
         </aside>
 
@@ -162,7 +171,7 @@
 
                 <!-- Profil Owner -->
                 <div class="flex items-center gap-4">
-                    <div
+                    <a href="{{ route('owner.profil.index') }}"
                         class="flex items-center gap-3 bg-white pl-1 pr-4 py-1 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:shadow transition-all">
 
                         <div
@@ -180,7 +189,7 @@
                                 Authority: Owner
                             </span>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </header>
 
@@ -191,6 +200,93 @@
 
         </div>
     </div>
+
+    <!-- MODAL KONFIRMASI LOGOUT -->
+    <div id="logoutModal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-gray-900/40 backdrop-blur-sm px-4">
+
+        <div id="logoutModalContent"
+            class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-7">
+
+            <!-- Ikon -->
+            <div class="flex flex-col items-center text-center">
+
+                <div class="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-[#CB7950]" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M17 16l-4-4m4 4H7m6 4v1a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                        </path>
+                    </svg>
+                </div>
+
+                <h2 class="text-lg font-bold text-gray-900">
+                    Keluar dari Akun?
+                </h2>
+
+                <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                    Apakah kamu yakin ingin keluar dari akun Owner OutGear Station?
+                    Kamu perlu login kembali untuk mengakses halaman Owner.
+                </p>
+
+            </div>
+
+            <!-- Tombol Aksi -->
+            <div class="flex gap-3 mt-7">
+
+                <button type="button"
+                    onclick="closeLogoutModal()"
+                    class="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200
+                    text-gray-700 text-sm font-semibold transition-colors">
+                    Batal
+                </button>
+
+                <form method="POST" action="{{ url('/logout') }}" class="flex-1">
+                    @csrf
+
+                    <button type="submit"
+                        class="w-full py-2.5 rounded-xl bg-[#293A38] hover:bg-[#1F2D2B]
+                        text-white text-sm font-semibold transition-colors">
+                        Ya, Keluar
+                    </button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT MODAL LOGOUT -->
+    <script>
+        function openLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Tutup modal jika area luar modal diklik
+        document.getElementById('logoutModal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeLogoutModal();
+            }
+        });
+
+        // Tutup modal dengan tombol Escape
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeLogoutModal();
+            }
+        });
+    </script>
+
 </body>
 
 </html>
