@@ -84,8 +84,7 @@ Route::get('/', function () {
 Route::get('/katalog', function () {
     return view('customer.katalog');
 });
->>>>>>> 776af4b (fix: update bot whatsapp dan timeout)
->>>>>>> e11fa96 (fix: update bot whatsapp dan timeout)
+
 
 /*
 |--------------------------------------------------------------------------
