@@ -57,7 +57,9 @@ Route::get('/katalog', KatalogController::class)->name('katalog');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
 
 Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+
 
 
 // Notifikasi pembayaran dari server Midtrans (tanpa login & tanpa CSRF; dicek lewat signature).
@@ -72,6 +74,18 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::post('/pembayaran/{pembayaran}/sinkron', [PembayaranPelangganController::class, 'sinkron'])->name('pembayaran.sinkron');
 });
 
+=======
+Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook']);
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/katalog', function () {
+    return view('customer.katalog');
+});
+>>>>>>> 776af4b (fix: update bot whatsapp dan timeout)
+>>>>>>> e11fa96 (fix: update bot whatsapp dan timeout)
 
 /*
 |--------------------------------------------------------------------------
@@ -107,9 +121,14 @@ Route::middleware(['role:admin,owner,petugas'])
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
         Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
+
         Route::get('/profile', [AdminProfilController::class, 'show'])->name('profile');
         Route::put('/profile', [AdminProfilController::class, 'update'])->name('profile.update');
         Route::put('/profile/sandi', [AdminProfilController::class, 'ubahSandi'])->name('profile.sandi');
+
+        Route::view('/profile', 'admin.profile')->name('profile');
+        Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
+
 
         // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
         Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
@@ -120,11 +139,16 @@ Route::middleware(['role:admin,owner,petugas'])
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/pemesanan/tabel', [AdminPemesananController::class, 'tabel'])->name('pemesanan.tabel');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
+
         Route::get('/verifikasi/data', [AdminVerifikasiController::class, 'data'])->name('verifikasi.data');
         Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
         Route::get('/denda/tabel', [AdminDendaController::class, 'tabel'])->name('denda.tabel');
         Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/tabel', [AdminLaporanController::class, 'tabel'])->name('laporan.tabel');
+
+        
+        Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
+
         Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');
 

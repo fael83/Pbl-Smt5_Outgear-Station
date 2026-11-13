@@ -55,17 +55,21 @@ class OutGearBotController extends Controller
             $token = config('services.fonnte.token') ?: env('FONNTE_TOKEN');
 
             if ($token) {
-                $response = Http::withHeaders([
-                    'Authorization' => $token,
-                ])->post('https://api.fonnte.com/send', [
-                    'target'  => $sender,
-                    'message' => $reply,
-                ]);
+                try {
+                    $response = Http::withHeaders([
+                        'Authorization' => $token,
+                    ])->timeout(30)->post('https://api.fonnte.com/send', [
+                        'target'  => $sender,
+                        'message' => $reply,
+                    ]);
 
-                Log::info('Bot: respons Fonnte', [
-                    'status' => $response->status(),
-                    'body'   => $response->body(),
-                ]);
+                    Log::info('Bot: respons Fonnte', [
+                        'status' => $response->status(),
+                        'body'   => $response->body(),
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Gagal mengirim ke Fonnte (Timeout/Network): ' . $e->getMessage());
+                }
             } else {
                 Log::warning('Bot: balasan TIDAK dikirim (token kosong)');
             }

@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // dijamin oleh pengecekan signature_key di MidtransWebhookController.
         $middleware->validateCsrfTokens(except: [
             'midtrans/notifikasi',
+            'wa/webhook',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
