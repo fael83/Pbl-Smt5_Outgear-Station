@@ -61,6 +61,10 @@ class PenggunaSeeder extends Seeder
                 ],
             );
 
+            if ($pengguna->role !== $akun['role']) {
+                $pengguna->forceFill(['role' => $akun['role']])->save();
+            }
+
             if (! $pengguna->hasVerifiedEmail()) {
                 $pengguna->markEmailAsVerified();
             }

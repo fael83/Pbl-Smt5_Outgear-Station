@@ -16,12 +16,12 @@ use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\PembayaranPelangganController;
 use App\Http\Controllers\OutGearBotController;
+use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
-use App\Http\Controllers\Owner\DendaController;
-use App\Http\Controllers\Owner\HargaController;
+use App\Http\Controllers\Owner\DendaController as OwnerDendaController;
+use App\Http\Controllers\Owner\HargaController as OwnerHargaController;
 use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
-use App\Http\Controllers\Owner\StaffController;
-use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
+use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\PersiapanController;
@@ -46,18 +46,8 @@ Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 Route::get('/katalog', KatalogController::class)->name('katalog');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
-
-// Notifikasi pembayaran dari server Midtrans (tanpa login & tanpa CSRF; dicek lewat signature).
-Route::post('/midtrans/notifikasi', MidtransWebhookController::class)->name('midtrans.notifikasi');
-
-// Booking & pembayaran: wajib login sebagai pelanggan.
-Route::middleware(['auth', 'role:customer'])->group(function () {
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
-    Route::post('/pembayaran/{pembayaran}/bayar', [PembayaranPelangganController::class, 'bayar'])->name('pembayaran.bayar');
-    Route::post('/booking-saya/{pemesanan}/batalkan', [PembayaranPelangganController::class, 'batalkanPesanan'])->name('pemesanan.batalkan');
-    Route::post('/pembayaran/{pembayaran}/sinkron', [PembayaranPelangganController::class, 'sinkron'])->name('pembayaran.sinkron');
-});
+Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -72,14 +62,14 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Panel admin
+| Panel Admin (Role: Admin, Owner)
 |--------------------------------------------------------------------------
 |
 | Middleware role membatasi akses: owner dan petugas hanya boleh melihat
 | data, sedangkan aksi tulis (simpan/ubah/hapus) khusus admin.
 |
 */
-Route::middleware(['role:admin,owner,petugas'])
+Route::middleware(['auth', 'role:admin,owner'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -172,12 +162,55 @@ Route::middleware('role:petugas')
     ->prefix('petugas')
     ->name('petugas.')
     ->group(function () {
-        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/harga-sewa', [OwnerHargaController::class, 'hargaSewa'])->name('harga-sewa.index');
+        Route::put('/harga-sewa/{id}', [OwnerHargaController::class, 'updateHargaSewa'])->name('harga-sewa.update');
+        Route::get('/aturan-denda', [OwnerDendaController::class, 'aturanDenda'])->name('aturan-denda.index');
+        Route::put('/aturan-denda/{id}', [OwnerDendaController::class, 'updateAturanDenda'])->name('aturan-denda.update');
+
+        Route::get('/kelola-staff', [OwnerStaffController::class, 'kelolaStaff'])->name('kelola-staff.index');
+        Route::get('/kelola-staff/tambah', [OwnerStaffController::class, 'createStaff'])->name('kelola-staff.create');
+        Route::post('/kelola-staff', [OwnerStaffController::class, 'storeStaff'])->name('kelola-staff.store');
+        Route::get('/kelola-staff/{id}/edit', [OwnerStaffController::class, 'editStaff'])->name('kelola-staff.edit');
+        Route::put('/kelola-staff/{id}', [OwnerStaffController::class, 'updateStaff'])->name('kelola-staff.update');
+        Route::delete('/kelola-staff/{id}', [OwnerStaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
+
+        Route::get('/laporan', [OwnerLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/ekspor-csv', [OwnerLaporanController::class, 'exportCsv'])->name('laporan.export-csv');
+        Route::get('/laporan/ekspor-pdf', [OwnerLaporanController::class, 'exportPdf'])->name('laporan.export');
+
         Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
         Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
         Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
         Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
         Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+        Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian');
+        Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
+        Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
+        Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
+        Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Panel Petugas Operasional
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:petugas,owner'])
+    ->prefix('petugas')
+    ->name('petugas.')
+    ->group(function () {
+        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/profile', [PetugasDashboardController::class, 'profile'])->name('profile');
+        Route::put('/profile', [PetugasDashboardController::class, 'updateProfile'])->name('profile.update');
+
+        Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
+        Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
+        Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
+        Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
+        Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+
         Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian');
         Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
         Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
