@@ -143,32 +143,32 @@
                     $namaKat = strtolower($item->kategori->nama ?? '');
 
                     if (str_contains($namaKat, 'tenda')) {
-                    $badgeBg = 'bg-orange-50 text-orange-700 border-orange-200';
-                    $dotBg = 'bg-orange-500';
+                        $badgeBg = 'bg-orange-50 text-orange-700 border-orange-200';
+                        $dotBg = 'bg-orange-500';
                     } elseif (str_contains($namaKat, 'carrier') || str_contains($namaKat, 'tas')) {
-                    $badgeBg = 'bg-blue-50 text-blue-700 border-blue-200';
-                    $dotBg = 'bg-blue-500';
+                        $badgeBg = 'bg-blue-50 text-blue-700 border-blue-200';
+                        $dotBg = 'bg-blue-500';
                     } elseif (str_contains($namaKat, 'masak') || str_contains($namaKat, 'cooking')) {
-                    $badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                    $dotBg = 'bg-emerald-500';
+                        $badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                        $dotBg = 'bg-emerald-500';
                     } elseif (str_contains($namaKat, 'penerangan')) {
-                    $badgeBg = 'bg-amber-50 text-amber-700 border-amber-200';
-                    $dotBg = 'bg-amber-500';
+                        $badgeBg = 'bg-amber-50 text-amber-700 border-amber-200';
+                        $dotBg = 'bg-amber-500';
                     } elseif (str_contains($namaKat, 'sleeping')) {
-                    $badgeBg = 'bg-purple-50 text-purple-700 border-purple-200';
-                    $dotBg = 'bg-purple-500';
+                        $badgeBg = 'bg-purple-50 text-purple-700 border-purple-200';
+                        $dotBg = 'bg-purple-500';
                     } elseif (str_contains($namaKat, 'navigasi')) {
-                    $badgeBg = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-                    $dotBg = 'bg-indigo-500';
+                        $badgeBg = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                        $dotBg = 'bg-indigo-500';
                     } elseif (str_contains($namaKat, 'sepatu') || str_contains($namaKat, 'sandal')) {
-                    $badgeBg = 'bg-teal-50 text-teal-700 border-teal-200';
-                    $dotBg = 'bg-teal-500';
+                        $badgeBg = 'bg-teal-50 text-teal-700 border-teal-200';
+                        $dotBg = 'bg-teal-500';
                     } elseif (str_contains($namaKat, 'matras') || str_contains($namaKat, 'alas')) {
-                    $badgeBg = 'bg-cyan-50 text-cyan-700 border-cyan-200';
-                    $dotBg = 'bg-cyan-500';
+                        $badgeBg = 'bg-cyan-50 text-cyan-700 border-cyan-200';
+                        $dotBg = 'bg-cyan-500';
                     } else {
-                    $badgeBg = 'bg-zinc-100 text-zinc-700 border-zinc-200';
-                    $dotBg = 'bg-zinc-500';
+                        $badgeBg = 'bg-zinc-100 text-zinc-700 border-zinc-200';
+                        $dotBg = 'bg-zinc-500';
                     }
                     @endphp
 
@@ -336,10 +336,12 @@
                     <label class="block text-xs font-semibold text-zinc-700 uppercase tracking-wider mb-1.5">
                         Tarif per Hari (Rp)
                     </label>
-                    <input type="number"
+                    <input type="text"
                         id="inputTarifHari"
                         name="tarif_sewa"
+                        inputmode="numeric"
                         required
+                        oninput="formatNominal(this)"
                         class="w-full bg-white border border-zinc-300 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-400 transition">
                 </div>
 
@@ -347,10 +349,12 @@
                     <label class="block text-xs font-semibold text-zinc-700 uppercase tracking-wider mb-1.5">
                         Nilai Pengganti (Rp)
                     </label>
-                    <input type="number"
+                    <input type="text"
                         id="inputNilaiPengganti"
                         name="nilai_pengganti"
+                        inputmode="numeric"
                         required
+                        oninput="formatNominal(this)"
                         class="w-full bg-white border border-zinc-300 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-400 transition">
                 </div>
             </div>
@@ -414,13 +418,24 @@
 
 <!-- JavaScript Modal Edit -->
 <script>
+    // Format angka dengan pemisah ribuan titik.
+    function formatNominal(input) {
+        let angka = input.value.replace(/\D/g, '');
+
+        input.value = angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
     function openModalEdit(id, nama, tarif, pengganti) {
         document.getElementById('formEditAlat').action =
             "{{ url('/owner/harga-sewa') }}/" + id;
 
         document.getElementById('inputNamaAlat').value = nama;
-        document.getElementById('inputTarifHari').value = Math.round(tarif);
-        document.getElementById('inputNilaiPengganti').value = Math.round(pengganti);
+
+        document.getElementById('inputTarifHari').value =
+            Number(tarif).toLocaleString('id-ID');
+
+        document.getElementById('inputNilaiPengganti').value =
+            Number(pengganti).toLocaleString('id-ID');
 
         document.getElementById('modalEditAlat').classList.remove('hidden');
     }
@@ -428,5 +443,14 @@
     function closeModalEdit() {
         document.getElementById('modalEditAlat').classList.add('hidden');
     }
+
+    // Hilangkan titik sebelum data dikirim ke controller.
+    document.getElementById('formEditAlat').addEventListener('submit', function () {
+        document.getElementById('inputTarifHari').value =
+            document.getElementById('inputTarifHari').value.replace(/\./g, '');
+
+        document.getElementById('inputNilaiPengganti').value =
+            document.getElementById('inputNilaiPengganti').value.replace(/\./g, '');
+    });
 </script>
 @endsection

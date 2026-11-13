@@ -1,4 +1,3 @@
-
 @extends('layouts.owner')
 
 @section('content')
@@ -128,7 +127,6 @@
                                 <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-700 border border-orange-200 flex items-center justify-center shrink-0">
 
                                     @if(str_contains(strtolower($denda->jenis_denda), 'keterlambatan'))
-                                        <!-- IKON JAM -->
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <circle cx="12" cy="12" r="9" stroke-width="1.8"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
@@ -136,7 +134,6 @@
                                         </svg>
 
                                     @elseif(str_contains(strtolower($denda->jenis_denda), 'kehilangan'))
-                                        <!-- IKON KEHILANGAN -->
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                                                 d="M12 3l9 5v8l-9 5-9-5V8l9-5z"/>
@@ -145,7 +142,6 @@
                                         </svg>
 
                                     @else
-                                        <!-- IKON KERUSAKAN -->
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                                                 d="M14.7 6.3a5 5 0 00-6.4 6.4L3 18l3 3 5.3-5.3a5 5 0 006.4-6.4L14 12l-2-2 2.7-3.7z"/>
@@ -205,8 +201,11 @@
                         <td class="p-4 align-middle text-center">
                             <button
                                 type="button"
-                                onclick='openModalEdit(@json($denda->id), @json($denda->jenis_denda), @json($denda->perhitungan_denda), @json($denda->nilai_denda))'
-                                class="px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-900 hover:text-white rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+                                data-id="{{ $denda->id }}"
+                                data-jenis="{{ $denda->jenis_denda }}"
+                                data-perhitungan="{{ $denda->perhitungan_denda }}"
+                                data-nilai="{{ $denda->nilai_denda }}"
+                                class="btn-edit-denda px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-900 hover:text-white rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
 
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -309,9 +308,8 @@
                     </label>
 
                     <input
-                        type="number"
-                        step="any"
-                        min="0"
+                        type="text"
+                        inputmode="decimal"
                         id="inputNilaiDenda"
                         name="nilai_denda"
                         required
@@ -399,33 +397,157 @@
 
 <!-- JAVASCRIPT -->
 <script>
-    function openModalEdit(id, jenis, perhitungan, nilai) {
-        const form = document.getElementById('formEditDenda');
-        const modal = document.getElementById('modalEditDenda');
+    const inputNilaiDenda = document.getElementById('inputNilaiDenda');
+    const inputPerhitungan = document.getElementById('inputPerhitungan');
+    const formEditDenda = document.getElementById('formEditDenda');
+    const modalEditDenda = document.getElementById('modalEditDenda');
 
-        form.action = "{{ url('/owner/aturan-denda') }}/" + encodeURIComponent(id);
+    // Format angka bulat dengan pemisah ribuan.
+    function formatAngkaRibuan(nilai) {
+        const angka = String(nilai ?? '').replace(/\D/g, '');
+
+        return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // Format nilai denda sesuai metode perhitungan.
+    function formatNilaiDenda(nilai, metode) {
+        let angka = String(nilai ?? '').trim();
+
+        if (metode === 'per_hari') {
+            // Hilangkan desimal .00 dari nilai database.
+            angka = angka.replace(/\.\d+$/, '');
+
+            return formatAngkaRibuan(angka);
+        }
+
+        // Format persentase.
+        angka = angka.replace(/[^\d.,]/g, '');
+
+        const posisiKoma = angka.lastIndexOf(',');
+        const posisiTitik = angka.lastIndexOf('.');
+        const posisiDesimal = Math.max(posisiKoma, posisiTitik);
+
+        let bagianUtama = angka;
+        let bagianDesimal = '';
+
+        if (posisiDesimal !== -1) {
+            bagianUtama = angka.substring(0, posisiDesimal);
+            bagianDesimal = angka.substring(posisiDesimal + 1);
+        }
+
+        bagianUtama = bagianUtama.replace(/\D/g, '');
+        bagianDesimal = bagianDesimal.replace(/\D/g, '');
+
+        bagianUtama = formatAngkaRibuan(bagianUtama);
+
+        if (posisiDesimal !== -1) {
+            return bagianUtama + ',' + bagianDesimal;
+        }
+
+        return bagianUtama;
+    }
+
+    // Format nilai awal dari database.
+    function formatNilaiAwal(nilai, metode) {
+        if (metode === 'per_hari') {
+            return formatAngkaRibuan(Math.round(Number(nilai) || 0));
+        }
+
+        const angka = Number(nilai) || 0;
+
+        return angka.toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Konversi nilai tampilan menjadi angka untuk dikirim.
+    function nominalUntukDikirim(nilai, metode) {
+        nilai = String(nilai ?? '').trim();
+
+        if (metode === 'per_hari') {
+            return nilai.replace(/\D/g, '');
+        }
+
+        return nilai.replace(/\./g, '').replace(',', '.');
+    }
+
+    // Membuka modal edit.
+    function openModalEdit(id, jenis, perhitungan, nilai) {
+        formEditDenda.action =
+            "{{ url('/owner/aturan-denda') }}/" + encodeURIComponent(id);
 
         document.getElementById('inputJenisDenda').value = jenis;
-        document.getElementById('inputPerhitungan').value = perhitungan;
-        document.getElementById('inputNilaiDenda').value = nilai;
+        inputPerhitungan.value = perhitungan;
 
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        inputNilaiDenda.value = formatNilaiAwal(nilai, perhitungan);
+
+        modalEditDenda.classList.remove('hidden');
+        modalEditDenda.classList.add('flex');
     }
 
+    // Menutup modal edit.
     function closeModalEdit() {
-        const modal = document.getElementById('modalEditDenda');
-
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        modalEditDenda.classList.add('hidden');
+        modalEditDenda.classList.remove('flex');
     }
 
-    document.getElementById('modalEditDenda').addEventListener('click', function(event) {
+    // Event listener tombol Edit Aturan.
+    document.querySelectorAll('.btn-edit-denda').forEach(button => {
+        button.addEventListener('click', function() {
+            openModalEdit(
+                this.dataset.id,
+                this.dataset.jenis,
+                this.dataset.perhitungan,
+                this.dataset.nilai
+            );
+        });
+    });
+
+    // Format nominal ketika pengguna mengetik.
+    inputNilaiDenda.addEventListener('input', function() {
+        const posisiKursor = this.selectionStart;
+        const panjangSebelum = this.value.length;
+
+        this.value = formatNilaiDenda(
+            this.value,
+            inputPerhitungan.value
+        );
+
+        const panjangSesudah = this.value.length;
+
+        const posisiBaru = Math.max(
+            0,
+            posisiKursor + (panjangSesudah - panjangSebelum)
+        );
+
+        this.setSelectionRange(posisiBaru, posisiBaru);
+    });
+
+    // Format ulang ketika metode perhitungan diganti.
+    inputPerhitungan.addEventListener('change', function() {
+        inputNilaiDenda.value = formatNilaiDenda(
+            inputNilaiDenda.value,
+            this.value
+        );
+    });
+
+    // Hapus format tampilan sebelum form dikirim.
+    formEditDenda.addEventListener('submit', function() {
+        inputNilaiDenda.value = nominalUntukDikirim(
+            inputNilaiDenda.value,
+            inputPerhitungan.value
+        );
+    });
+
+    // Tutup modal ketika area luar modal diklik.
+    modalEditDenda.addEventListener('click', function(event) {
         if (event.target === this) {
             closeModalEdit();
         }
     });
 
+    // Tutup modal menggunakan tombol Escape.
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             closeModalEdit();
