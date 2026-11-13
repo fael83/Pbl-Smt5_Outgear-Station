@@ -16,6 +16,7 @@ use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\PembayaranPelangganController;
 use App\Http\Controllers\OutGearBotController;
+
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Owner\DendaController as OwnerDendaController;
@@ -25,7 +26,23 @@ use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\PersiapanController;
+
+use App\Http\Controllers\PanduanController;
+
 use App\Http\Controllers\ProfileController;
+
+use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\DendaController as OwnerDendaController;
+use App\Http\Controllers\Owner\HargaController as OwnerHargaController;
+use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
+use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
+use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
+
+use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
+use App\Http\Controllers\Petugas\PersiapanController;
+use App\Http\Controllers\Petugas\PengembalianController;
+use App\Http\Controllers\Petugas\KerusakanController;
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Petugas\PengembalianController;
 use App\Http\Controllers\Petugas\KerusakanController;
@@ -38,10 +55,16 @@ use App\Http\Controllers\Petugas\KerusakanController;
 
 Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook'])->name('wa.webhook');
 
+
 Route::get('/', BerandaController::class)->name('beranda');
 
 // Seluruh halaman publik di bawah ini dapat dibuka tanpa login. Setelah login,
 // pengguna tetap diarahkan sesuai perannya (lihat DashboardController).
+Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+
+Route::get('/', BerandaController::class)->name('beranda');
+
 Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 Route::get('/katalog', KatalogController::class)->name('katalog');
@@ -49,9 +72,27 @@ Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
 Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+
+// Notifikasi pembayaran dari server Midtrans (tanpa login & tanpa CSRF)
+Route::post('/midtrans/notifikasi', MidtransWebhookController::class)->name('midtrans.notifikasi');
+
+// Booking & pembayaran: wajib login sebagai pelanggan
+Route::middleware(['auth', 'role:customer'])->group(function () {
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+    Route::post('/pembayaran/{pembayaran}/bayar', [PembayaranPelangganController::class, 'bayar'])->name('pembayaran.bayar');
+    Route::post('/booking-saya/{pemesanan}/batalkan', [PembayaranPelangganController::class, 'batalkanPesanan'])->name('pemesanan.batalkan');
+    Route::post('/pembayaran/{pembayaran}/sinkron', [PembayaranPelangganController::class, 'sinkron'])->name('pembayaran.sinkron');
+});
+
 /*
 |--------------------------------------------------------------------------
+
 | Profil pengguna (wajib login)
+
+| Profil Pengguna (Wajib Login)
+
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
@@ -62,7 +103,11 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+
 | Panel Admin (Role: Admin, Owner)
+
+| Panel Admin & Owner (Role: Admin, Owner, Petugas)
+
 |--------------------------------------------------------------------------
 |
 | Middleware role membatasi akses: owner dan petugas hanya boleh melihat
@@ -75,32 +120,61 @@ Route::middleware(['auth', 'role:admin,owner'])
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
         Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
+
         Route::get('/profile', [AdminProfilController::class, 'show'])->name('profile');
         Route::put('/profile', [AdminProfilController::class, 'update'])->name('profile.update');
         Route::put('/profile/sandi', [AdminProfilController::class, 'ubahSandi'])->name('profile.sandi');
 
         // Pelanggan (akun dengan peran customer), dibaca langsung dari tabel users.
+
+
+        Route::get('/profile', [AdminProfilController::class, 'show'])->name('profile');
+        Route::put('/profile', [AdminProfilController::class, 'update'])->name('profile.update');
+        Route::put('/profile/sandi', [AdminProfilController::class, 'ubahSandi'])->name('profile.sandi');
+
+        Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
+        Route::get('/denda/tabel', [AdminDendaController::class, 'tabel'])->name('denda.tabel');
+
+        // Pelanggan
+
         Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
         Route::get('/pelanggan/tabel', [AdminPelangganController::class, 'tabel'])->name('pelanggan.tabel');
         Route::get('/pelanggan/ekspor', [AdminPelangganController::class, 'ekspor'])->name('pelanggan.ekspor');
 
+
         // Pemesanan, verifikasi, denda, laporan — read-only untuk owner/petugas.
+
+        // Pemesanan & Verifikasi
+
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/pemesanan/tabel', [AdminPemesananController::class, 'tabel'])->name('pemesanan.tabel');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
         Route::get('/verifikasi/data', [AdminVerifikasiController::class, 'data'])->name('verifikasi.data');
+
         Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
         Route::get('/denda/tabel', [AdminDendaController::class, 'tabel'])->name('denda.tabel');
+
+
+        // Laporan
+
         Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/tabel', [AdminLaporanController::class, 'tabel'])->name('laporan.tabel');
         Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');
+
 
         // Data Alat & Stok. Dipakai oleh menu "Data Peralatan" di sidebar admin.
         Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
         Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
 
         // Aksi tulis hanya untuk admin (selaras dengan AlatPolicy).
+
+        // Data Alat & Stok
+        Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
+        Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
+
+        // Aksi tulis khusus admin
+
         Route::middleware('role:admin')->group(function () {
             Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
             Route::post('/pelanggan', [AdminPelangganController::class, 'store'])->name('pelanggan.store');
@@ -115,6 +189,7 @@ Route::middleware(['auth', 'role:admin,owner'])
             Route::delete('/peralatan/{alat}', [InventarisController::class, 'destroy'])->name('peralatan.destroy');
         });
     });
+
 
 // /OWNERRR
 
@@ -162,10 +237,23 @@ Route::middleware('role:petugas')
     ->prefix('petugas')
     ->name('petugas.')
     ->group(function () {
+
+/*
+|--------------------------------------------------------------------------
+| Panel Owner
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:owner'])
+    ->prefix('owner')
+    ->name('owner.')
+    ->group(function () {
+
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/harga-sewa', [OwnerHargaController::class, 'hargaSewa'])->name('harga-sewa.index');
         Route::put('/harga-sewa/{id}', [OwnerHargaController::class, 'updateHargaSewa'])->name('harga-sewa.update');
+
+
         Route::get('/aturan-denda', [OwnerDendaController::class, 'aturanDenda'])->name('aturan-denda.index');
         Route::put('/aturan-denda/{id}', [OwnerDendaController::class, 'updateAturanDenda'])->name('aturan-denda.update');
 
@@ -177,20 +265,45 @@ Route::middleware('role:petugas')
         Route::delete('/kelola-staff/{id}', [OwnerStaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
 
         Route::get('/laporan', [OwnerLaporanController::class, 'index'])->name('laporan.index');
+
         Route::get('/laporan/ekspor-csv', [OwnerLaporanController::class, 'exportCsv'])->name('laporan.export-csv');
         Route::get('/laporan/ekspor-pdf', [OwnerLaporanController::class, 'exportPdf'])->name('laporan.export');
+
+        Route::get('/laporan/export', [OwnerLaporanController::class, 'exportPdf'])->name('laporan.export');
+        Route::get('/laporan/export-csv', [OwnerLaporanController::class, 'exportCsv'])->name('laporan.export-csv');
+        Route::get('/laporan/denda', [OwnerLaporanController::class, 'rekapDenda'])->name('laporan.denda');
+
+        Route::get('/profil', [OwnerProfileController::class, 'index'])->name('profil.index');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Panel Petugas Operasional & Gudang
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:petugas,owner'])
+    ->prefix('petugas')
+    ->name('petugas.')
+    ->group(function () {
+        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/profile', [PetugasDashboardController::class, 'profile'])->name('profile');
+        Route::put('/profile', [PetugasDashboardController::class, 'updateProfile'])->name('profile.update');
+
 
         Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
         Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
         Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
         Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
         Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+
         Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian');
         Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
         Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
         Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
+        
         Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
     });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -221,3 +334,7 @@ Route::middleware(['auth', 'role:petugas,owner'])
     });
 
 require __DIR__.'/auth.php';
+
+// Autentikasi bawaan Laravel
+require __DIR__.'/auth.php';
+
