@@ -184,6 +184,274 @@
         </div>
     </div>
 
+    
+{{-- ALAT PALING SERING DISEWA --}}
+<div class="bg-white rounded-2xl border border-zinc-200/80 shadow-sm p-6">
+
+    <div class="mb-5">
+        <h3 class="font-bold text-zinc-900 text-base">
+            Alat Paling Sering Disewa
+        </h3>
+        <p class="text-xs text-zinc-500 mt-0.5">
+            Lima alat dengan total kuantitas penyewaan tertinggi.
+        </p>
+    </div>
+
+    @forelse ($alatPalingSeringDisewa as $index => $alat)
+        <div class="mb-5 last:mb-0">
+
+            <div class="flex items-center justify-between gap-3 mb-2">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-50 text-orange-700 text-sm font-bold flex-shrink-0">
+                        {{ $index + 1 }}
+                    </span>
+
+                    <span class="text-sm font-semibold text-zinc-800">
+                        {{ $alat->nama }}
+                    </span>
+                </div>
+
+                <span class="text-sm font-bold text-zinc-700 whitespace-nowrap">
+                    {{ number_format($alat->total_disewa, 0, ',', '.') }} unit
+                </span>
+            </div>
+
+            <div class="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
+                <div
+                    class="h-full bg-orange-400 rounded-full"
+                    style="width: {{ $alatPalingSeringDisewa->first()->total_disewa > 0
+                        ? ($alat->total_disewa / $alatPalingSeringDisewa->first()->total_disewa) * 100
+                        : 0 }}%">
+                </div>
+            </div>
+
+        </div>
+    @empty
+        <div class="py-6 text-center">
+            <p class="text-sm text-zinc-500">
+                Belum ada data penyewaan alat.
+            </p>
+        </div>
+    @endforelse
+
+</div>
+    
+
+{{-- PERLU PERHATIAN --}}
+<div class="mt-6 rounded-xl border border-gray-200 bg-white p-5">
+    <div class="mb-4">
+        <h2 class="text-lg font-semibold text-gray-800">
+            Perlu Perhatian
+        </h2>
+        <p class="mt-1 text-sm text-gray-500">
+            Informasi pemesanan dan inventaris yang membutuhkan perhatian.
+        </p>
+    </div>
+
+    <div class="space-y-3">
+
+        {{-- 1. MENUNGGU PEMBAYARAN --}}
+        <details class="group rounded-lg border border-gray-200">
+            <summary class="flex cursor-pointer list-none items-center justify-between p-4">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-yellow-50 text-yellow-600">
+                        <i class="fas fa-wallet"></i>
+                    </span>
+                    <div>
+                        <p class="font-medium text-gray-800">Menunggu Pembayaran</p>
+                        <p class="text-xs text-gray-500">
+                            Pemesanan yang belum menyelesaikan pembayaran
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="rounded-full bg-yellow-50 px-3 py-1 text-sm font-semibold text-yellow-700">
+                        {{ $perhatian['perlu_pembayaran']->count() }}
+                    </span>
+                    <span class="text-gray-400 transition-transform group-open:rotate-180">⌄</span>
+                </div>
+            </summary>
+
+            <div class="border-t border-gray-100 p-4">
+                @forelse ($perhatian['perlu_pembayaran'] as $item)
+                    <div class="flex flex-wrap justify-between gap-2 border-b border-gray-100 py-3 last:border-0">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">
+                                {{ $item->kode_pemesanan }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {{ $item->pelanggan?->name ?? '-' }}
+                            </p>
+                        </div>
+                        <span class="text-sm font-medium text-yellow-700">
+                            Menunggu pembayaran
+                        </span>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">
+                        Tidak ada pemesanan yang menunggu pembayaran.
+                    </p>
+                @endforelse
+            </div>
+        </details>
+
+
+        {{-- 2. TERLAMBAT DIKEMBALIKAN --}}
+        <details class="group rounded-lg border border-gray-200">
+            <summary class="flex cursor-pointer list-none items-center justify-between p-4">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                        <i class="fas fa-clock"></i>
+                    </span>
+                    <div>
+                        <p class="font-medium text-gray-800">Terlambat Dikembalikan</p>
+                        <p class="text-xs text-gray-500">
+                            Melewati tanggal selesai dan belum tercatat pengembaliannya
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700">
+                        {{ $perhatian['terlambat']->count() }}
+                    </span>
+                    <span class="text-gray-400 transition-transform group-open:rotate-180">⌄</span>
+                </div>
+            </summary>
+
+            <div class="border-t border-gray-100 p-4">
+                @forelse ($perhatian['terlambat'] as $item)
+                    <div class="flex flex-wrap justify-between gap-2 border-b border-gray-100 py-3 last:border-0">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">
+                                {{ $item->kode_pemesanan }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                Batas pengembalian:
+                                {{ \Carbon\Carbon::parse($item->tanggal_selesai)->format('d M Y') }}
+                            </p>
+                        </div>
+                        <span class="text-sm font-medium text-red-600">
+                            Belum dikembalikan
+                        </span>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">
+                        Tidak ada pemesanan yang terlambat dikembalikan.
+                    </p>
+                @endforelse
+            </div>
+        </details>
+
+
+        {{-- 3. DENDA BELUM DIBAYAR --}}
+        <details class="group rounded-lg border border-gray-200">
+            <summary class="flex cursor-pointer list-none items-center justify-between p-4">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </span>
+                    <div>
+                        <p class="font-medium text-gray-800">Denda Belum Dibayar</p>
+                        <p class="text-xs text-gray-500">
+                            Daftar denda yang belum diselesaikan
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-700">
+                        {{ $perhatian['denda_belum_dibayar']->count() }}
+                    </span>
+                    <span class="text-gray-400 transition-transform group-open:rotate-180">⌄</span>
+                </div>
+            </summary>
+
+            <div class="border-t border-gray-100 p-4">
+                @forelse ($perhatian['denda_belum_dibayar'] as $item)
+                    <div class="flex flex-wrap justify-between gap-2 border-b border-gray-100 py-3 last:border-0">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">
+                                {{ $item->pemesanan?->kode_pemesanan ?? '-' }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {{ ucfirst(str_replace('_', ' ', $item->jenis_denda)) }}
+                            </p>
+                        </div>
+                        <span class="text-sm font-semibold text-orange-700">
+                            Rp{{ number_format($item->jumlah_denda, 0, ',', '.') }}
+                        </span>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">
+                        Tidak ada denda yang belum dibayar.
+                    </p>
+                @endforelse
+            </div>
+        </details>
+
+
+        {{-- 4. BARANG RUSAK ATAU HILANG --}}
+        <details class="group rounded-lg border border-gray-200">
+            <summary class="flex cursor-pointer list-none items-center justify-between p-4">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                        <i class="fas fa-box-open"></i>
+                    </span>
+                    <div>
+                        <p class="font-medium text-gray-800">Barang Rusak atau Hilang</p>
+                        <p class="text-xs text-gray-500">
+                            Detail alat yang mengalami kerusakan atau kehilangan
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="rounded-full bg-purple-50 px-3 py-1 text-sm font-semibold text-purple-700">
+                        {{ $perhatian['barang_bermasalah']->count() }}
+                    </span>
+                    <span class="text-gray-400 transition-transform group-open:rotate-180">⌄</span>
+                </div>
+            </summary>
+
+            <div class="border-t border-gray-100 p-4">
+                @forelse ($perhatian['barang_bermasalah'] as $item)
+                    <div class="border-b border-gray-100 py-3 last:border-0">
+                        <p class="text-sm font-medium text-gray-800">
+                            {{ $item->detailPemesanan?->alat?->nama ?? 'Nama alat tidak tersedia' }}
+                        </p>
+
+                        <p class="mt-1 text-xs text-gray-500">
+                            Pemesanan:
+                            {{ $item->pengembalian?->pemesanan?->kode_pemesanan ?? '-' }}
+                        </p>
+
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @if ($item->jumlah_rusak > 0)
+                                <span class="rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700">
+                                    Rusak: {{ $item->jumlah_rusak }}
+                                </span>
+                            @endif
+
+                            @if ($item->jumlah_hilang > 0)
+                                <span class="rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700">
+                                    Hilang: {{ $item->jumlah_hilang }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">
+                        Tidak ada barang rusak atau hilang.
+                    </p>
+                @endforelse
+            </div>
+        </details>
+
+    </div>
+</div>
+
     {{-- Pemesanan Terbaru --}}
     <div class="bg-white rounded-2xl border border-zinc-200/80 shadow-sm overflow-hidden">
 
@@ -316,4 +584,3 @@
 
 </div>
 @endsection
-```
