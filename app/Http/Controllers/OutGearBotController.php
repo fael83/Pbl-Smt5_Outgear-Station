@@ -26,14 +26,23 @@ class OutGearBotController extends Controller
                 return response()->json(['status' => 'success']);
             }
 
-            $pesanBantuan = "Halo! Selamat datang di OutGear Station. 🏕️\n\nKetik salah satu kata kunci berikut:\n- menu (Melihat katalog alat)\n- syarat (Syarat & ketentuan sewa)\n- lokasi (Alamat basecamp)";
+            $pesanBantuan = "Halo! Selamat datang di OutGear Station. 🏕️\n\nKetik salah satu kata kunci berikut:\n- katalog (Melihat katalog alat di web)\n- syarat (Syarat & ketentuan sewa)\n- lokasi (Alamat basecamp)";
 
             $reply = null;
 
-            if (in_array($message, ['menu', 'katalog'])) {
-                $reply = "Katalog OutGear Station:\n1. Tenda Badai (Ultralight)\n2. Carrier Ergonomis (60L+)\n3. Alat Masak Gunung\n\nSilakan kunjungi web kami untuk pemesanan langsung!";
+            // Mengambil URL dari file .env (jika belum diisi, pakai fallback URL lokal)
+            $baseUrl = env('OUTGEAR_WEB_URL', url('/'));
+            $katalogUrl = rtrim($baseUrl, '/') . '/katalog';
+
+            if ($message === 'katalog') {
+                $reply = "Silakan kunjungi katalog lengkap dan lakukan pemesanan alat outdoor melalui website resmi kami:\n{$katalogUrl}\n\nNikmati kemudahan sewa alat pendakian dengan cepat dan aman! ⛺✨";
             } elseif (in_array($message, ['syarat', 'ketentuan'])) {
-                $reply = "Syarat Sewa Alat OutGear Station:\n1. Wajib meninggalkan identitas asli (KTP/SIM/KTM).\n2. Melakukan pembayaran melalui sistem.\n3. Menjaga kondisi alat selama masa penyewaan.";
+                $reply = "Syarat & Ketentuan Umum OutGear Station:\n\n" .
+                         "1. Penyewa wajib meninggalkan Identitas Asli (E-KTP) yang masih berlaku sebagai jaminan selama masa sewa.\n\n" .
+                         "2. Alat yang disewa menjadi tanggung jawab penuh penyewa. Kerusakan (sobek, patah, terbakar) atau kehilangan alat akan dikenakan denda sesuai dengan harga perbaikan atau harga beli alat baru.\n\n" .
+                         "3. Hitungan sewa adalah per hari (24 Jam). Keterlambatan pengembalian akan dikenakan denda sebesar harga sewa per hari untuk setiap alat yang terlambat.\n\n" .
+                         "4. Uang muka (DP) yang sudah dibayarkan tidak dapat dikembalikan (hangus) apabila penyewa melakukan pembatalan sepihak pada hari-H pengambilan.\n\n" .
+                         "5. Tidak perlu mencuci tenda atau alat masak setelah digunakan, cukup pastikan alat dalam keadaan kering dan bebas dari sampah.";
             } elseif (in_array($message, ['lokasi', 'alamat'])) {
                 $reply = "Basecamp OutGear Station:\nMalang, East Java, Indonesia.";
             } elseif (in_array($message, ['halo', 'hai', 'hi', 'bantuan', 'help'])) {
