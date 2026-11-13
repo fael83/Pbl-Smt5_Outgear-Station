@@ -17,6 +17,11 @@ use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\PembayaranPelangganController;
 use App\Http\Controllers\OutGearBotController;
 use App\Http\Controllers\OwnerController;
+use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\DendaController as OwnerDendaController;
+use App\Http\Controllers\Owner\HargaController as OwnerHargaController;
+use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
+use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\KerusakanController;
@@ -34,6 +39,7 @@ Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/katalog', KatalogController::class)->name('katalog');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
 Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -51,16 +57,18 @@ Route::middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Panel Admin (Role: Admin, Owner, Petugas)
+| Panel Admin (Role: Admin, Owner)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:admin,owner,petugas'])
+Route::middleware(['auth', 'role:admin,owner'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
         Route::get('/data', [AdminDashboardController::class, 'data'])->name('dashboard.data');
-        Route::view('/profile', 'admin.profile')->name('profile');
+        Route::get('/profile', [AdminProfilController::class, 'show'])->name('profile');
+        Route::put('/profile', [AdminProfilController::class, 'update'])->name('profile.update');
+        Route::put('/profile/sandi', [AdminProfilController::class, 'ubahSandi'])->name('profile.sandi');
 
         // Data Pelanggan
         Route::get('/pelanggan', [AdminPelangganController::class, 'index'])->name('pelanggan');
@@ -71,8 +79,11 @@ Route::middleware(['auth', 'role:admin,owner,petugas'])
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/pemesanan/tabel', [AdminPemesananController::class, 'tabel'])->name('pemesanan.tabel');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
-        Route::get('/denda', AdminDendaController::class)->name('denda.index');
-        Route::get('/laporan', AdminLaporanController::class)->name('laporan.index');
+        Route::get('/verifikasi/data', [AdminVerifikasiController::class, 'data'])->name('verifikasi.data');
+        Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
+        Route::get('/denda/tabel', [AdminDendaController::class, 'tabel'])->name('denda.tabel');
+        Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/tabel', [AdminLaporanController::class, 'tabel'])->name('laporan.tabel');
         Route::get('/laporan/export-excel', [AdminLaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::get('/laporan/cetak-pdf', [AdminLaporanController::class, 'cetakPdf'])->name('laporan.pdf');
 
@@ -105,12 +116,55 @@ Route::middleware(['auth', 'role:owner'])
     ->prefix('owner')
     ->name('owner.')
     ->group(function () {
-        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/harga-sewa', [OwnerHargaController::class, 'hargaSewa'])->name('harga-sewa.index');
+        Route::put('/harga-sewa/{id}', [OwnerHargaController::class, 'updateHargaSewa'])->name('harga-sewa.update');
+        Route::get('/aturan-denda', [OwnerDendaController::class, 'aturanDenda'])->name('aturan-denda.index');
+        Route::put('/aturan-denda/{id}', [OwnerDendaController::class, 'updateAturanDenda'])->name('aturan-denda.update');
+
+        Route::get('/kelola-staff', [OwnerStaffController::class, 'kelolaStaff'])->name('kelola-staff.index');
+        Route::get('/kelola-staff/tambah', [OwnerStaffController::class, 'createStaff'])->name('kelola-staff.create');
+        Route::post('/kelola-staff', [OwnerStaffController::class, 'storeStaff'])->name('kelola-staff.store');
+        Route::get('/kelola-staff/{id}/edit', [OwnerStaffController::class, 'editStaff'])->name('kelola-staff.edit');
+        Route::put('/kelola-staff/{id}', [OwnerStaffController::class, 'updateStaff'])->name('kelola-staff.update');
+        Route::delete('/kelola-staff/{id}', [OwnerStaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
+
+        Route::get('/laporan', [OwnerLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/ekspor-csv', [OwnerLaporanController::class, 'exportCsv'])->name('laporan.export-csv');
+        Route::get('/laporan/ekspor-pdf', [OwnerLaporanController::class, 'exportPdf'])->name('laporan.export');
+
         Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
         Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
         Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
         Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
         Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+        Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian');
+        Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
+        Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
+        Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
+        Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Panel Petugas Operasional
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:petugas,owner'])
+    ->prefix('petugas')
+    ->name('petugas.')
+    ->group(function () {
+        Route::get('/dashboard', [PetugasDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/profile', [PetugasDashboardController::class, 'profile'])->name('profile');
+        Route::put('/profile', [PetugasDashboardController::class, 'updateProfile'])->name('profile.update');
+
+        Route::get('/persiapan', [PersiapanController::class, 'index'])->name('persiapan');
+        Route::get('/persiapan/tabel', [PersiapanController::class, 'tabel'])->name('persiapan.tabel');
+        Route::post('/persiapan', [PersiapanController::class, 'store'])->name('persiapan.store');
+        Route::put('/persiapan/{id}', [PersiapanController::class, 'update'])->name('persiapan.update');
+        Route::delete('/persiapan/{id}', [PersiapanController::class, 'destroy'])->name('persiapan.destroy');
+
         Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian');
         Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
         Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
