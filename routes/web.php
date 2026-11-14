@@ -27,25 +27,14 @@ use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\PersiapanController;
 
-use App\Http\Controllers\PanduanController;
-
 use App\Http\Controllers\ProfileController;
 
-use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
-use App\Http\Controllers\Owner\DendaController as OwnerDendaController;
-use App\Http\Controllers\Owner\HargaController as OwnerHargaController;
-use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
-use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
 use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
 
-use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
-use App\Http\Controllers\Petugas\PersiapanController;
 use App\Http\Controllers\Petugas\PengembalianController;
 use App\Http\Controllers\Petugas\KerusakanController;
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Petugas\PengembalianController;
-use App\Http\Controllers\Petugas\KerusakanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -237,6 +226,7 @@ Route::middleware('role:petugas')
     ->prefix('petugas')
     ->name('petugas.')
     ->group(function () {
+    });
 
 /*
 |--------------------------------------------------------------------------
