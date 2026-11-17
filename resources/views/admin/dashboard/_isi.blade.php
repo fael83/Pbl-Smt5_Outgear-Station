@@ -164,7 +164,7 @@
                                 <div class="flex items-center gap-3">
                                     <h3 class="font-bold text-zinc-900 text-base">Aktivitas Booking Terbaru</h3>
                                     <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg">
-                                        Filter: <span class="font-bold text-zinc-800" x-text="labelFilter"></span>
+                                        Filter: <span class="inline-block w-24 shrink-0 truncate align-bottom font-bold text-zinc-800" x-text="labelFilter"></span>
                                     </span>
                                     <template x-if="search !== '' || selectedFilter !== 'semua'">
                                         <button @click="search = ''; selectedFilter = 'semua'"
@@ -226,7 +226,7 @@
                                 </div>
                             </div>
 
-                            <div class="overflow-x-auto">
+                            <div class="min-h-[22rem] overflow-x-auto">
                                 <table class="w-full text-left text-xs">
                                     <thead>
                                         <tr class="bg-zinc-50/70 text-zinc-400 font-semibold uppercase text-[10px] tracking-wider border-b border-zinc-100">
