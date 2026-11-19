@@ -2,12 +2,6 @@
 
 @section('title', 'Booking Saya - OutGear Station')
 
-@push('head')
-    @if (filled($clientKey))
-        <script src="{{ $snapJsUrl }}" data-client-key="{{ $clientKey }}"></script>
-    @endif
-@endpush
-
 @section('content')
 @php
     // Pengelompokan tab dan tampilan tiap status pemesanan.
