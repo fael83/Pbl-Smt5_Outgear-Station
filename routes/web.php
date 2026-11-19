@@ -52,17 +52,8 @@ Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 
-Route::get('/', BerandaController::class)->name('beranda');
-
-Route::get('/dashboard', DashboardController::class)->name('dashboard');
-
 Route::get('/katalog', KatalogController::class)->name('katalog');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
-Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-
 // Notifikasi pembayaran dari server Midtrans (tanpa login & tanpa CSRF)
 Route::post('/midtrans/notifikasi', MidtransWebhookController::class)->name('midtrans.notifikasi');
 
