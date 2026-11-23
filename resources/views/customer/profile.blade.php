@@ -72,51 +72,71 @@
             </div>
 
             <!-- 2. Form Update Password -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-sm space-y-6">
+            <div id="ubah-sandi" class="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-sm space-y-6">
                 <div>
                     <h3 class="text-base font-extrabold text-gray-900">Ubah Kata Sandi</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Pastikan akunmu menggunakan kata sandi yang aman.</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Pastikan akunmu menggunakan kata sandi yang aman (minimal 8 karakter).</p>
                 </div>
 
-                <form method="post" action="{{ route('password.update') }}" class="space-y-4">
+                @if (session('status') === 'password-updated')
+                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl px-4 py-3">
+                        ✓ Kata sandi berhasil diperbarui.
+                    </div>
+                @endif
+
+                @if ($errors->updatePassword->any())
+                    <div class="bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl px-4 py-3">
+                        Kata sandi belum diperbarui. Periksa kembali isian di bawah.
+                    </div>
+                @endif
+
+                <form method="post" action="{{ route('password.update') }}" class="space-y-4" x-data="{ lihat: false }">
                     @csrf
                     @method('put')
 
                     <!-- Password Saat Ini -->
                     <div>
                         <label for="current_password" class="block text-xs font-bold text-gray-700 uppercase mb-1">Kata Sandi Saat Ini</label>
-                        <input type="password" id="current_password" name="current_password" required 
-                               class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-gray-900 font-medium focus:ring-2 focus:ring-brand focus:outline-none transition">
+                        <input :type="lihat ? 'text' : 'password'" id="current_password" name="current_password" required autocomplete="current-password"
+                               class="w-full bg-gray-50 border {{ $errors->updatePassword->has('current_password') ? 'border-red-300' : 'border-gray-200' }} rounded-xl px-4 py-2.5 text-xs text-gray-900 font-medium focus:ring-2 focus:ring-brand focus:outline-none transition">
+                        @if ($errors->updatePassword->has('current_password'))
+                            <p class="text-[11px] text-red-500 mt-1">{{ $errors->updatePassword->first('current_password') }}</p>
+                        @endif
                     </div>
 
                     <!-- Password Baru -->
                     <div>
                         <label for="password" class="block text-xs font-bold text-gray-700 uppercase mb-1">Kata Sandi Baru</label>
-                        <input type="password" id="password" name="password" required 
-                               class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-gray-900 font-medium focus:ring-2 focus:ring-brand focus:outline-none transition">
+                        <input :type="lihat ? 'text' : 'password'" id="password" name="password" required minlength="8" autocomplete="new-password"
+                               class="w-full bg-gray-50 border {{ $errors->updatePassword->has('password') ? 'border-red-300' : 'border-gray-200' }} rounded-xl px-4 py-2.5 text-xs text-gray-900 font-medium focus:ring-2 focus:ring-brand focus:outline-none transition">
+                        @if ($errors->updatePassword->has('password'))
+                            <p class="text-[11px] text-red-500 mt-1">{{ $errors->updatePassword->first('password') }}</p>
+                        @endif
                     </div>
 
                     <!-- Konfirmasi Password Baru -->
                     <div>
                         <label for="password_confirmation" class="block text-xs font-bold text-gray-700 uppercase mb-1">Konfirmasi Kata Sandi Baru</label>
-                        <input type="password" id="password_confirmation" name="password_confirmation" required 
+                        <input :type="lihat ? 'text' : 'password'" id="password_confirmation" name="password_confirmation" required minlength="8" autocomplete="new-password"
                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-gray-900 font-medium focus:ring-2 focus:ring-brand focus:outline-none transition">
                     </div>
 
-                    <div class="pt-2 flex items-center justify-between">
+                    <label class="flex items-center gap-2 text-[11px] font-semibold text-gray-500 cursor-pointer select-none">
+                        <input type="checkbox" x-model="lihat" class="rounded border-gray-300 text-brand focus:ring-brand">
+                        Tampilkan kata sandi
+                    </label>
+
+                    <div class="pt-2">
                         <button type="submit" class="bg-gray-900 hover:bg-brand text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-sm">
                             Update Kata Sandi
                         </button>
-
-                        @if (session('status') === 'password-updated')
-                            <span x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 3000)" 
-                                  class="text-xs font-bold text-emerald-600">
-                                ✓ Password Diperbarui!
-                            </span>
-                        @endif
                     </div>
                 </form>
             </div>
+
+            @if ($errors->updatePassword->any() || session('status') === 'password-updated')
+                <script>document.getElementById('ubah-sandi')?.scrollIntoView({ block: 'center' });</script>
+            @endif
 
         </div>
 
