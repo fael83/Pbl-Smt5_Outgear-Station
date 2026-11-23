@@ -123,9 +123,10 @@ class PemesananController extends Controller
 
         return Pemesanan::query()
             ->with([
-                'pelanggan:id,name,no_telepon',
-                'detailPemesanan:id,pemesanan_id,alat_id,jumlah',
+                'pelanggan:id,name,email,no_telepon',
+                'detailPemesanan:id,pemesanan_id,alat_id,jumlah,tarif_per_hari,subtotal',
                 'detailPemesanan.alat:id,nama',
+                'pembayaran:id,pemesanan_id,jenis_pembayaran,metode_pembayaran,jumlah,status_transaksi,waktu_bayar',
             ])
             ->when($status, fn ($query) => $query->where('status', $status))
             ->when($kataKunci !== '', function ($query) use ($kataKunci) {

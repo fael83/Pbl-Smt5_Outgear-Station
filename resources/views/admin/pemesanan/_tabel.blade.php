@@ -134,6 +134,34 @@
                                         $selesai = $item->tanggal_selesai->copy()->locale('id');
                                         $lamaSewa = max(1, (int) $mulai->diffInDays($selesai) + 1);
                                         $teksJadwal = $mulai->translatedFormat('d M') . ' - ' . $selesai->translatedFormat('d M Y');
+
+                                         // Data untuk pop-up detail (dikirim ke Alpine, tidak ada request tambahan).
+                                        $detail = [
+                                            'kode' => $item->kode_pemesanan,
+                                            'status' => $labelStatus[$item->status] ?? $item->status,
+                                            'pelanggan' => $namaPelanggan,
+                                            'telepon' => $item->pelanggan?->no_telepon ?: '-',
+                                            'email' => $item->pelanggan?->email ?: '-',
+                                            'jadwal' => $teksJadwal,
+                                            'lama' => $lamaSewa,
+                                            'dibuat' => $item->created_at?->copy()->locale('id')->translatedFormat('d M Y H:i') ?? '-',
+                                            'dibatalkan' => $item->waktu_pembatalan?->copy()->locale('id')->translatedFormat('d M Y H:i'),
+                                            'total' => (float) $item->total_biaya,
+                                            'dp' => (float) $item->jumlah_dp,
+                                            'items' => $item->detailPemesanan->map(fn ($d) => [
+                                                'nama' => $d->alat?->nama ?? 'Alat dihapus',
+                                                'jumlah' => (int) $d->jumlah,
+                                                'tarif' => (float) $d->tarif_per_hari,
+                                                'subtotal' => (float) $d->subtotal,
+                                            ])->values()->all(),
+                                            'pembayaran' => $item->pembayaran->map(fn ($p) => [
+                                                'jenis' => $p->jenis_pembayaran,
+                                                'metode' => $p->metode_pembayaran ?: '-',
+                                                'jumlah' => (float) $p->jumlah,
+                                                'status' => $p->status_transaksi,
+                                                'waktu' => $p->waktu_bayar?->copy()->locale('id')->translatedFormat('d M Y H:i'),
+                                            ])->values()->all(),
+                                        ];
                                     @endphp
                                     <tr class="hover:bg-zinc-50/80 transition">
                                         <td class="p-4 font-mono text-zinc-500 align-middle text-center">#{{ $item->kode_pemesanan }}</td>
@@ -167,20 +195,13 @@
                                         <td class="p-4 font-bold align-middle text-center {{ $dibatalkan ? 'text-zinc-400 line-through' : 'text-zinc-900' }}">Rp {{ number_format((float) $item->total_biaya, 0, ',', '.') }}</td>
                                         <td class="p-4 align-middle text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold border inline-block {{ $kelasBadge[$item->status] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200' }}">{{ $labelStatus[$item->status] ?? $item->status }}</span></td>
                                         <td class="p-4 align-middle text-center">
-                                            <div class="inline-flex items-center gap-1.5">
-                                                <button type="button" class="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Detail Pemesanan">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                                </button>
-                                                @if (in_array($item->status, ['selesai', 'dibatalkan'], true))
-                                                    <button type="button" class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                    </button>
-                                                @else
-                                                    <button type="button" class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Batalkan">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                                    </button>
-                                                @endif
-                                            </div>
+                                            <button type="button"
+                                                    @click="bukaDetail({{ Js::from($detail) }})"
+                                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-zinc-600 hover:text-blue-600 bg-zinc-50 hover:bg-blue-50 border border-zinc-200 rounded-lg transition"
+                                                    title="Lihat detail pemesanan">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                Detail
+                                            </button>
                                         </td>
                                     </tr>
                                 @empty

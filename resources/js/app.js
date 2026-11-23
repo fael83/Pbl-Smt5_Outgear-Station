@@ -1000,6 +1000,29 @@ Alpine.data('halamanPemesanan', (config = {}) =>
     buatTabelServer(config, ['status'], {
         labelStatus: { ...(config.labelStatus ?? {}) },
 
+        /** Data pemesanan yang sedang dilihat di pop-up detail (null = tertutup). */
+        detail: null,
+
+        bukaDetail(data) {
+            this.detail = data;
+        },
+
+        tutupDetail() {
+            this.detail = null;
+        },
+
+        rp(angka) {
+            return 'Rp ' + Number(angka || 0).toLocaleString('id-ID');
+        },
+
+        labelJenis(jenis) {
+            return { dp: 'DP', pelunasan: 'Pelunasan', denda: 'Denda' }[jenis] ?? jenis;
+        },
+
+        labelBayar(status) {
+            return { pending: 'Menunggu', berhasil: 'Berhasil', gagal: 'Gagal' }[status] ?? status;
+        },
+
         /** Teks pada chip "Filter: …". */
         get labelFilter() {
             return this.labelStatus[this.filter.status] ?? 'Semua Status';
