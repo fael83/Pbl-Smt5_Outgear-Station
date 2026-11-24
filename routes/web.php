@@ -23,13 +23,10 @@ use App\Http\Controllers\Owner\HargaController as OwnerHargaController;
 use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
 use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
 use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
-use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
-use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\Petugas\KerusakanController;
 use App\Http\Controllers\Petugas\PengembalianController;
 use App\Http\Controllers\Petugas\PersiapanController;
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
