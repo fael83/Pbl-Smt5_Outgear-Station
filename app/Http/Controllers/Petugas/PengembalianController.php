@@ -87,6 +87,9 @@ class PengembalianController extends Controller
             );
         }
 
+        // Hitung denda (terlambat/rusak/hilang) dari checklist terbaru.
+        app(\App\Services\DendaService::class)->sinkronkan($pengembalian);
+
         // Jika ada status pemesanan masih 'berlangsung', ubah ke 'selesai'
         if ($pengembalian->pemesanan && $pengembalian->pemesanan->status === 'berlangsung') {
             $pengembalian->pemesanan->update(['status' => 'selesai']);

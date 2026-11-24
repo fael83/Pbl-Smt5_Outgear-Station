@@ -219,7 +219,7 @@ class DashboardController extends Controller
         $geser = 0.0;
 
         foreach ([
-            ['label' => 'Sedang Disewa', 'nilai' => $disewa, 'warna' => '#EA580C'],
+            ['label' => 'Sedang Disewa', 'nilai' => $disewa, 'warna' => '#2563EB'],
             ['label' => 'Tersedia di Basecamp', 'nilai' => $tersedia, 'warna' => '#E4E4E7'],
             ['label' => 'Rusak', 'nilai' => $rusak, 'warna' => '#E11D48'],
         ] as $bagian) {

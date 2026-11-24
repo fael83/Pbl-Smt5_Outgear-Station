@@ -3,26 +3,35 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pemesanan;
+use App\Services\MidtransService;
+use App\Services\PembayaranService;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class BookingSayaController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request, PembayaranService $layanan, MidtransService $midtrans): View
     {
-        $user = auth()->user();
+        $user = $request->user();
 
-        try {
-            // Hanya ambil pemesanan milik akun pengguna yang sedang login
-            $bookings = $user
-                ? Pemesanan::with(['detailPemesanan.alat', 'pelanggan'])
-                    ->where('user_id', $user->id)
-                    ->latest()
-                    ->get()
-                : collect();
-        } catch (\Throwable) {
-            $bookings = collect();
-        }
+        // Lepas booking milik pelanggan ini yang sudah lewat batas bayar.
+        $layanan->batalkanKedaluwarsa($user->id);
 
-        return view('customer.booking', compact('bookings', 'user'));
+        $daftar = Pemesanan::query()
+            ->where('user_id', $user->id)
+            ->with([
+                'detailPemesanan:id,pemesanan_id,alat_id,jumlah',
+                'detailPemesanan.alat:id,nama',
+                'pembayaran' => fn ($q) => $q->where('jenis_pembayaran', 'dp')->select('id', 'pemesanan_id', 'status_transaksi', 'jumlah', 'metode_pembayaran'),
+            ])
+            ->latest()
+            ->get();
+
+        return view('customer.booking', [
+            'daftarBooking' => $daftar,
+            'snapJsUrl' => $midtrans->urlSnapJs(),
+            'clientKey' => $midtrans->clientKey(),
+            'batasBayarMenit' => (int) config('services.midtrans.batas_bayar_menit', 60),
+        ]);
     }
 }

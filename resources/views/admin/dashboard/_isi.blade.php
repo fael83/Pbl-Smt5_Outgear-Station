@@ -164,7 +164,7 @@
                                 <div class="flex items-center gap-3">
                                     <h3 class="font-bold text-zinc-900 text-base">Aktivitas Booking Terbaru</h3>
                                     <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg">
-                                        Filter: <span class="font-bold text-zinc-800" x-text="labelFilter"></span>
+                                        Filter: <span class="inline-block w-24 shrink-0 truncate align-bottom font-bold text-zinc-800" x-text="labelFilter"></span>
                                     </span>
                                     <template x-if="search !== '' || selectedFilter !== 'semua'">
                                         <button @click="search = ''; selectedFilter = 'semua'"
@@ -226,7 +226,7 @@
                                 </div>
                             </div>
 
-                            <div class="overflow-x-auto">
+                            <div class="min-h-[22rem] overflow-x-auto">
                                 <table class="w-full text-left text-xs">
                                     <thead>
                                         <tr class="bg-zinc-50/70 text-zinc-400 font-semibold uppercase text-[10px] tracking-wider border-b border-zinc-100">
@@ -329,15 +329,33 @@
                             <!-- Donut (SVG, dihitung dari stok di database) -->
                             <div class="my-auto py-6 flex flex-col items-center justify-center">
                                 @if ($inventaris['total'] > 0)
-                                    <div class="relative flex items-center justify-center">
+                                    <div class="relative flex items-center justify-center"
+                                         x-data="{ segmenAktif: null }"
+                                         @mouseleave="segmenAktif = null">
+                                        <div x-cloak x-show="segmenAktif"
+                                             role="status"
+                                             aria-live="polite"
+                                             class="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-full items-center gap-2 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-800 shadow-md pointer-events-none">
+                                            <span class="h-2 w-2 rounded-full"
+                                                  :style="segmenAktif ? `background-color: ${segmenAktif.warna}` : ''"></span>
+                                            <span x-text="segmenAktif ? `${segmenAktif.label}: ${Number(segmenAktif.nilai).toLocaleString('id-ID')} unit` : ''"></span>
+                                        </div>
                                         <svg class="w-44 h-44 -rotate-90" viewBox="0 0 40 40" role="img" aria-label="Komposisi stok alat">
                                             <circle cx="20" cy="20" r="15.9155" fill="none" stroke="#F4F4F5" stroke-width="4.2"></circle>
                                             @foreach ($inventaris['segmen'] as $segmen)
                                                 <circle cx="20" cy="20" r="15.9155" fill="none"
                                                         stroke="{{ $segmen['warna'] }}" stroke-width="4.2"
                                                         stroke-dasharray="{{ $segmen['persen'] }} {{ round(100 - $segmen['persen'], 2) }}"
-                                                        stroke-dashoffset="-{{ $segmen['geser'] }}">
-                                                    <title>{{ $segmen['label'] }}: {{ $segmen['nilai'] }} unit</title>
+                                                        stroke-dashoffset="-{{ $segmen['geser'] }}"
+                                                        pointer-events="stroke"
+                                                        data-label="{{ $segmen['label'] }}"
+                                                        data-nilai="{{ $segmen['nilai'] }}"
+                                                        data-warna="{{ $segmen['warna'] }}"
+                                                        aria-label="{{ $segmen['label'] }}: {{ $segmen['nilai'] }} unit"
+                                                        tabindex="0"
+                                                        @pointerover="segmenAktif = { label: $el.dataset.label, nilai: $el.dataset.nilai, warna: $el.dataset.warna }"
+                                                        @focus="segmenAktif = { label: $el.dataset.label, nilai: $el.dataset.nilai, warna: $el.dataset.warna }"
+                                                        @blur="segmenAktif = null">
                                                 </circle>
                                             @endforeach
                                         </svg>
