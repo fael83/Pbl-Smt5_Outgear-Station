@@ -40,6 +40,8 @@ Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook'])->name
 
 Route::get('/', BerandaController::class)->name('beranda');
 Route::get('/dashboard', DashboardController::class)->name('dashboard');
+Route::get('/katalog', KatalogController::class)->name('katalog');
+Route::get('/panduan', PanduanController::class)->name('panduan');
 
 // Notifikasi pembayaran dari server Midtrans (tanpa login & tanpa CSRF)
 Route::post('/midtrans/notifikasi', MidtransWebhookController::class)->name('midtrans.notifikasi');

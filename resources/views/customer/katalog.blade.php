@@ -607,5 +607,3 @@
         </div>
     </footer>
 </body>
-
-@endsection
