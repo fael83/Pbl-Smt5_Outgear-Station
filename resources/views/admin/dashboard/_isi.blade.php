@@ -286,7 +286,7 @@
                                         <span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-full">{{ $statistik['perlu_verifikasi'] }} Menunggu</span>
                                     @endif
                                 </div>
-                                <a href="/admin/verifikasi" class="text-xs font-semibold text-portal-orange hover:underline">
+                                <a href="/admin/pembayaran" class="text-xs font-semibold text-portal-orange hover:underline">
                                     Kelola Semua →
                                 </a>
                             </div>
@@ -299,7 +299,7 @@
                                                 <div class="font-semibold text-zinc-900 text-xs truncate">{{ $antrean['pelanggan'] }}</div>
                                                 <div class="text-[11px] text-zinc-400 mt-0.5">{{ $antrean['jenis'] }} • {{ $antrean['metode'] }} • <span class="font-bold text-zinc-900">Rp {{ number_format($antrean['jumlah'], 0, ',', '.') }}</span></div>
                                             </div>
-                                            <a href="/admin/verifikasi" class="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm transition">
+                                            <a href="/admin/pembayaran" class="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm transition">
                                                 Tinjau
                                             </a>
                                         </div>

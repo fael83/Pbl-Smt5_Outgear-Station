@@ -1000,29 +1000,6 @@ Alpine.data('halamanPemesanan', (config = {}) =>
     buatTabelServer(config, ['status'], {
         labelStatus: { ...(config.labelStatus ?? {}) },
 
-        /** Data pemesanan yang sedang dilihat di pop-up detail (null = tertutup). */
-        detail: null,
-
-        bukaDetail(data) {
-            this.detail = data;
-        },
-
-        tutupDetail() {
-            this.detail = null;
-        },
-
-        rp(angka) {
-            return 'Rp ' + Number(angka || 0).toLocaleString('id-ID');
-        },
-
-        labelJenis(jenis) {
-            return { dp: 'DP', pelunasan: 'Pelunasan', denda: 'Denda' }[jenis] ?? jenis;
-        },
-
-        labelBayar(status) {
-            return { pending: 'Menunggu', berhasil: 'Berhasil', gagal: 'Gagal' }[status] ?? status;
-        },
-
         /** Teks pada chip "Filter: …". */
         get labelFilter() {
             return this.labelStatus[this.filter.status] ?? 'Semua Status';
@@ -1148,22 +1125,22 @@ Alpine.data('halamanLaporan', (config = {}) => {
 });
 
 /**
- * Komponen halaman admin "Verifikasi Pembayaran" (/admin/verifikasi).
+ * Komponen halaman admin "Pembayaran" (/admin/pembayaran).
  *
- * Seluruh antrean sudah ada di browser, jadi mencari dan memfilter berjalan
- * INSTAN tanpa menghubungi server. Yang butuh database — tombol muat ulang,
- * verifikasi, dan tolak — memakai pop-up "Memuat data…" dan notifikasi yang
- * sama dengan halaman admin lainnya.
+ * Dua tab: DP dan Pelunasan (sisa sewa + denda). Pencarian dan filter
+ * berjalan di browser; aksi (terima tunai, bayar Midtrans, tolak) memanggil
+ * server lalu mengganti seluruh data dengan balasan terbaru.
  */
-Alpine.data('halamanVerifikasi', (config = {}) => ({
+Alpine.data('halamanPembayaran', (config = {}) => ({
+    tab: 'pelunasan',
     search: '',
-    showSearchInput: false,
-    showFilterDropdown: false,
-    selectedFilter: 'Semua',
-    selectedJenis: 'Semua',
-    modalDetail: false,
-    selectedItem: null,
-    pembayaranList: Array.isArray(config.items) ? config.items : [],
+    filterStatus: 'Semua',
+    dpList: Array.isArray(config.dp) ? config.dp : [],
+    pelunasanList: Array.isArray(config.pelunasan) ? config.pelunasan : [],
+
+    modalBayar: false,
+    itemBayar: null,
+    cara: 'tunai',
 
     memuat: false,
     pesan: '',
@@ -1171,12 +1148,21 @@ Alpine.data('halamanVerifikasi', (config = {}) => ({
     timerPesan: null,
 
     formatRupiah(val) {
-        return 'Rp ' + Number(val).toLocaleString('id-ID');
+        return 'Rp ' + Number(val ?? 0).toLocaleString('id-ID');
     },
 
-    /**
-     * Ambil ulang seluruh antrean dari database.
-     */
+    terapkan(data) {
+        if (Array.isArray(data.dp)) {
+            this.dpList = data.dp;
+        }
+
+        if (Array.isArray(data.pelunasan)) {
+            this.pelunasanList = data.pelunasan;
+        }
+
+        window.dispatchEvent(new CustomEvent('badge-verifikasi', { detail: this.dpMenunggu }));
+    },
+
     async muatUlang() {
         if (this.memuat) {
             return;
@@ -1187,23 +1173,13 @@ Alpine.data('halamanVerifikasi', (config = {}) => ({
         try {
             const { ok, data } = await kirim(config.dataUrl);
 
-            if (!ok || !Array.isArray(data.items)) {
+            if (!ok) {
                 this.notifikasi(data.message ?? 'Gagal memuat ulang data pembayaran.', true);
 
                 return;
             }
 
-            this.pembayaranList = data.items;
-
-            // Jaga modal detail yang sedang terbuka tetap sinkron dengan data baru.
-            if (this.selectedItem) {
-                this.selectedItem = this.pembayaranList.find((p) => p.id === this.selectedItem.id) ?? null;
-
-                if (this.selectedItem === null) {
-                    this.modalDetail = false;
-                }
-            }
-
+            this.terapkan(data);
             this.notifikasi('Data diperbarui.');
         } catch {
             this.notifikasi('Tidak dapat terhubung ke server.', true);
@@ -1212,35 +1188,30 @@ Alpine.data('halamanVerifikasi', (config = {}) => ({
         }
     },
 
-    /**
-     * Kirim aksi verifikasi/tolak ke server, lalu terapkan balasannya ke baris.
-     */
-    async prosesAksi(id, kunciUrl, pesanGagalBawaan) {
-        const item = this.pembayaranList.find((p) => p.id === id);
-
-        if (!item || this.memuat) {
+    /** Aksi pada pembayaran DP: verifikasi, terima tunai, atau tolak. */
+    async aksiDp(item, kunciUrl, cara = null) {
+        if (this.memuat) {
             return;
         }
 
         this.memuat = true;
 
         try {
-            const { ok, data } = await kirim(item[kunciUrl], { method: 'PATCH' });
+            const body = new FormData();
+
+            if (cara) {
+                body.append('cara', cara);
+            }
+
+            const { ok, data } = await kirim(item[kunciUrl], { method: 'PATCH', body });
 
             if (!ok) {
-                this.notifikasi(data.message ?? pesanGagalBawaan, true);
+                this.notifikasi(data.message ?? 'Aksi gagal diproses.', true);
 
                 return;
             }
 
-            item.status_transaksi = data.status_transaksi;
-            item.waktu_bayar = data.waktu_bayar ?? item.waktu_bayar;
-
-            if (this.selectedItem && this.selectedItem.id === id) {
-                this.selectedItem.status_transaksi = item.status_transaksi;
-                this.selectedItem.waktu_bayar = item.waktu_bayar;
-            }
-
+            this.terapkan(data);
             this.notifikasi(data.message ?? 'Pembayaran diperbarui.');
         } catch {
             this.notifikasi('Tidak dapat terhubung ke server.', true);
@@ -1249,62 +1220,150 @@ Alpine.data('halamanVerifikasi', (config = {}) => ({
         }
     },
 
-    verifikasi(id) {
-        return this.prosesAksi(id, 'url_verifikasi', 'Gagal memverifikasi pembayaran.');
+    bukaBayar(item) {
+        this.itemBayar = item;
+        this.cara = 'tunai';
+        this.modalBayar = true;
     },
 
-    tolak(id) {
-        return this.prosesAksi(id, 'url_tolak', 'Gagal menolak pembayaran.');
+    /** Proses pelunasan: tunai langsung lunas, Midtrans membuka pop-up Snap. */
+    async prosesBayar() {
+        const item = this.itemBayar;
+
+        if (!item || this.memuat) {
+            return;
+        }
+
+        this.memuat = true;
+
+        try {
+            const body = new FormData();
+            body.append('cara', this.cara);
+
+            const { ok, data } = await kirim(item.url_bayar, { method: 'POST', body });
+
+            if (!ok) {
+                this.notifikasi(data.message ?? 'Pelunasan gagal diproses.', true);
+
+                return;
+            }
+
+            this.terapkan(data);
+            this.modalBayar = false;
+            this.notifikasi(data.message ?? 'Pelunasan diproses.');
+
+            if (data.snap_token) {
+                this.bukaSnap(data.snap_token, data.pembayaran_id);
+            }
+        } catch {
+            this.notifikasi('Tidak dapat terhubung ke server.', true);
+        } finally {
+            this.memuat = false;
+        }
     },
 
-    openDetail(item) {
-        this.selectedItem = item;
-        this.modalDetail = true;
+    /** Buka lagi pop-up Midtrans untuk tagihan yang masih menunggu. */
+    lanjutkanMidtrans(item) {
+        if (item.snap_token) {
+            this.bukaSnap(item.snap_token, item.pembayaran_menunggu_id);
+        }
     },
 
-    get adaFilter() {
-        return this.search !== '' || this.selectedFilter !== 'Semua' || this.selectedJenis !== 'Semua';
+    bukaSnap(token, pembayaranId) {
+        if (typeof window.snap === 'undefined') {
+            this.notifikasi('Pop-up Midtrans gagal dimuat. Muat ulang halaman.', true);
+
+            return;
+        }
+
+        const selesai = () => this.cekStatus(pembayaranId);
+
+        window.snap.pay(token, {
+            onSuccess: selesai,
+            onPending: selesai,
+            onError: selesai,
+            onClose: selesai,
+        });
+    },
+
+    async cekStatus(pembayaranId) {
+        if (!pembayaranId) {
+            return this.muatUlang();
+        }
+
+        try {
+            const url = config.sinkronUrl.replace('__ID__', pembayaranId);
+            const { ok, data } = await kirim(url, { method: 'POST' });
+
+            if (ok) {
+                this.terapkan(data);
+            }
+
+            this.notifikasi(data.message ?? 'Status diperbarui.', !ok);
+        } catch {
+            this.notifikasi('Tidak dapat terhubung ke server.', true);
+        }
     },
 
     resetFilter() {
         this.search = '';
-        this.selectedFilter = 'Semua';
-        this.selectedJenis = 'Semua';
+        this.filterStatus = 'Semua';
     },
 
-    get filteredList() {
-        return this.pembayaranList.filter((item) => {
-            const matchStatus =
-                this.selectedFilter === 'Semua' ||
-                (this.selectedFilter === 'Pending' && item.status_transaksi === 'pending') ||
-                (this.selectedFilter === 'Berhasil' && item.status_transaksi === 'berhasil') ||
-                (this.selectedFilter === 'Gagal' && item.status_transaksi === 'gagal');
+    get adaFilter() {
+        return this.search !== '' || this.filterStatus !== 'Semua';
+    },
 
-            const matchJenis = this.selectedJenis === 'Semua' || item.jenis_pembayaran === this.selectedJenis;
+    get dpTersaring() {
+        const q = this.search.toLowerCase().trim();
 
-            const query = this.search.toLowerCase().trim();
-            const matchSearch =
-                query === '' ||
-                item.id.toString().includes(query) ||
-                item.pemesanan_id.toString().includes(query) ||
-                item.kode_pemesanan.toLowerCase().includes(query) ||
-                item.pelanggan_nama.toLowerCase().includes(query) ||
-                item.transaction_id_midtrans.toLowerCase().includes(query);
+        return this.dpList.filter((i) => {
+            const cocokStatus = this.filterStatus === 'Semua' || i.status_transaksi === this.filterStatus;
+            const cocokCari =
+                q === '' ||
+                i.kode_pemesanan.toLowerCase().includes(q) ||
+                i.pelanggan_nama.toLowerCase().includes(q) ||
+                i.transaction_id.toLowerCase().includes(q);
 
-            return matchStatus && matchJenis && matchSearch;
+            return cocokStatus && cocokCari;
         });
     },
 
-    get countPending() {
-        return this.pembayaranList.filter((p) => p.status_transaksi === 'pending').length;
+    get pelunasanTersaring() {
+        const q = this.search.toLowerCase().trim();
+
+        return this.pelunasanList.filter((i) => {
+            const cocokStatus = this.filterStatus === 'Semua' || i.status === this.filterStatus;
+            const cocokCari =
+                q === '' ||
+                i.kode_pemesanan.toLowerCase().includes(q) ||
+                i.pelanggan_nama.toLowerCase().includes(q);
+
+            return cocokStatus && cocokCari;
+        });
     },
 
-    get countBerhasil() {
-        return this.pembayaranList.filter((p) => p.status_transaksi === 'berhasil').length;
+    get dpMenunggu() {
+        return this.dpList.filter((p) => p.status_transaksi === 'pending').length;
     },
 
-    get countGagal() {
-        return this.pembayaranList.filter((p) => p.status_transaksi === 'gagal').length;
+    get dpBerhasil() {
+        return this.dpList.filter((p) => p.status_transaksi === 'berhasil').length;
+    },
+
+    get pelunasanPerluBayar() {
+        return this.pelunasanList.filter((p) => p.status !== 'lunas' && p.dikembalikan).length;
+    },
+
+    get totalTagihan() {
+        return this.pelunasanList
+            .filter((p) => p.status !== 'lunas' && p.dikembalikan)
+            .reduce((jumlah, p) => jumlah + p.total_tagihan, 0);
+    },
+
+    pindahTab(nama) {
+        this.tab = nama;
+        this.filterStatus = 'Semua';
     },
 
     notifikasi(pesan, gagal = false) {
