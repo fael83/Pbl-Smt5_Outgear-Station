@@ -1135,6 +1135,8 @@ Alpine.data('halamanPembayaran', (config = {}) => ({
     tab: new URLSearchParams(window.location.search).get('tab') || config.tab || 'dp',
     search: '',
     filterStatus: 'Semua',
+    showSearchInput: false,
+    showFilterDropdown: false,
     dpList: Array.isArray(config.dp) ? config.dp : [],
     pelunasanList: Array.isArray(config.pelunasan) ? config.pelunasan : [],
 
