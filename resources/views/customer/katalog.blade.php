@@ -293,6 +293,24 @@
             </button>
         </div>
 
+        @php
+            $dataAlat = [];
+            foreach ($peralatan as $item) {
+                $dataAlat[$item->id] = [
+                    'id' => $item->id,
+                    'nama' => $item->nama,
+                    'deskripsi' => $item->deskripsi,
+                    'kategori' => $item->kategori?->nama,
+                    'foto' => $item->foto_url,
+                    'tarif' => (float) $item->tarif_per_hari,
+                    'stok' => (int) $item->stok_tersedia,
+                ];
+            }
+        @endphp
+        <script>
+            window.DATA_ALAT = {!! json_encode($dataAlat, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!};
+        </script>
+
         <!-- Product Cards Grid -->
         <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             @forelse ($peralatan as $alat)
@@ -312,28 +330,45 @@
                 <article x-show="selectedCategory === 'semua' || '{{ $namaKategori }}'.includes(selectedCategory)"
                          class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
                     <div>
-                        <div class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3 flex items-center justify-center">
+                        <!-- Foto & Status Stok -->
+                        <div @click="bukaDetail({{ $alat->id }})" class="relative h-48 sm:h-52 rounded-2xl bg-gradient-to-b from-gray-50/90 to-gray-100/80 overflow-hidden mb-3.5 flex items-center justify-center cursor-pointer group/img p-3.5 border border-gray-100/90">
                             @if ($fotoUrl)
                                 <img src="{{ $fotoUrl }}"
-                                     alt="{{ $alat->nama }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                     alt="{{ $alat->nama }}"
+                                     loading="lazy"
+                                     class="w-full h-full object-contain object-center group-hover/img:scale-108 transition-transform duration-300 drop-shadow-xs">
                             @else
-                                <span class="text-5xl">{{ \App\Support\IkonKategori::untuk($alat->kategori?->nama) }}</span>
+                                @include('partials.foto-kosong', ['kelas' => 'w-14 h-14'])
                             @endif
 
-                            <span class="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full border backdrop-blur {{ $alat->stok_tersedia > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
-                                {{ $alat->stok_tersedia > 0 ? 'Tersedia ('.$alat->stok_tersedia.' unit)' : 'Stok Habis' }}
+                            <div class="absolute inset-0 bg-black/0 group-hover/img:bg-black/5 transition-colors duration-300 pointer-events-none"></div>
+
+                            <span class="absolute top-2.5 right-2.5 z-10 text-[10px] font-bold px-2.5 py-0.5 rounded-full border backdrop-blur shadow-xs {{ $alat->stok_tersedia > 0 ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-gray-800/80 text-gray-200 border-gray-700' }}">
+                                {{ $alat->stok_tersedia > 0 ? 'Tersedia: '.$alat->stok_tersedia : 'Stok Habis' }}
                             </span>
+
+                            @if ($alat->kategori)
+                                <span class="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg bg-black/60 text-white backdrop-blur border border-white/20">
+                                    {{ $alat->kategori->nama }}
+                                </span>
+                            @endif
                         </div>
 
-                        <h3 class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-2">
+                        <h3 @click="bukaDetail({{ $alat->id }})" class="font-extrabold text-sm text-gray-900 group-hover:text-brand transition-colors duration-200 line-clamp-1 mb-1.5 cursor-pointer" title="{{ $alat->nama }}">
                             {{ $alat->nama }}
                         </h3>
+
+                        @if ($alat->deskripsi)
+                            <p class="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-3">
+                                {{ $alat->deskripsi }}
+                            </p>
+                        @endif
                     </div>
 
-                    <div class="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+                    <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 mt-2">
                         <div>
-                            <p class="text-[9px] text-gray-400 uppercase font-bold">TARIF / HARI</p>
-                            <p class="text-xs font-extrabold text-brand">Rp {{ number_format((float) $alat->tarif_per_hari, 0, ',', '.') }}</p>
+                            <p class="text-[9px] text-gray-400 uppercase font-black tracking-wider">TARIF / HARI</p>
+                            <p class="text-sm font-black text-brand">Rp {{ number_format((float) $alat->tarif_per_hari, 0, ',', '.') }}</p>
                         </div>
 
                         <button @disabled($alat->stok_tersedia <= 0)
@@ -533,12 +568,9 @@
                         <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center font-bold text-white text-xs">OS</div>
                         <span class="font-bold text-white text-sm">OutGear Station</span>
                     </div>
-                    <p class="text-[11px] leading-relaxed text-gray-400">
-                        Penyedia persewaan perlengkapan outdoor, mountaineering & camping terpercaya sejak 2021 di Malang.
-                    </p>
-                    <div class="pt-2 text-[11px] text-gray-300">
-                        <p class="font-bold text-white mb-1">📍 Basecamp Utama:</p>
-                        <p>Jl. Soekarno Hatta No. 9, Malang, Jawa Timur</p>
+                    <div class="rounded-2xl bg-gray-50 border border-gray-100 p-3">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Stok tersedia</p>
+                        <p class="font-black text-sm" :class="detail?.stok > 0 ? 'text-emerald-600' : 'text-red-500'" x-text="detail?.stok > 0 ? detail.stok + ' unit' : 'Habis'"></p>
                     </div>
                 </div>
 
@@ -562,6 +594,10 @@
                             💵 Tunai / Cash
                         </span>
                     </div>
+                    <p x-show="qtyDiKeranjang > 0" class="text-[11px] text-gray-500" x-text="qtyDiKeranjang + ' unit alat ini sudah ada di keranjang'"></p>
+                    <button type="button" @click="masukkanDariDetail()" :disabled="sisaBisaDitambah < 1"
+                            class="w-full bg-brand hover:bg-brand-hover hover:scale-[1.01] active:scale-95 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:transform-none text-white text-xs sm:text-sm font-black py-4 rounded-2xl transition-all duration-200 shadow-xl shadow-brand/25 uppercase tracking-wide flex items-center justify-center gap-2 cursor-pointer"
+                            x-text="detail?.stok < 1 ? 'Stok Habis' : (sisaBisaDitambah < 1 ? 'Semua Stok Sudah di Keranjang' : '🛒 Sewa & Masukkan ke Keranjang')"></button>
                 </div>
             </div>
 
@@ -572,4 +608,4 @@
     </footer>
 </body>
 
-</html>
+@endsection
