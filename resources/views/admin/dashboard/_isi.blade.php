@@ -1,6 +1,6 @@
 {{--
     Isi dashboard operasional admin: kartu statistik, aktivitas booking terbaru,
-    verifikasi pembayaran cepat, dan status inventaris alat.
+    ringkasan pembayaran cepat, dan status inventaris alat.
 
     Dipakai dua tempat:
     - dirender penuh oleh resources/views/admin/dashboard.blade.php;
@@ -65,31 +65,40 @@
                         </div>
                     </div>
 
-                    <!-- Kartu 2: Verifikasi Pembayaran -->
-                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Perlu Verifikasi</span>
+                    <!-- Kartu 2: Pembayaran Menunggu -->
+                    <a href="{{ route('admin.pembayaran.index', ['tab' => 'dp']) }}" class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-amber-300 transition group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 group-hover:text-amber-700 transition">Pembayaran Menunggu</span>
+                            <span class="text-xs text-zinc-400 group-hover:text-amber-600 transition">→</span>
+                        </div>
                         <div class="my-2">
-                            <div class="text-3xl font-black text-amber-600 tracking-tight"><span class="font-heading">{{ number_format($statistik['perlu_verifikasi'], 0, ',', '.') }}</span> <span class="text-xs font-semibold font-sans text-zinc-400">pembayaran</span></div>
+                            <div class="text-3xl font-black text-amber-600 tracking-tight"><span class="font-heading">{{ number_format($statistik['perlu_verifikasi'], 0, ',', '.') }}</span> <span class="text-xs font-semibold font-sans text-zinc-400">transaksi</span></div>
                         </div>
                         <div class="flex items-center justify-between text-[11px] pt-2 border-t border-zinc-100">
                             @if ($statistik['perlu_verifikasi'] > 0)
-                                <span class="text-amber-600 font-bold">Menunggu Validasi</span>
+                                <span class="text-amber-600 font-bold flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    Perlu Diproses
+                                </span>
                             @else
-                                <span class="text-zinc-400 font-medium">Tidak ada antrean</span>
+                                <span class="text-zinc-400 font-medium">Semua pembayaran selesai</span>
                             @endif
                         </div>
-                    </div>
+                    </a>
 
-                    <!-- Kartu 3: Pendapatan Hari Ini -->
-                    <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Pendapatan Hari Ini</span>
+                    <!-- Kartu 3: Pendapatan Bulan Ini -->
+                    <a href="{{ route('admin.pembayaran.index') }}" class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-emerald-300 transition group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 group-hover:text-emerald-700 transition">Pendapatan Bulan Ini</span>
+                            <span class="text-xs text-zinc-400 group-hover:text-emerald-600 transition">→</span>
+                        </div>
                         <div class="my-2">
-                            <div class="text-2xl font-black text-emerald-600 tracking-tight">Rp <span class="font-heading">{{ number_format($statistik['pendapatan_hari_ini'], 0, ',', '.') }}</span></div>
+                            <div class="text-2xl font-black text-emerald-600 tracking-tight">Rp <span class="font-heading">{{ number_format($statistik['pendapatan_bulan_ini'] ?? $statistik['pendapatan_hari_ini'], 0, ',', '.') }}</span></div>
                         </div>
                         <div class="flex items-center justify-between text-[11px] pt-2 border-t border-zinc-100">
-                            <span class="text-zinc-400 font-medium">{{ $statistik['transaksi_hari_ini'] }} transaksi berhasil</span>
+                            <span class="text-zinc-500 font-medium">{{ $statistik['transaksi_bulan_ini'] ?? $statistik['transaksi_hari_ini'] }} transaksi berhasil ({{ $statistik['nama_bulan_ini'] ?? \Carbon\Carbon::now()->locale('id')->translatedFormat('F Y') }})</span>
                         </div>
-                    </div>
+                    </a>
 
                     <!-- Kartu 4: Stok Alat Kritis -->
                     <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
@@ -111,7 +120,7 @@
                 <!-- GRID KONTEN UTAMA (8 Kiri, 4 Kanan) -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                     
-                    <!-- KOLOM KIRI (Lebar 8): TABEL BOOKING & VERIFIKASI PEMBAYARAN -->
+                    <!-- KOLOM KIRI (Lebar 8): TABEL BOOKING & RINGKASAN PEMBAYARAN -->
                     <div class="lg:col-span-8 space-y-6 flex flex-col justify-between">
                         
                         <!-- TABEL AKTIVITAS BOOKING TERBARU -->
@@ -277,17 +286,17 @@
                             </div>
                         </div>
 
-                        <!-- VERIFIKASI PEMBAYARAN CEPAT -->
+                        <!-- RINGKASAN PEMBAYARAN -->
                         <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm space-y-4">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2.5">
-                                    <h3 class="font-bold text-zinc-900 text-sm">Verifikasi Pembayaran</h3>
+                                    <h3 class="font-bold text-zinc-900 text-sm">Pembayaran</h3>
                                     @if ($statistik['perlu_verifikasi'] > 0)
                                         <span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-full">{{ $statistik['perlu_verifikasi'] }} Menunggu</span>
                                     @endif
                                 </div>
-                                <a href="/admin/pembayaran" class="text-xs font-semibold text-portal-orange hover:underline">
-                                    Kelola Semua →
+                                <a href="{{ route('admin.pembayaran.index', ['tab' => 'dp']) }}" class="text-xs font-semibold text-portal-orange hover:underline">
+                                    Semua Pembayaran DP →
                                 </a>
                             </div>
 
@@ -299,14 +308,14 @@
                                                 <div class="font-semibold text-zinc-900 text-xs truncate">{{ $antrean['pelanggan'] }}</div>
                                                 <div class="text-[11px] text-zinc-400 mt-0.5">{{ $antrean['jenis'] }} • {{ $antrean['metode'] }} • <span class="font-bold text-zinc-900">Rp {{ number_format($antrean['jumlah'], 0, ',', '.') }}</span></div>
                                             </div>
-                                            <a href="/admin/pembayaran" class="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm transition">
-                                                Tinjau
+                                            <a href="{{ route('admin.pembayaran.index', ['tab' => 'dp']) }}" class="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm transition">
+                                                Tinjau Pembayaran
                                             </a>
                                         </div>
                                     @endforeach
                                 </div>
                             @else
-                                <div class="py-6 text-center text-xs text-zinc-400">Tidak ada pembayaran yang menunggu verifikasi.</div>
+                                <div class="py-6 text-center text-xs text-zinc-400">Tidak ada pembayaran yang menunggu proses.</div>
                             @endif
                         </div>
 

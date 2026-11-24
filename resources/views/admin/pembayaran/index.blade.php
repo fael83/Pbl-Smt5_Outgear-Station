@@ -12,6 +12,7 @@
 </head>
 <body class="admin-theme antialiased min-h-screen"
       x-data="halamanPembayaran({
+          tab: {{ Js::from(request('tab', 'dp')) }},
           dp: {{ Js::from($dataAwal['dp']) }},
           pelunasan: {{ Js::from($dataAwal['pelunasan']) }},
           dataUrl: {{ Js::from($dataUrl) }},
@@ -77,12 +78,12 @@
                     <!-- Tab + pencarian + filter -->
                     <div class="p-5 border-b border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div class="inline-flex bg-zinc-100 rounded-xl p-1 text-xs font-bold">
-                            <button @click="pindahTab('pelunasan')"
-                                    :class="tab === 'pelunasan' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'"
-                                    class="px-4 py-2 rounded-lg transition">Pelunasan &amp; Denda</button>
                             <button @click="pindahTab('dp')"
                                     :class="tab === 'dp' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'"
                                     class="px-4 py-2 rounded-lg transition">Pembayaran DP</button>
+                            <button @click="pindahTab('pelunasan')"
+                                    :class="tab === 'pelunasan' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'"
+                                    class="px-4 py-2 rounded-lg transition">Pelunasan &amp; Denda</button>
                         </div>
 
                         <div class="flex items-center gap-2">
@@ -192,7 +193,7 @@
                     </div>
 
                     <!-- TAB DP -->
-                    <div x-show="tab === 'dp'" class="overflow-x-auto" style="display: none;">
+                    <div x-show="tab === 'dp'" class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
                             <thead>
                                 <tr class="bg-zinc-50/80 text-zinc-400 font-bold border-b border-zinc-200 uppercase tracking-wider text-[10px]">
