@@ -1132,7 +1132,7 @@ Alpine.data('halamanLaporan', (config = {}) => {
  * server lalu mengganti seluruh data dengan balasan terbaru.
  */
 Alpine.data('halamanPembayaran', (config = {}) => ({
-    tab: 'pelunasan',
+    tab: new URLSearchParams(window.location.search).get('tab') || config.tab || 'dp',
     search: '',
     filterStatus: 'Semua',
     dpList: Array.isArray(config.dp) ? config.dp : [],
@@ -1364,6 +1364,11 @@ Alpine.data('halamanPembayaran', (config = {}) => ({
     pindahTab(nama) {
         this.tab = nama;
         this.filterStatus = 'Semua';
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', nama);
+            window.history.replaceState({}, '', url);
+        } catch {}
     },
 
     notifikasi(pesan, gagal = false) {
