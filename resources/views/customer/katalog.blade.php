@@ -95,18 +95,23 @@
                          class="w-full flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10">
 
                         <!-- Gambar Promo (Kiri) -->
-                        <div class="w-full md:w-5/12 h-60 sm:h-72 md:h-80 rounded-2xl overflow-hidden relative shadow-2xl bg-black/40 border border-white/10 group">
+                        <div class="w-full md:w-5/12 h-60 sm:h-72 md:h-80 rounded-2xl overflow-hidden relative shadow-2xl bg-black/50 border border-white/10 group flex items-center justify-center p-4">
+                            <!-- Background ambient blur agar latar tidak kosong -->
                             <img :src="slide.image" :alt="slide.title"
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                 class="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none">
+
+                            <!-- Gambar utama utuh tanpa terpotong -->
+                            <img :src="slide.image" :alt="slide.title"
+                                 class="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-2xl">
 
                             <!-- Tag Badge di atas gambar -->
-                            <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
+                            <div class="absolute top-3 left-3 z-20 bg-black/70 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
                                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                 <span>Unit Siap Sewa</span>
                             </div>
 
                             <!-- Tag Highlight di bawah gambar -->
-                            <div class="absolute bottom-3 right-3 bg-brand/90 backdrop-blur-md text-white text-[11px] font-black px-3 py-1 rounded-xl shadow-lg border border-white/20">
+                            <div class="absolute bottom-3 right-3 z-20 bg-brand/90 backdrop-blur-md text-white text-[11px] font-black px-3 py-1 rounded-xl shadow-lg border border-white/20">
                                 <span x-text="slide.highlight"></span>
                             </div>
                         </div>
@@ -134,6 +139,18 @@
                                         <span x-text="feature"></span>
                                     </span>
                                 </template>
+                            </div>
+
+                            <!-- Tombol CTA Promo Slider -->
+                            <div class="pt-2">
+                                <button type="button"
+                                        @click="document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' })"
+                                        class="inline-flex items-center gap-2.5 bg-brand hover:bg-brand-hover hover:scale-105 active:scale-95 text-white text-xs sm:text-sm font-black px-6 py-3 rounded-2xl shadow-xl shadow-brand/30 hover:shadow-brand/50 transition-all duration-200 group/btn cursor-pointer">
+                                    <span x-text="slide.cta || 'Sewa Sekarang'"></span>
+                                    <svg class="w-4 h-4 transition-transform duration-200 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -167,8 +184,18 @@
 
     <!-- Main Content Katalog -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-grow">
-        <div class="mb-5">
-            <h2 class="text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight">Daftar Peralatan</h2>
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200">
+            <div>
+                <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <span>Daftar Peralatan Outdoor</span>
+                    <span class="text-xs font-bold text-brand bg-brand/10 px-2.5 py-0.5 rounded-full border border-brand/20">Katalog Lengkap</span>
+                </h2>
+                <p class="text-xs text-gray-500 mt-1">Pilih perlengkapan petualanganmu dan klik tombol <strong class="text-brand">Sewa Barang</strong> untuk langsung memesan.</p>
+            </div>
+            <div class="text-xs text-gray-500 font-semibold flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-gray-200 shadow-xs self-start sm:self-auto">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{{ $peralatan->count() }} Pilihan Alat Siap Sewa</span>
+            </div>
         </div>
 
         @php
@@ -195,37 +222,64 @@
                 @php
                     $fotoUrl = $alat->foto_url;
                 @endphp
-                <article class="bg-white rounded-2xl border border-gray-200 p-3 flex flex-col justify-between hover:shadow-lg transition group">
+                <article class="bg-white rounded-3xl border border-gray-200/90 p-3.5 sm:p-4 flex flex-col justify-between hover:shadow-xl hover:border-brand/40 hover:-translate-y-1.5 transition-all duration-300 group">
                     <div>
-                        <div @click="bukaDetail({{ $alat->id }})" class="relative h-44 rounded-xl bg-gray-100 overflow-hidden mb-3 flex items-center justify-center cursor-pointer">
+                        <!-- Foto & Status Stok -->
+                        <div @click="bukaDetail({{ $alat->id }})" class="relative h-48 sm:h-52 rounded-2xl bg-gradient-to-b from-gray-50/90 to-gray-100/80 overflow-hidden mb-3.5 flex items-center justify-center cursor-pointer group/img p-3.5 border border-gray-100/90">
                             @if ($fotoUrl)
                                 <img src="{{ $fotoUrl }}"
-                                     alt="{{ $alat->nama }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                     alt="{{ $alat->nama }}"
+                                     loading="lazy"
+                                     class="w-full h-full object-contain object-center group-hover/img:scale-108 transition-transform duration-300 drop-shadow-xs">
                             @else
                                 @include('partials.foto-kosong', ['kelas' => 'w-14 h-14'])
                             @endif
 
-                            <span class="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full border backdrop-blur {{ $alat->stok_tersedia > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
-                                {{ $alat->stok_tersedia > 0 ? 'Tersedia ('.$alat->stok_tersedia.' unit)' : 'Stok Habis' }}
+                            <div class="absolute inset-0 bg-black/0 group-hover/img:bg-black/5 transition-colors duration-300 pointer-events-none"></div>
+
+                            <span class="absolute top-2.5 right-2.5 z-10 text-[10px] font-bold px-2.5 py-0.5 rounded-full border backdrop-blur shadow-xs {{ $alat->stok_tersedia > 0 ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-gray-800/80 text-gray-200 border-gray-700' }}">
+                                {{ $alat->stok_tersedia > 0 ? 'Tersedia: '.$alat->stok_tersedia : 'Stok Habis' }}
                             </span>
+
+                            @if ($alat->kategori)
+                                <span class="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg bg-black/60 text-white backdrop-blur border border-white/20">
+                                    {{ $alat->kategori->nama }}
+                                </span>
+                            @endif
                         </div>
 
-                        <h3 @click="bukaDetail({{ $alat->id }})" class="font-bold text-xs text-gray-900 group-hover:text-brand transition line-clamp-1 mb-2 cursor-pointer">
+                        <h3 @click="bukaDetail({{ $alat->id }})" class="font-extrabold text-sm text-gray-900 group-hover:text-brand transition-colors duration-200 line-clamp-1 mb-1.5 cursor-pointer" title="{{ $alat->nama }}">
                             {{ $alat->nama }}
                         </h3>
+
+                        @if ($alat->deskripsi)
+                            <p class="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-3">
+                                {{ $alat->deskripsi }}
+                            </p>
+                        @endif
                     </div>
 
-                    <div class="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+                    <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 mt-2">
                         <div>
-                            <p class="text-[9px] text-gray-400 uppercase font-bold">TARIF / HARI</p>
-                            <p class="text-xs font-extrabold text-brand">Rp {{ number_format((float) $alat->tarif_per_hari, 0, ',', '.') }}</p>
+                            <p class="text-[9px] text-gray-400 uppercase font-black tracking-wider">TARIF / HARI</p>
+                            <p class="text-sm font-black text-brand">Rp {{ number_format((float) $alat->tarif_per_hari, 0, ',', '.') }}</p>
                         </div>
 
-                        <!-- Tombol Detail: lihat dulu, baru masukkan ke keranjang -->
-                        <button type="button" @click="bukaDetail({{ $alat->id }})"
-                                class="bg-brand hover:bg-brand-hover text-white shadow-sm text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1">
-                            <span>Lihat Detail</span>
-                        </button>
+                        <!-- Tombol Sewa Barang dengan Respon Interaktif Kursor -->
+                        @if ($alat->stok_tersedia > 0)
+                            <button type="button" @click="bukaDetail({{ $alat->id }})"
+                                    class="bg-brand hover:bg-brand-hover hover:scale-105 active:scale-95 text-white shadow-md shadow-brand/20 hover:shadow-lg hover:shadow-brand/35 text-xs font-bold px-3.5 sm:px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 group/btn cursor-pointer">
+                                <span>Sewa Barang</span>
+                                <svg class="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        @else
+                            <button type="button" disabled
+                                    class="bg-gray-100 text-gray-400 text-xs font-bold px-3.5 py-2 rounded-xl cursor-not-allowed border border-gray-200">
+                                Stok Habis
+                            </button>
+                        @endif
                     </div>
                 </article>
             @empty
@@ -239,17 +293,26 @@
 <!-- Modal detail alat -->
 <div x-show="showDetail" x-cloak style="display: none;" class="fixed inset-0 z-[55] overflow-y-auto" @keydown.escape.window="showDetail = false">
     <div class="min-h-screen px-4 flex items-center justify-center">
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showDetail = false"></div>
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="showDetail = false"></div>
 
-        <div class="relative z-10 w-full max-w-3xl my-8 bg-white rounded-3xl shadow-2xl overflow-hidden grid md:grid-cols-2">
-            <button type="button" @click="showDetail = false" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 text-gray-500 hover:text-gray-800 font-bold shadow">✕</button>
+        <div class="relative z-10 w-full max-w-3xl my-8 bg-white rounded-3xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-gray-100">
+            <button type="button" @click="showDetail = false"
+                    class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 text-gray-500 hover:text-gray-900 hover:bg-white hover:scale-105 active:scale-95 font-bold shadow-md flex items-center justify-center transition-all duration-200 cursor-pointer">✕</button>
 
-            <div class="bg-gray-100 min-h-[260px] md:min-h-[420px] flex items-center justify-center">
+            <div class="bg-gradient-to-br from-gray-50 via-gray-100/70 to-gray-100 min-h-[280px] md:min-h-[440px] flex items-center justify-center p-6 relative overflow-hidden group">
+                <!-- Ambient blur backdrop -->
                 <template x-if="detail && detail.foto">
-                    <img :src="detail.foto" :alt="detail.nama" class="w-full h-full object-cover">
+                    <img :src="detail.foto" class="absolute inset-0 w-full h-full object-cover blur-2xl opacity-20 scale-125 pointer-events-none">
+                </template>
+
+                <template x-if="detail && detail.foto">
+                    <img :src="detail.foto" :alt="detail.nama"
+                         class="relative z-10 w-full h-full max-h-[300px] md:max-h-[390px] object-contain object-center drop-shadow-lg transition-transform duration-300 group-hover:scale-105">
                 </template>
                 <template x-if="detail && !detail.foto">
-                    @include('partials.foto-kosong', ['kelas' => 'w-20 h-20'])
+                    <div class="relative z-10 flex items-center justify-center">
+                        @include('partials.foto-kosong', ['kelas' => 'w-20 h-20'])
+                    </div>
                 </template>
             </div>
 
@@ -271,19 +334,21 @@
                     </div>
                 </div>
 
-                <div class="mt-auto space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-700">Jumlah</span>
-                        <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
-                            <button type="button" @click="detailQty = Math.max(1, detailQty - 1)" class="px-3 py-1.5 text-gray-600 hover:bg-gray-200 font-bold">-</button>
-                            <span class="px-4 text-sm font-bold text-gray-800" x-text="detailQty"></span>
-                            <button type="button" @click="detailQty = Math.min(Math.max(1, sisaBisaDitambah), detailQty + 1)" class="px-3 py-1.5 text-gray-600 hover:bg-gray-200 font-bold">+</button>
+                <div class="mt-auto space-y-3 pt-2">
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                        <span class="text-xs font-bold text-gray-700">Jumlah Unit Sewa</span>
+                        <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                            <button type="button" @click="detailQty = Math.max(1, detailQty - 1)"
+                                    class="px-3.5 py-1.5 text-gray-600 hover:bg-gray-100 active:scale-90 font-bold transition cursor-pointer">-</button>
+                            <span class="px-4 text-sm font-extrabold text-gray-900" x-text="detailQty"></span>
+                            <button type="button" @click="detailQty = Math.min(Math.max(1, sisaBisaDitambah), detailQty + 1)"
+                                    class="px-3.5 py-1.5 text-gray-600 hover:bg-gray-100 active:scale-90 font-bold transition cursor-pointer">+</button>
                         </div>
                     </div>
                     <p x-show="qtyDiKeranjang > 0" class="text-[11px] text-gray-500" x-text="qtyDiKeranjang + ' unit alat ini sudah ada di keranjang'"></p>
                     <button type="button" @click="masukkanDariDetail()" :disabled="sisaBisaDitambah < 1"
-                            class="w-full bg-brand hover:bg-brand-hover disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-bold py-3.5 rounded-2xl transition shadow-lg shadow-brand/20 uppercase tracking-wide"
-                            x-text="detail?.stok < 1 ? 'Stok Habis' : (sisaBisaDitambah < 1 ? 'Semua stok sudah di keranjang' : '🛒 Masukkan ke Keranjang')"></button>
+                            class="w-full bg-brand hover:bg-brand-hover hover:scale-[1.01] active:scale-95 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:transform-none text-white text-xs sm:text-sm font-black py-4 rounded-2xl transition-all duration-200 shadow-xl shadow-brand/25 uppercase tracking-wide flex items-center justify-center gap-2 cursor-pointer"
+                            x-text="detail?.stok < 1 ? 'Stok Habis' : (sisaBisaDitambah < 1 ? 'Semua Stok Sudah di Keranjang' : '🛒 Sewa & Masukkan ke Keranjang')"></button>
                 </div>
             </div>
         </div>

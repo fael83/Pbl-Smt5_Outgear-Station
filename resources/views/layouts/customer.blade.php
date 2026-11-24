@@ -233,48 +233,62 @@
 <body class="bg-[#F8F6F2] text-gray-800 font-sans antialiased min-h-screen flex flex-col" x-data="keranjangOutgear()">
 
     <!-- Navbar pelanggan (sama di semua halaman) -->
-    <nav class="bg-dark text-white px-8 py-6 flex items-center justify-between shadow-xl sticky top-0 z-50 border-b border-white/10 w-full">
-        <a href="{{ route('katalog') }}" class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center font-black text-white shadow-xl shadow-brand/30 text-base tracking-wider">
+    <nav class="bg-dark text-white px-6 sm:px-8 py-5 sm:py-6 flex items-center justify-between shadow-xl sticky top-0 z-50 border-b border-white/10 w-full backdrop-blur-md bg-dark/95">
+        <a href="{{ route('katalog') }}" class="flex items-center gap-4 group">
+            <div class="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center font-black text-white shadow-xl shadow-brand/30 text-base tracking-wider group-hover:scale-105 group-hover:shadow-brand/50 group-hover:rotate-1 transition-all duration-300">
                 OS
             </div>
             <div>
-                <h1 class="font-black text-base tracking-wide text-white leading-tight">OutGear Station</h1>
+                <h1 class="font-black text-base tracking-wide text-white leading-tight group-hover:text-brand transition-colors duration-200">OutGear Station</h1>
                 <p class="text-[11px] text-gray-400 tracking-widest uppercase font-semibold">Rental & Outdoor Equipment</p>
             </div>
         </a>
 
-        <div class="hidden md:flex items-center gap-10 text-sm font-bold tracking-wide">
+        <div class="hidden md:flex items-center gap-2 lg:gap-3 text-sm font-bold tracking-wide">
             <a href="{{ route('katalog') }}"
-               class="{{ request()->routeIs('katalog') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200">Katalog</a>
+               class="relative px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 group {{ request()->routeIs('katalog') ? 'bg-brand/20 text-brand border border-brand/40 shadow-sm shadow-brand/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }}">
+                <span class="group-hover:scale-105 transition-transform duration-200">Katalog</span>
+                @if(request()->routeIs('katalog'))
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
+                @endif
+            </a>
 
             <a href="{{ route('booking.saya') }}"
-               class="{{ request()->routeIs('booking.saya') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200 flex items-center gap-2.5 group">
-                <span>Booking Saya</span>
+               class="relative px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2.5 group {{ request()->routeIs('booking.saya') ? 'bg-brand/20 text-brand border border-brand/40 shadow-sm shadow-brand/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }}">
+                <span class="group-hover:translate-x-0.5 group-hover:text-white transition-all duration-200">Booking Saya</span>
                 @if ($badgeBooking > 0)
-                    <span class="bg-brand/20 text-brand group-hover:bg-brand group-hover:text-white text-xs px-2.5 py-0.5 rounded-full font-extrabold transition-colors duration-200">{{ $badgeBooking }}</span>
+                    <span class="bg-brand text-white text-xs px-2.5 py-0.5 rounded-full font-black shadow-sm group-hover:scale-110 group-hover:shadow-brand/50 transition-all duration-200">{{ $badgeBooking }}</span>
+                @endif
+                @if(request()->routeIs('booking.saya'))
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
                 @endif
             </a>
 
             <a href="{{ route('panduan') }}"
-               class="{{ request()->routeIs('panduan') ? 'text-brand font-extrabold' : 'text-gray-300 hover:text-brand' }} transition-colors duration-200">Panduan Sewa</a>
+               class="relative px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 group {{ request()->routeIs('panduan') ? 'bg-brand/20 text-brand border border-brand/40 shadow-sm shadow-brand/10' : 'text-gray-300 hover:text-white hover:bg-white/10' }}">
+                <span class="group-hover:scale-105 transition-transform duration-200">Panduan Sewa</span>
+                @if(request()->routeIs('panduan'))
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
+                @endif
+            </a>
         </div>
 
-        <div class="flex items-center gap-4">
-            <button type="button" @click="isCartOpen = true" class="bg-brand hover:bg-brand-hover text-white text-xs font-black px-5 py-3 rounded-2xl flex items-center gap-3 transition shadow-lg shadow-brand/25 active:scale-95">
+        <div class="flex items-center gap-3 sm:gap-4">
+            <button type="button" @click="isCartOpen = true"
+                    class="bg-brand hover:bg-brand-hover hover:scale-105 active:scale-95 text-white text-xs font-black px-4 sm:px-5 py-3 rounded-2xl flex items-center gap-2.5 sm:gap-3 transition-all duration-200 shadow-lg shadow-brand/25 hover:shadow-brand/40 cursor-pointer">
                 <span class="text-sm">🛒 Keranjang</span>
                 <span class="bg-white/20 backdrop-blur text-white text-[11px] font-black px-2.5 py-0.5 rounded-full" x-text="totalItems + ' Item'">0 Item</span>
             </button>
 
             @auth
                 <a href="{{ route('profile.edit') }}"
-                   class="w-11 h-11 rounded-2xl bg-brand text-white flex items-center justify-center text-sm font-black border {{ request()->routeIs('profile.*') ? 'border-white' : 'border-brand/50' }} shadow-md shadow-brand/20 hover:scale-105 transition"
+                   class="w-11 h-11 rounded-2xl bg-brand text-white flex items-center justify-center text-sm font-black border {{ request()->routeIs('profile.*') ? 'border-white' : 'border-brand/50' }} shadow-md shadow-brand/20 hover:scale-105 hover:shadow-brand/40 transition-all duration-200"
                    title="Profil Saya ({{ auth()->user()->name }})">
                     {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
                 </a>
             @else
                 <a href="{{ route('login') }}"
-                   class="w-11 h-11 rounded-2xl bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 flex items-center justify-center text-sm transition border border-gray-700/60 shadow-sm"
+                   class="w-11 h-11 rounded-2xl bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 hover:scale-105 flex items-center justify-center text-sm transition-all duration-200 border border-gray-700/60 shadow-sm"
                    title="Masuk ke Akun">👤</a>
             @endauth
         </div>
@@ -313,9 +327,9 @@
                             <div class="flex gap-3 pb-4 border-b border-gray-100 items-start">
                                 <input type="checkbox" x-model="item.selected" class="mt-8 rounded text-brand focus:ring-brand">
 
-                                <div class="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center border border-gray-200">
+                                <div class="w-16 h-16 rounded-xl bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center border border-gray-200 p-1">
                                     <template x-if="item.foto">
-                                        <img :src="item.foto" class="w-full h-full object-cover">
+                                        <img :src="item.foto" class="w-full h-full object-contain object-center">
                                     </template>
                                     <template x-if="!item.foto">
                                         @include('partials.foto-kosong', ['kelas' => 'w-6 h-6'])
