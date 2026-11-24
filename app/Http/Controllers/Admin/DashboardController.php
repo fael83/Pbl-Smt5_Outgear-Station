@@ -99,10 +99,6 @@ class DashboardController extends Controller
         $waktuHariIni = $hariIni->toDateTimeString();
         $waktuBesok = $besok->toDateTimeString();
 
-        // Rentang waktu bulan berjalan (awal bulan s.d. awal bulan berikutnya)
-        $awalBulanIni = $hariIni->copy()->startOfMonth()->toDateTimeString();
-        $awalBulanBerikutnya = $hariIni->copy()->startOfMonth()->addMonth()->toDateTimeString();
-
         // Query 1: hitungan pemesanan.
         $pemesanan = Pemesanan::query()
             ->selectRaw("
@@ -111,13 +107,13 @@ class DashboardController extends Controller
             ", [$tanggalHariIni, $tanggalBesok])
             ->first();
 
-        // Query 2: pembayaran (antrean pembayaran dan pendapatan bulan ini).
+        // Query 2: pembayaran (antrean verifikasi dan pendapatan hari ini).
         $pembayaran = Pembayaran::query()
             ->selectRaw("
                 sum(case when status_transaksi = 'pending' then 1 else 0 end) as menunggu,
-                sum(case when status_transaksi = 'berhasil' and coalesce(waktu_bayar, updated_at) >= ? and coalesce(waktu_bayar, updated_at) < ? then 1 else 0 end) as berhasil_bulan_ini,
-                sum(case when status_transaksi = 'berhasil' and coalesce(waktu_bayar, updated_at) >= ? and coalesce(waktu_bayar, updated_at) < ? then jumlah else 0 end) as pendapatan_bulan_ini
-            ", [$awalBulanIni, $awalBulanBerikutnya, $awalBulanIni, $awalBulanBerikutnya])
+                sum(case when status_transaksi = 'berhasil' and waktu_bayar >= ? and waktu_bayar < ? then 1 else 0 end) as berhasil_hari_ini,
+                sum(case when status_transaksi = 'berhasil' and waktu_bayar >= ? and waktu_bayar < ? then jumlah else 0 end) as pendapatan_hari_ini
+            ", [$waktuHariIni, $waktuBesok, $waktuHariIni, $waktuBesok])
             ->first();
 
         // Query 3: booking terbaru (nama pelanggan lewat join, tanpa query tambahan).
@@ -194,11 +190,8 @@ class DashboardController extends Controller
                 'booking_aktif' => (int) $pemesanan->aktif,
                 'ambil_hari_ini' => (int) $pemesanan->ambil_hari_ini,
                 'perlu_verifikasi' => (int) $pembayaran->menunggu,
-                'pendapatan_bulan_ini' => (float) $pembayaran->pendapatan_bulan_ini,
-                'transaksi_bulan_ini' => (int) $pembayaran->berhasil_bulan_ini,
-                'nama_bulan_ini' => $hariIni->copy()->locale('id')->translatedFormat('F Y'),
-                'pendapatan_hari_ini' => (float) $pembayaran->pendapatan_bulan_ini,
-                'transaksi_hari_ini' => (int) $pembayaran->berhasil_bulan_ini,
+                'pendapatan_hari_ini' => (float) $pembayaran->pendapatan_hari_ini,
+                'transaksi_hari_ini' => (int) $pembayaran->berhasil_hari_ini,
                 'stok_kritis' => (int) $perKategori->sum('kritis'),
                 'batas_kritis_persen' => self::BATAS_KRITIS_PERSEN,
             ],
@@ -226,7 +219,7 @@ class DashboardController extends Controller
         $geser = 0.0;
 
         foreach ([
-            ['label' => 'Sedang Disewa', 'nilai' => $disewa, 'warna' => '#EA580C'],
+            ['label' => 'Sedang Disewa', 'nilai' => $disewa, 'warna' => '#2563EB'],
             ['label' => 'Tersedia di Basecamp', 'nilai' => $tersedia, 'warna' => '#E4E4E7'],
             ['label' => 'Rusak', 'nilai' => $rusak, 'warna' => '#E11D48'],
         ] as $bagian) {
