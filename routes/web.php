@@ -14,23 +14,22 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\MidtransWebhookController;
-use App\Http\Controllers\PembayaranPelangganController;
 use App\Http\Controllers\OutGearBotController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
-
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Owner\DendaController as OwnerDendaController;
 use App\Http\Controllers\Owner\HargaController as OwnerHargaController;
 use App\Http\Controllers\Owner\LaporanController as OwnerLaporanController;
 use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
 use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
-
+use App\Http\Controllers\Owner\StaffController as OwnerStaffController;
+use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
-use App\Http\Controllers\Petugas\PersiapanController;
-use App\Http\Controllers\Petugas\PengembalianController;
 use App\Http\Controllers\Petugas\KerusakanController;
-
+use App\Http\Controllers\Petugas\PengembalianController;
+use App\Http\Controllers\Petugas\PersiapanController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,13 +40,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/wa/webhook', [OutGearBotController::class, 'handleWebhook'])->name('wa.webhook');
 Route::get('/', BerandaController::class)->name('beranda');
-
 Route::get('/dashboard', DashboardController::class)->name('dashboard');
 Route::get('/katalog', KatalogController::class)->name('katalog');
 Route::get('/panduan-sewa', PanduanController::class)->name('panduan');
 Route::get('/booking-saya', BookingSayaController::class)->name('booking.saya');
-
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
 // Notifikasi pembayaran dari server Midtrans (tanpa login & tanpa CSRF)
 Route::post('/midtrans/notifikasi', MidtransWebhookController::class)->name('midtrans.notifikasi');
@@ -96,11 +92,13 @@ Route::middleware(['auth', 'role:admin,owner,petugas'])
         Route::get('/pelanggan/tabel', [AdminPelangganController::class, 'tabel'])->name('pelanggan.tabel');
         Route::get('/pelanggan/ekspor', [AdminPelangganController::class, 'ekspor'])->name('pelanggan.ekspor');
 
+
         // Pemesanan & Verifikasi
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/pemesanan/tabel', [AdminPemesananController::class, 'tabel'])->name('pemesanan.tabel');
         Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
         Route::get('/verifikasi/data', [AdminVerifikasiController::class, 'data'])->name('verifikasi.data');
+
 
         // Laporan
         Route::get('/laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
@@ -113,6 +111,8 @@ Route::middleware(['auth', 'role:admin,owner,petugas'])
         Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
 
         // Aksi tulis khusus admin
+        Route::get('/peralatan', [InventarisController::class, 'index'])->name('peralatan.index');
+        Route::get('/peralatan/tabel', [InventarisController::class, 'tabel'])->name('peralatan.tabel');
         Route::middleware('role:admin')->group(function () {
             Route::patch('/pelanggan/{pelanggan}/status', [AdminPelangganController::class, 'ubahStatus'])->name('pelanggan.status');
             Route::post('/pelanggan', [AdminPelangganController::class, 'store'])->name('pelanggan.store');
@@ -141,7 +141,6 @@ Route::middleware(['auth', 'role:owner'])
 
         Route::get('/harga-sewa', [OwnerHargaController::class, 'hargaSewa'])->name('harga-sewa.index');
         Route::put('/harga-sewa/{id}', [OwnerHargaController::class, 'updateHargaSewa'])->name('harga-sewa.update');
-        
         Route::get('/aturan-denda', [OwnerDendaController::class, 'aturanDenda'])->name('aturan-denda.index');
         Route::put('/aturan-denda/{id}', [OwnerDendaController::class, 'updateAturanDenda'])->name('aturan-denda.update');
 
@@ -153,6 +152,8 @@ Route::middleware(['auth', 'role:owner'])
         Route::delete('/kelola-staff/{id}', [OwnerStaffController::class, 'destroyStaff'])->name('kelola-staff.destroy');
 
         Route::get('/laporan', [OwnerLaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/ekspor-csv', [OwnerLaporanController::class, 'exportCsv'])->name('laporan.export-csv');
+        Route::get('/laporan/ekspor-pdf', [OwnerLaporanController::class, 'exportPdf'])->name('laporan.export');
         Route::get('/laporan/export', [OwnerLaporanController::class, 'exportPdf'])->name('laporan.export');
         Route::get('/laporan/export-csv', [OwnerLaporanController::class, 'exportCsv'])->name('laporan.export-csv');
         Route::get('/laporan/denda', [OwnerLaporanController::class, 'rekapDenda'])->name('laporan.denda');
@@ -183,9 +184,11 @@ Route::middleware(['auth', 'role:petugas,owner'])
         Route::post('/pengembalian', [PengembalianController::class, 'store'])->name('pengembalian.store');
         Route::post('/pengembalian/{id}/checklist', [PengembalianController::class, 'updateChecklist'])->name('pengembalian.checklist');
         Route::delete('/pengembalian/{id}', [PengembalianController::class, 'destroy'])->name('pengembalian.destroy');
-        
+
         Route::get('/kerusakan', [KerusakanController::class, 'index'])->name('kerusakan');
     });
 
+
 // Autentikasi bawaan Laravel
+
 require __DIR__.'/auth.php';
