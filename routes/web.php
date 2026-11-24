@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\PelangganController as AdminPelangganController;
 use App\Http\Controllers\Admin\PemesananController as AdminPemesananController;
 use App\Http\Controllers\Admin\ProfilController as AdminProfilController;
-use App\Http\Controllers\Admin\VerifikasiController as AdminVerifikasiController;
+use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\BookingSayaController;
 use App\Http\Controllers\CheckoutController;
@@ -128,8 +128,10 @@ Route::middleware(['auth', 'role:admin,owner'])
 
         Route::get('/pemesanan', [AdminPemesananController::class, 'index'])->name('pemesanan');
         Route::get('/pemesanan/tabel', [AdminPemesananController::class, 'tabel'])->name('pemesanan.tabel');
-        Route::get('/verifikasi', [AdminVerifikasiController::class, 'index'])->name('verifikasi.index');
-        Route::get('/verifikasi/data', [AdminVerifikasiController::class, 'data'])->name('verifikasi.data');
+        Route::get('/pembayaran', [AdminPembayaranController::class, 'index'])->name('pembayaran.index');
+        Route::get('/pembayaran/data', [AdminPembayaranController::class, 'muatUlang'])->name('pembayaran.data');
+        // Alamat lama (halaman Verifikasi Pembayaran) diarahkan ke halaman baru.
+        Route::redirect('/verifikasi', '/admin/pembayaran');
 
         Route::get('/denda', [AdminDendaController::class, 'index'])->name('denda.index');
         Route::get('/denda/tabel', [AdminDendaController::class, 'tabel'])->name('denda.tabel');
@@ -161,8 +163,10 @@ Route::middleware(['auth', 'role:admin,owner'])
             Route::put('/pelanggan/{pelanggan}', [AdminPelangganController::class, 'update'])->name('pelanggan.update');
             Route::delete('/pelanggan/{pelanggan}', [AdminPelangganController::class, 'destroy'])->name('pelanggan.destroy');
 
-            Route::patch('/verifikasi/{pembayaran}/verifikasi', [AdminVerifikasiController::class, 'verifikasi'])->name('verifikasi.verifikasi');
-            Route::patch('/verifikasi/{pembayaran}/tolak', [AdminVerifikasiController::class, 'tolak'])->name('verifikasi.tolak');
+            Route::patch('/pembayaran/{pembayaran}/verifikasi', [AdminPembayaranController::class, 'verifikasi'])->name('pembayaran.verifikasi');
+            Route::patch('/pembayaran/{pembayaran}/tolak', [AdminPembayaranController::class, 'tolak'])->name('pembayaran.tolak');
+            Route::post('/pembayaran/{pembayaran}/sinkron', [AdminPembayaranController::class, 'sinkron'])->name('pembayaran.sinkron');
+            Route::post('/pembayaran/pelunasan/{pemesanan}', [AdminPembayaranController::class, 'bayarPelunasan'])->name('pembayaran.pelunasan');
 
             Route::post('/peralatan', [InventarisController::class, 'store'])->name('peralatan.store');
             Route::put('/peralatan/{alat}', [InventarisController::class, 'update'])->name('peralatan.update');

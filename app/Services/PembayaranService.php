@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\Alat;
+use App\Models\Denda;
 use App\Models\Pembayaran;
 use App\Models\Pemesanan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Satu-satunya tempat yang mengubah status pembayaran DP dan dampaknya ke
@@ -83,8 +85,99 @@ class PembayaranService
                 }
             }
 
+            // Pelunasan/denda lunas: seluruh denda pemesanan ini ikut lunas.
+            if (in_array($baru->jenis_pembayaran, ['pelunasan', 'denda'], true)) {
+                Denda::query()
+                    ->where('pemesanan_id', $baru->pemesanan_id)
+                    ->where('status', 'belum_dibayar')
+                    ->update(['status' => 'lunas']);
+
+                \App\Support\BadgeAdmin::lupakan();
+            }
+
             return $baru;
         });
+    }
+
+    /**
+     * Rincian tagihan pelunasan: sisa sewa (total - DP, bila belum pernah
+     * dilunasi) ditambah semua denda yang belum dibayar.
+     *
+     * @return array{sisa_sewa: float, denda: float, total: float, jenis: string}
+     */
+    public function hitungTagihan(Pemesanan $pemesanan): array
+    {
+        $sudahLunas = $pemesanan->pembayaran
+            ->contains(fn (Pembayaran $p) => $p->jenis_pembayaran === 'pelunasan' && $p->status_transaksi === 'berhasil');
+
+        $sisa = $sudahLunas ? 0.0 : max(0.0, (float) $pemesanan->total_biaya - (float) $pemesanan->jumlah_dp);
+
+        $denda = (float) $pemesanan->denda
+            ->where('status', 'belum_dibayar')
+            ->sum('jumlah_denda');
+
+        return [
+            'sisa_sewa' => $sisa,
+            'denda' => $denda,
+            'total' => $sisa + $denda,
+            'jenis' => $sisa > 0 ? 'pelunasan' : 'denda',
+        ];
+    }
+
+    /**
+     * Buat tagihan pelunasan (sisa sewa + denda). Tagihan pending sebelumnya
+     * ditutup dulu supaya hanya ada satu yang aktif.
+     *
+     * @param  'tunai'|'midtrans'  $cara
+     */
+    public function buatPelunasan(Pemesanan $pemesanan, string $cara): Pembayaran
+    {
+        $pemesanan->loadMissing(['pembayaran', 'denda']);
+
+        $tagihan = $this->hitungTagihan($pemesanan);
+
+        if ($tagihan['total'] <= 0) {
+            throw new \RuntimeException('Tidak ada tagihan yang harus dibayar untuk pemesanan ini.');
+        }
+
+        foreach ($pemesanan->pembayaran as $lama) {
+            if ($lama->jenis_pembayaran !== 'dp' && $lama->status_transaksi === 'pending') {
+                if (filled($lama->metode_pembayaran) && $this->midtrans->terkonfigurasi()) {
+                    try {
+                        $this->midtrans->batalkan((string) $lama->transaction_id);
+                    } catch (\Throwable $e) {
+                        Log::warning('Midtrans: gagal membatalkan tagihan lama', ['pesan' => $e->getMessage()]);
+                    }
+                }
+
+                $this->tandaiGagal($lama);
+            }
+        }
+
+        $akhiran = $tagihan['jenis'] === 'pelunasan' ? 'PL' : 'DN';
+
+        $pembayaran = Pembayaran::create([
+            'pemesanan_id' => $pemesanan->id,
+            'transaction_id' => $pemesanan->kode_pemesanan.'-'.$akhiran.'-'.strtoupper(Str::random(5)),
+            'jenis_pembayaran' => $tagihan['jenis'],
+            'metode_pembayaran' => $cara === 'tunai' ? 'tunai' : null,
+            'jumlah' => $tagihan['total'],
+            'status_transaksi' => 'pending',
+        ]);
+
+        if ($cara === 'tunai') {
+            return $this->tandaiBerhasil($pembayaran, 'tunai');
+        }
+
+        $token = $this->midtrans->buatSnapToken(
+            $pembayaran,
+            $pemesanan->pelanggan,
+            ($tagihan['jenis'] === 'pelunasan' ? 'Pelunasan ' : 'Denda ').$pemesanan->kode_pemesanan,
+        );
+
+        $pembayaran->update(['midtrans' => $token]);
+
+        return $pembayaran;
     }
 
     /**
