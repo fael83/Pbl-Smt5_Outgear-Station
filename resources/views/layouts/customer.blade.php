@@ -41,6 +41,7 @@
                 detailQty: 1,
                 toast: '',
                 toastTimer: null,
+                itemKonfirmasiHapus: null,
 
                 init() {
                     this.muatKeranjang();
@@ -97,8 +98,18 @@
                 },
                 tampilToast(teks) {
                     this.toast = teks;
+                    this.itemKonfirmasiHapus = null;
                     clearTimeout(this.toastTimer);
-                    this.toastTimer = setTimeout(() => this.toast = '', 3000);
+                    this.toastTimer = setTimeout(() => {
+                        this.toast = '';
+                        this.toastTimer = null;
+                    }, 3000);
+                },
+                tutupToast() {
+                    clearTimeout(this.toastTimer);
+                    this.toast = '';
+                    this.toastTimer = null;
+                    this.itemKonfirmasiHapus = null;
                 },
 
                 // --- Keranjang ---
@@ -113,11 +124,29 @@
                 },
                 increaseQty(id) {
                     let item = this.cart.find(i => i.id === id);
-                    if (item && (item.stok === undefined || item.qty < item.stok)) item.qty += 1;
+                    if (!item) return;
+                    if (item.stok === undefined || item.qty < item.stok) {
+                        item.qty += 1;
+                        return;
+                    }
+                    this.tampilToast(`${item.nama} sudah mencapai batas stok tersedia (${item.stok} unit).`);
                 },
                 decreaseQty(id) {
                     let item = this.cart.find(i => i.id === id);
-                    if (item && item.qty > 1) item.qty -= 1;
+                    if (!item) return;
+                    if (item.qty <= 1) {
+                        this.toast = `Yakin ingin menghapus "${item.nama}" dari keranjang?`;
+                        this.itemKonfirmasiHapus = id;
+                        clearTimeout(this.toastTimer);
+                        this.toastTimer = null;
+                        return;
+                    }
+                    item.qty -= 1;
+                },
+                hapusItemDariToast() {
+                    if (this.itemKonfirmasiHapus === null) return;
+                    this.removeFromCart(this.itemKonfirmasiHapus);
+                    this.tutupToast();
                 },
                 removeFromCart(id) {
                     this.cart = this.cart.filter(i => i.id !== id);
@@ -304,16 +333,16 @@
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @click="isCartOpen = false"></div>
 
         <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
-            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
-                <div>
+            <div class="h-full max-h-full w-screen max-w-md min-h-0 overflow-hidden bg-white shadow-2xl flex flex-col">
+                <div class="flex min-h-0 flex-1 flex-col">
                     <!-- Header Keranjang -->
-                    <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-white">
+                    <div class="shrink-0 p-4 border-b border-gray-200 flex items-center justify-between bg-white">
                         <h3 class="font-bold text-base text-gray-900">Keranjang Belanja</h3>
                         <button @click="isCartOpen = false" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
                     </div>
 
                     <!-- Opsi Pilih Semua -->
-                    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between text-xs bg-gray-50/50">
+                    <div class="shrink-0 px-4 py-3 border-b border-gray-100 flex items-center justify-between text-xs bg-gray-50/50">
                         <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
                             <input type="checkbox" @click="cart.forEach(i => i.selected = !i.selected)" :checked="cart.every(i => i.selected) && cart.length > 0" class="rounded text-brand focus:ring-brand">
                             <span>Pilih Semua</span>
@@ -322,7 +351,7 @@
                     </div>
 
                     <!-- List Item dalam Keranjang -->
-                    <div class="max-h-[calc(100vh-250px)] overflow-y-auto p-4 space-y-4">
+                    <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-4">
                         <template x-for="item in cart" :key="item.id">
                             <div class="flex gap-3 pb-4 border-b border-gray-100 items-start">
                                 <input type="checkbox" x-model="item.selected" class="mt-8 rounded text-brand focus:ring-brand">
@@ -368,7 +397,7 @@
                 </div>
 
                 <!-- Footer Checkout Keranjang -->
-                <div class="p-4 border-t border-gray-200 bg-white space-y-3">
+                <div class="max-h-[65vh] shrink-0 overflow-y-auto overscroll-contain p-4 border-t border-gray-200 bg-white space-y-3">
                     <!-- Input Jadwal Sewa -->
                     <div class="bg-gray-50 rounded-2xl p-3 border border-gray-200 space-y-2">
                         <div class="flex items-center justify-between text-[11px] font-bold text-gray-700">
@@ -416,15 +445,17 @@
                     </div>
 
                     <!-- Tombol Checkout -->
-                    <button @click="submitCheckout()"
-                            :disabled="isCheckingOut || selectedItems.length === 0"
-                            class="w-full bg-gray-900 hover:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3.5 rounded-2xl transition shadow-lg tracking-wide uppercase flex items-center justify-center gap-2">
-                        <span x-show="!isCheckingOut">Checkout &amp; Bayar DP (<span x-text="selectedItems.length"></span> Item)</span>
-                        <span x-show="isCheckingOut" class="flex items-center gap-2">
-                            <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                            <span>Memproses Booking...</span>
-                        </span>
-                    </button>
+                    <div class="sticky bottom-0 z-10 bg-white pt-2">
+                        <button @click="submitCheckout()"
+                                :disabled="isCheckingOut || selectedItems.length === 0"
+                                class="w-full bg-gray-900 hover:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3.5 rounded-2xl transition shadow-lg tracking-wide uppercase flex items-center justify-center gap-2">
+                            <span x-show="!isCheckingOut">Checkout &amp; Bayar DP (<span x-text="selectedItems.length"></span> Item)</span>
+                            <span x-show="isCheckingOut" class="flex items-center gap-2">
+                                <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                <span>Memproses Booking...</span>
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -432,9 +463,17 @@
     
 
 <!-- Toast singkat -->
-<div x-show="toast" x-transition x-cloak style="display: none;" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-gray-900 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3">
+<div x-show="toast" x-transition x-cloak style="display: none;" role="status" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] max-w-[calc(100vw-2rem)] bg-gray-900 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-xl flex flex-wrap items-center justify-center gap-3">
     <span x-text="toast"></span>
-    <button type="button" @click="isCartOpen = true; toast = ''" class="text-brand underline">Lihat keranjang</button>
+    <template x-if="itemKonfirmasiHapus !== null">
+        <div class="flex shrink-0 items-center gap-2">
+            <button type="button" @click="hapusItemDariToast()" class="rounded-lg bg-red-500 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-red-600">Ya, hapus</button>
+            <button type="button" @click="tutupToast()" class="rounded-lg px-2.5 py-1 text-[11px] font-bold text-gray-200 transition hover:bg-white/10">Batal</button>
+        </div>
+    </template>
+    <template x-if="itemKonfirmasiHapus === null">
+        <button type="button" @click="isCartOpen = true; tutupToast()" class="text-brand underline">Lihat keranjang</button>
+    </template>
 </div>
 
 

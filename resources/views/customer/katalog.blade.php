@@ -3,7 +3,29 @@
 @section('title', 'Katalog Sewa Alat Outdoor & Pendakian - OutGear Station')
 
 @section('content')
-    <div x-data="{ kategoriAktif: 'semua' }" class="w-full">
+    <div x-data="{
+        kategoriAktif: 'semua',
+        barangDiperluas: false,
+        pencarianTerbuka: false,
+        kataKunci: '',
+        cocokDenganPencarian(id) {
+            const alat = (window.DATA_ALAT || {})[id];
+            const kataKunci = this.kataKunci.trim().toLowerCase();
+            if (!alat) return false;
+            if (!kataKunci) return true;
+            return [alat.nama, alat.deskripsi, alat.kategori]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+                .includes(kataKunci);
+        },
+        jumlahHasilPencarian() {
+            return Object.values(window.DATA_ALAT || {}).filter((alat) => (
+                (this.kategoriAktif === 'semua' || Number(alat.kategori_id) === Number(this.kategoriAktif)) &&
+                this.cocokDenganPencarian(alat.id)
+            )).length;
+        }
+    }" class="w-full">
     <!-- Header & Hero Section -->
     <header class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-2 w-full">
         <!-- Hero Slider -->
@@ -87,8 +109,16 @@
     <!-- Main Content Katalog -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-grow">
         <section id="kategori-katalog" aria-label="Filter kategori peralatan" class="mb-7">
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-                @foreach ($peralatan->pluck('kategori')->filter()->unique('id')->values() as $kategori)
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+            <button type="button" @click="kategoriAktif = 'semua'; barangDiperluas = false"
+                    aria-label="Tampilkan semua peralatan"
+                    :aria-pressed="kategoriAktif === 'semua'"
+                    :class="kategoriAktif === 'semua' ? 'border-brand bg-brand/10 text-brand shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-brand/40 hover:shadow-md'"
+                    class="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center transition-all">
+                <span class="text-lg leading-none" aria-hidden="true">🏕️</span>
+                <span class="text-[8px] font-bold uppercase tracking-wide leading-tight">Semua</span>
+            </button>
+            @foreach ($peralatan->pluck('kategori')->filter()->unique('id')->values() as $kategori)
                     @php
                         $namaKategori = strtolower($kategori->nama);
                         $ikonKategori = match (true) {
@@ -104,7 +134,7 @@
                         };
                     @endphp
                     <button type="button" data-kategori="{{ $kategori->id }}"
-                            @click="kategoriAktif = kategoriAktif === {{ $kategori->id }} ? 'semua' : {{ $kategori->id }}"
+                            @click="kategoriAktif = kategoriAktif === {{ $kategori->id }} ? 'semua' : {{ $kategori->id }}; barangDiperluas = false"
                             :aria-pressed="kategoriAktif === {{ $kategori->id }}"
                             :class="kategoriAktif === {{ $kategori->id }} ? 'border-brand bg-brand/10 text-brand shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-brand/40 hover:shadow-md'"
                             class="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center transition-all">
@@ -119,13 +149,40 @@
             <div>
                 <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
                     <span>Daftar Peralatan Outdoor</span>
-                    <span class="text-xs font-bold text-brand bg-brand/10 px-2.5 py-0.5 rounded-full border border-brand/20">Katalog Lengkap</span>
                 </h2>
                 <p class="text-xs text-gray-500 mt-1">Pilih perlengkapan petualanganmu dan klik tombol <strong class="text-brand">Sewa Barang</strong> untuk langsung memesan.</p>
             </div>
-            <div class="text-xs text-gray-500 font-semibold flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-gray-200 shadow-xs self-start sm:self-auto">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{{ $peralatan->count() }} Pilihan Alat Siap Sewa</span>
+            <div class="flex flex-col items-stretch gap-2 self-start sm:flex-row sm:items-center sm:self-auto">
+                <div class="flex items-center gap-2">
+                    <div class="text-xs text-gray-500 font-semibold flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-gray-200 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>{{ $peralatan->count() }} Pilihan Alat Siap Sewa</span>
+                    </div>
+                    <button type="button" x-show="!pencarianTerbuka" x-cloak
+                            @click="pencarianTerbuka = true; $nextTick(() => $refs.inputPencarian.focus())"
+                            :aria-expanded="pencarianTerbuka"
+                            aria-label="Cari peralatan"
+                            class="rounded-2xl border border-gray-200 bg-white p-2.5 text-gray-500 shadow-xs transition hover:border-brand/40 hover:text-brand">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7" stroke-width="2"/>
+                            <path stroke-linecap="round" stroke-width="2" d="m20 20-4-4"/>
+                        </svg>
+                    </button>
+                </div>
+                <div x-show="pencarianTerbuka" x-transition x-cloak class="relative">
+                    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" stroke-width="2"/>
+                        <path stroke-linecap="round" stroke-width="2" d="m20 20-4-4"/>
+                    </svg>
+                    <input x-ref="inputPencarian" x-model.trim="kataKunci" type="search"
+                           aria-label="Cari barang di katalog" placeholder="Cari nama barang..."
+                           class="w-full rounded-2xl border border-gray-200 bg-white py-2 pl-9 pr-9 text-xs text-gray-700 shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 sm:w-56">
+                    <button type="button" @click="pencarianTerbuka = false; kataKunci = ''"
+                            aria-label="Tutup pencarian"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-1.5 py-0.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">
+                        ✕
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -134,6 +191,7 @@
             foreach ($peralatan as $item) {
                 $dataAlat[$item->id] = [
                     'id' => $item->id,
+                    'kategori_id' => $item->kategori_id,
                     'nama' => $item->nama,
                     'deskripsi' => $item->deskripsi,
                     'kategori' => $item->kategori?->nama,
@@ -149,11 +207,12 @@
 
         <!-- Product Cards Grid -->
         <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            @forelse ($peralatan as $alat)
+            @forelse ($peralatan as $index => $alat)
                 @php
                     $fotoUrl = $alat->foto_url;
                 @endphp
-                <article x-show="kategoriAktif === 'semua' || kategoriAktif === {{ $alat->kategori_id ?? 'null' }}"
+                <article x-show="cocokDenganPencarian({{ $alat->id }}) && (kategoriAktif === 'semua' ? (barangDiperluas || kataKunci.trim() !== '' || {{ $index }} < 12) : kategoriAktif === {{ $alat->kategori_id ?? 'null' }})"
+                         @if ($index >= 12) x-cloak @endif
                          class="bg-white rounded-3xl border border-gray-200/90 p-3.5 sm:p-4 flex flex-col justify-between hover:shadow-xl hover:border-brand/40 hover:-translate-y-1.5 transition-all duration-300 group">
                     <div>
                         <!-- Foto & Status Stok -->
@@ -220,6 +279,22 @@
                 </p>
             @endforelse
         </div>
+        <p x-show="jumlahHasilPencarian() === 0 && (kataKunci.trim() !== '' || kategoriAktif !== 'semua')" x-cloak
+           class="mt-4 rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+            Tidak ada barang yang cocok dengan pencarian atau kategori ini.
+        </p>
+        @if ($peralatan->count() > 12)
+            <div x-show="kategoriAktif === 'semua' && kataKunci.trim() === ''" x-cloak class="mt-6 flex justify-center">
+                <button type="button" @click="barangDiperluas = !barangDiperluas"
+                        :aria-expanded="barangDiperluas"
+                        class="inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-bold text-brand transition hover:bg-brand/10">
+                    <span x-text="barangDiperluas ? 'Tampilkan lebih sedikit' : 'Tampilkan lebih banyak'">Tampilkan lebih banyak</span>
+                    <svg class="h-4 w-4 transition-transform" :class="barangDiperluas ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
+        @endif
     </main>
     </div>
 
