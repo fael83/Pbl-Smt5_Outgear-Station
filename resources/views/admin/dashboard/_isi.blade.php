@@ -80,14 +80,14 @@
                         </div>
                     </div>
 
-                    <!-- Kartu 3: Pendapatan Hari Ini -->
+                    <!-- Kartu 3: Pendapatan Bulan Ini -->
                     <div class="bg-white p-5 rounded-2xl border border-zinc-200/70 shadow-sm flex flex-col justify-between">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Pendapatan Hari Ini</span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Pendapatan Bulan Ini</span>
                         <div class="my-2">
-                            <div class="text-2xl font-black text-emerald-600 tracking-tight">Rp <span class="font-heading">{{ number_format($statistik['pendapatan_hari_ini'], 0, ',', '.') }}</span></div>
+                            <div class="text-2xl font-black text-emerald-600 tracking-tight">Rp <span class="font-heading">{{ number_format($statistik['pendapatan_bulan_ini'], 0, ',', '.') }}</span></div>
                         </div>
                         <div class="flex items-center justify-between text-[11px] pt-2 border-t border-zinc-100">
-                            <span class="text-zinc-400 font-medium">{{ $statistik['transaksi_hari_ini'] }} transaksi berhasil</span>
+                            <span class="text-zinc-400 font-medium">{{ $statistik['transaksi_bulan_ini'] }} transaksi berhasil</span>
                         </div>
                     </div>
 
@@ -286,7 +286,7 @@
                                         <span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-full">{{ $statistik['perlu_verifikasi'] }} Menunggu</span>
                                     @endif
                                 </div>
-                                <a href="/admin/verifikasi" class="text-xs font-semibold text-portal-orange hover:underline">
+                                <a href="{{ route('admin.pembayaran.index') }}" class="text-xs font-semibold text-portal-orange hover:underline">
                                     Kelola Semua →
                                 </a>
                             </div>
@@ -299,7 +299,7 @@
                                                 <div class="font-semibold text-zinc-900 text-xs truncate">{{ $antrean['pelanggan'] }}</div>
                                                 <div class="text-[11px] text-zinc-400 mt-0.5">{{ $antrean['jenis'] }} • {{ $antrean['metode'] }} • <span class="font-bold text-zinc-900">Rp {{ number_format($antrean['jumlah'], 0, ',', '.') }}</span></div>
                                             </div>
-                                            <a href="/admin/verifikasi" class="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm transition">
+                                            <a href="{{ route('admin.pembayaran.index') }}" class="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-sm transition">
                                                 Tinjau
                                             </a>
                                         </div>

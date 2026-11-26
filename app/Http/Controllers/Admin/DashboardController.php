@@ -98,6 +98,10 @@ class DashboardController extends Controller
         $tanggalBesok = $besok->toDateString();
         $waktuHariIni = $hariIni->toDateTimeString();
         $waktuBesok = $besok->toDateTimeString();
+        $awalBulan = Carbon::now()->startOfMonth();
+        $awalBulanBerikutnya = $awalBulan->copy()->addMonth();
+        $waktuAwalBulan = $awalBulan->toDateTimeString();
+        $waktuAwalBulanBerikutnya = $awalBulanBerikutnya->toDateTimeString();
 
         // Query 1: hitungan pemesanan.
         $pemesanan = Pemesanan::query()
@@ -107,13 +111,13 @@ class DashboardController extends Controller
             ", [$tanggalHariIni, $tanggalBesok])
             ->first();
 
-        // Query 2: pembayaran (antrean verifikasi dan pendapatan hari ini).
+        // Query 2: pembayaran (antrean verifikasi dan pendapatan bulan ini).
         $pembayaran = Pembayaran::query()
             ->selectRaw("
                 sum(case when status_transaksi = 'pending' then 1 else 0 end) as menunggu,
-                sum(case when status_transaksi = 'berhasil' and waktu_bayar >= ? and waktu_bayar < ? then 1 else 0 end) as berhasil_hari_ini,
-                sum(case when status_transaksi = 'berhasil' and waktu_bayar >= ? and waktu_bayar < ? then jumlah else 0 end) as pendapatan_hari_ini
-            ", [$waktuHariIni, $waktuBesok, $waktuHariIni, $waktuBesok])
+                sum(case when status_transaksi = 'berhasil' and waktu_bayar >= ? and waktu_bayar < ? then 1 else 0 end) as berhasil_bulan_ini,
+                sum(case when status_transaksi = 'berhasil' and waktu_bayar >= ? and waktu_bayar < ? then jumlah else 0 end) as pendapatan_bulan_ini
+            ", [$waktuAwalBulan, $waktuAwalBulanBerikutnya, $waktuAwalBulan, $waktuAwalBulanBerikutnya])
             ->first();
 
         // Query 3: booking terbaru (nama pelanggan lewat join, tanpa query tambahan).
@@ -190,8 +194,8 @@ class DashboardController extends Controller
                 'booking_aktif' => (int) $pemesanan->aktif,
                 'ambil_hari_ini' => (int) $pemesanan->ambil_hari_ini,
                 'perlu_verifikasi' => (int) $pembayaran->menunggu,
-                'pendapatan_hari_ini' => (float) $pembayaran->pendapatan_hari_ini,
-                'transaksi_hari_ini' => (int) $pembayaran->berhasil_hari_ini,
+                'pendapatan_bulan_ini' => (float) $pembayaran->pendapatan_bulan_ini,
+                'transaksi_bulan_ini' => (int) $pembayaran->berhasil_bulan_ini,
                 'stok_kritis' => (int) $perKategori->sum('kritis'),
                 'batas_kritis_persen' => self::BATAS_KRITIS_PERSEN,
             ],
