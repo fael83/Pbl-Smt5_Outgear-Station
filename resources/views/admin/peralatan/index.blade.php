@@ -133,44 +133,47 @@
         </div>
 
         <!-- Modal Tambah / Edit Alat -->
-        <div x-cloak x-show="modalTerbuka" x-transition.opacity
-             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#1A2024]/50 p-4 md:p-8"
-             @keydown.escape.window="tutupModal()">
-            <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl" @click.outside="tutupModal()">
-                <div class="flex items-start justify-between gap-4 p-5 border-b border-gray-100">
-                    <div>
-                        <h2 class="text-lg font-bold text-[#1A2024]"
-                            x-text="mode === 'edit' ? 'Edit Data Alat' : 'Tambah Alat Baru'">Tambah Alat Baru</h2>
-                        <p class="text-xs text-gray-500 mt-0.5">
-                            Stok tersedia dihitung otomatis: total − disewa − rusak.
-                        </p>
-                    </div>
-                    <button type="button" @click="tutupModal()"
-                            class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition">✕</button>
-                </div>
-
-                <form x-ref="formAlat" method="POST" enctype="multipart/form-data" :action="formUrl" @submit.prevent="simpan($el)" class="p-5 space-y-4">
-                    @csrf
-                    <template x-if="mode === 'edit'">
-                        <input type="hidden" name="_method" value="PUT">
-                    </template>
-                    <input type="hidden" name="form_mode" :value="mode">
-                    <input type="hidden" name="alat_id" :value="form.id ?? ''">
-                    <input type="hidden" name="search" :value="cari">
-                    <input type="hidden" name="kategori" :value="kategori">
-                    <input type="hidden" name="kondisi" :value="kondisi">
-                    <input type="hidden" name="per_page" :value="perPage">
-
-                    @if ($errors->any())
-                        <div class="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-xs text-red-700 space-y-1">
-                            <p class="font-semibold">Periksa kembali data berikut:</p>
-                            @foreach ($errors->all() as $pesanError)
-                                <p>{{ $pesanError }}</p>
-                            @endforeach
+        <template x-teleport="body">
+            <div x-cloak x-show="modalTerbuka" x-transition.opacity
+                 class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1A2024]/50 p-4 backdrop-blur-[2px] sm:p-6"
+                 @keydown.escape.window="tutupModal()">
+                <div class="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+                     @click.outside="tutupModal()">
+                    <div class="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 p-5 sm:p-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#1A2024]"
+                                x-text="mode === 'edit' ? 'Edit Data Alat' : 'Tambah Alat Baru'">Tambah Alat Baru</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                Stok tersedia dihitung otomatis: total − disewa − rusak.
+                            </p>
                         </div>
-                    @endif
+                        <button type="button" @click="tutupModal()"
+                                aria-label="Tutup form"
+                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-gray-200">✕</button>
+                    </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form x-ref="formAlat" method="POST" enctype="multipart/form-data" :action="formUrl" @submit.prevent="simpan($el)" class="min-h-0 space-y-4 overflow-y-auto p-5 sm:p-6">
+                        @csrf
+                        <template x-if="mode === 'edit'">
+                            <input type="hidden" name="_method" value="PUT">
+                        </template>
+                        <input type="hidden" name="form_mode" :value="mode">
+                        <input type="hidden" name="alat_id" :value="form.id ?? ''">
+                        <input type="hidden" name="search" :value="cari">
+                        <input type="hidden" name="kategori" :value="kategori">
+                        <input type="hidden" name="kondisi" :value="kondisi">
+                        <input type="hidden" name="per_page" :value="perPage">
+
+                        @if ($errors->any())
+                            <div class="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-xs text-red-700 space-y-1">
+                                <p class="font-semibold">Periksa kembali data berikut:</p>
+                                @foreach ($errors->all() as $pesanError)
+                                    <p>{{ $pesanError }}</p>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="md:col-span-2">
                             <label for="nama" class="block text-xs font-semibold text-[#1A2024] mb-1">Nama Alat</label>
                             <input type="text" id="nama" name="nama" x-model="form.nama" required
@@ -214,14 +217,6 @@
                             <p class="mt-1 text-[10px] text-red-600" x-show="errors.stok_total" x-text="errors.stok_total"></p>
                         </div>
 
-                        <div>
-                            <label for="stok_rusak" class="block text-xs font-semibold text-[#1A2024] mb-1">Stok Rusak (unit)</label>
-                            <input type="number" id="stok_rusak" name="stok_rusak" x-model="form.stok_rusak"
-                                   min="0" step="1"
-                                   class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]">
-                            <p class="mt-1 text-[10px] text-red-600" x-show="errors.stok_rusak" x-text="errors.stok_rusak"></p>
-                        </div>
-
                         <div class="md:col-span-2">
                             <label for="foto" class="block text-xs font-semibold text-[#1A2024] mb-1">Foto Alat <span class="text-gray-400 font-normal">(JPG/PNG/WEBP, maks. 2 MB)</span></label>
                             <div class="flex items-center gap-4">
@@ -252,9 +247,9 @@
                                       class="w-full bg-[#F4EFEA]/60 border border-transparent rounded-xl px-4 py-2.5 text-xs text-[#1A2024] focus:ring-2 focus:ring-[#15AEEA]"></textarea>
                             <p class="mt-1 text-[10px] text-red-600" x-show="errors.deskripsi" x-text="errors.deskripsi"></p>
                         </div>
-                    </div>
+                        </div>
 
-                    <div class="flex items-center justify-between gap-3 pt-4 border-t border-gray-100">
+                        <div class="sticky bottom-0 flex items-center justify-between gap-3 border-t border-gray-100 bg-white pt-4">
                         <p class="text-[10px] text-gray-400" x-show="mode === 'edit'">
                             Stok tersedia saat ini:
                             <span class="font-semibold text-[#1A2024]" x-text="(form.stok_tersedia ?? 0) + ' unit'"></span>
@@ -269,10 +264,11 @@
                                 <span x-text="menyimpan ? 'Menyimpan…' : (mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Alat')"></span>
                             </button>
                         </div>
-                    </div>
-                </form>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        </template>
 
 
         @include('partials.status-muat')

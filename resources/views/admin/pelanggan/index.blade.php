@@ -144,25 +144,27 @@
         </div>
 
         <!-- Form pelanggan baru -->
-        <div x-cloak x-show="modalTerbuka" x-transition.opacity
-             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#1A2024]/50 p-4 md:p-8"
-             @keydown.escape.window="modalTerbuka = false">
-            <div class="w-full max-w-xl rounded-2xl bg-white shadow-xl" @click.outside="modalTerbuka = false">
-                <div class="flex items-start justify-between gap-4 border-b border-gray-100 p-5">
-                    <div>
-                        <h2 class="text-lg font-bold text-[#1A2024]"
-                            x-text="formMode === 'edit' ? 'Edit Pelanggan' : 'Tambah Pelanggan'">Tambah Pelanggan</h2>
-                        <p class="mt-0.5 text-xs text-gray-500"
-                           x-text="formMode === 'edit' ? 'Perbarui data akun pelanggan.' : 'Buat akun pelanggan baru yang tersimpan di database.'">
-                            Buat akun pelanggan baru yang tersimpan di database.
-                        </p>
+        <template x-teleport="body">
+            <div x-cloak x-show="modalTerbuka" x-transition.opacity
+                 class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1A2024]/50 p-4 backdrop-blur-[2px] sm:p-6"
+                 @keydown.escape.window="modalTerbuka = false">
+                <div class="flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+                     @click.outside="modalTerbuka = false">
+                    <div class="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 p-5 sm:p-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#1A2024]"
+                                x-text="formMode === 'edit' ? 'Edit Pelanggan' : 'Tambah Pelanggan'">Tambah Pelanggan</h2>
+                            <p class="mt-0.5 text-xs text-gray-500"
+                               x-text="formMode === 'edit' ? 'Perbarui data akun pelanggan.' : 'Buat akun pelanggan baru yang tersimpan di database.'">
+                                Buat akun pelanggan baru yang tersimpan di database.
+                            </p>
+                        </div>
+                        <button type="button" @click="modalTerbuka = false"
+                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-gray-200"
+                                aria-label="Tutup form">✕</button>
                     </div>
-                    <button type="button" @click="modalTerbuka = false"
-                            class="h-8 w-8 rounded-lg bg-gray-100 text-gray-500 transition hover:bg-gray-200"
-                            aria-label="Tutup form">✕</button>
-                </div>
 
-                <form method="POST" action="{{ route('admin.pelanggan.store') }}" x-bind:action="formAction" class="space-y-4 p-5">
+                    <form method="POST" action="{{ route('admin.pelanggan.store') }}" x-bind:action="formAction" class="min-h-0 space-y-4 overflow-y-auto p-5 sm:p-6">
                     @csrf
                     <input type="hidden" name="_method" value="PUT" x-bind:disabled="formMode !== 'edit'">
                     <input type="hidden" name="form_mode" x-bind:value="formMode">
@@ -221,16 +223,17 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                        <div class="sticky bottom-0 flex justify-end gap-2 border-t border-gray-100 bg-white pt-4">
                         <button type="button" @click="modalTerbuka = false"
                                 class="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-semibold text-[#1A2024] transition hover:bg-gray-200">Batal</button>
                         <button type="submit"
                                 class="rounded-xl bg-[#D86B43] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#D86B43]/90"
                                 x-text="formMode === 'edit' ? 'Simpan Perubahan' : 'Simpan Pelanggan'">Simpan Pelanggan</button>
-                    </div>
-                </form>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        </template>
 
         @include('partials.status-muat')
     </div>
